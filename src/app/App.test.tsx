@@ -1,0 +1,15 @@
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { App } from "./App";
+
+describe("App shell", () => {
+  it("renders a Chinese Claude Desktop style conversation workspace", () => {
+    render(<App />);
+
+    expect(screen.getByText("AI 测试助手")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "新建测试" })).toBeInTheDocument();
+    expect(screen.getAllByText("订单模块测试")).toHaveLength(2);
+    expect(screen.getByPlaceholderText("输入你想测试的功能，例如：测试订单模块功能")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "发送" })).toBeInTheDocument();
+  });
+});

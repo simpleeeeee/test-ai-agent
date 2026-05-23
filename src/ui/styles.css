@@ -1,0 +1,175 @@
+:root {
+  color: #2e2b27;
+  background: #f4f1eb;
+  font-family:
+    "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC",
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 960px;
+  min-height: 100vh;
+  background: #f4f1eb;
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 268px minmax(0, 1fr);
+  height: 100vh;
+  background: #f4f1eb;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #ded8ce;
+  background: #ebe7df;
+  padding: 14px;
+}
+
+.sidebar-header {
+  display: grid;
+  gap: 12px;
+}
+
+.app-title {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.new-test-button,
+.settings-button,
+.session-item,
+.send-button {
+  align-items: center;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 8px;
+}
+
+.new-test-button {
+  background: #3d6f8f;
+  color: #fff;
+  justify-content: center;
+  padding: 10px 12px;
+}
+
+.session-list {
+  display: grid;
+  gap: 4px;
+  margin-top: 18px;
+}
+
+.session-item {
+  background: transparent;
+  color: #514c45;
+  justify-content: flex-start;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.session-item.active {
+  background: #ddd7ce;
+  color: #1f1d1a;
+}
+
+.settings-button {
+  background: transparent;
+  color: #615a51;
+  margin-top: auto;
+  padding: 9px 10px;
+}
+
+.conversation {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-width: 0;
+  padding: 22px 28px;
+}
+
+.conversation-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.eyebrow {
+  color: #82796d;
+  font-size: 12px;
+  margin: 0 0 4px;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 19px;
+}
+
+.status-chip {
+  background: #e2ded7;
+  border-radius: 999px;
+  color: #625b52;
+  font-size: 12px;
+  padding: 5px 10px;
+}
+
+.empty-state {
+  align-self: center;
+  color: #514c45;
+  display: grid;
+  gap: 8px;
+  justify-self: center;
+  max-width: 520px;
+  text-align: center;
+}
+
+.empty-state h2 {
+  font-size: 20px;
+  font-weight: 580;
+}
+
+.empty-state p {
+  color: #82796d;
+}
+
+.composer {
+  align-items: flex-end;
+  background: #fffdfa;
+  border: 1px solid #ded8ce;
+  border-radius: 12px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 12px;
+}
+
+.composer textarea {
+  background: transparent;
+  border: 0;
+  color: #2e2b27;
+  min-height: 48px;
+  outline: 0;
+  resize: none;
+}
+
+.send-button {
+  background: #2f6f8f;
+  color: #fff;
+  padding: 9px 12px;
+}
