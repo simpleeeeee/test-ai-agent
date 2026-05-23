@@ -142,4 +142,47 @@ describe("applyRunEvent", () => {
     expect(withEvidence.evidence[0].title).toBe("创建订单响应");
     expect(withBug.bugDraft?.severity).toBe("P1");
   });
+
+  it("marks tool calls as failed via updateToolCall", () => {
+    const run = createInitialRun({
+      prompt: "测试订单模块功能",
+      projectName: "电商后台",
+      environmentName: "QA",
+      agentName: "订单测试 Agent",
+    });
+
+    const withTool = applyRunEvent(run, {
+      type: "tool:call-started",
+      toolCall: { id: "tool-1", toolName: "mcp-test.login", label: "登录", status: "running" },
+    });
+    const failed = applyRunEvent(withTool, {
+      type: "tool:call-failed",
+      toolCallId: "tool-1",
+      outputSummary: "登录超时",
+    });
+
+    expect(failed.toolCalls[0].status).toBe("failed");
+    expect(failed.toolCalls[0].outputSummary).toBe("登录超时");
+  });
+
+  it("does not duplicate tool calls when started twice with same id", () => {
+    const run = createInitialRun({
+      prompt: "测试",
+      projectName: "电商后台",
+      environmentName: "QA",
+      agentName: "订单测试 Agent",
+    });
+
+    const first = applyRunEvent(run, {
+      type: "tool:call-started",
+      toolCall: { id: "tool-1", toolName: "mcp-test.login", label: "登录", status: "running" },
+    });
+    const second = applyRunEvent(first, {
+      type: "tool:call-started",
+      toolCall: { id: "tool-1", toolName: "mcp-test.login", label: "登录", status: "running" },
+    });
+
+    expect(second.toolCalls).toHaveLength(1);
+    expect(second.toolCalls[0].status).toBe("running");
+  });
 });

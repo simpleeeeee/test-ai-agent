@@ -90,8 +90,16 @@ export function applyRunEvent(run: TestRun, event: RunEvent): TestRun {
       return { ...run, status: "waiting_confirmation", plan: event.plan };
     case "run:status-changed":
       return { ...run, status: event.status };
-    case "tool:call-started":
-      return { ...run, toolCalls: [...run.toolCalls, { ...event.toolCall, status: "running" }] };
+    case "tool:call-started": {
+      const exists = run.toolCalls.some(tc => tc.id === event.toolCall.id);
+      return {
+        ...run,
+        toolCalls: exists
+          ? run.toolCalls.map(tc =>
+              tc.id === event.toolCall.id ? { ...tc, status: "running" as const } : tc)
+          : [...run.toolCalls, { ...event.toolCall, status: "running" as const }],
+      };
+    }
     case "tool:approval-required": {
       const exists = run.toolCalls.some(tc => tc.id === event.toolCall.id);
       return {
