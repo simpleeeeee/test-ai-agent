@@ -31,6 +31,15 @@ export async function* runFakeAgent(prompt: string): AsyncGenerator<RunEvent> {
       outputSummary: "测试账号登录成功",
     };
     yield {
+      type: "tool:call-started",
+      toolCall: {
+        id: "tool-query-order",
+        toolName: "mcp-db.queryOrder",
+        label: "查询订单数据库",
+        status: "running",
+      },
+    };
+    yield {
       type: "tool:approval-required",
       toolCall: {
         id: "tool-query-order",
