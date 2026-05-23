@@ -107,7 +107,7 @@ export function applyRunEvent(run: TestRun, event: RunEvent): TestRun {
         status: "waiting_approval",
         toolCalls: exists
           ? run.toolCalls.map(tc =>
-              tc.id === event.toolCall.id ? { ...tc, status: "waiting_approval" as const } : tc)
+              tc.id === event.toolCall.id ? { ...tc, status: "waiting_approval" as const, approvalReason: event.toolCall.approvalReason } : tc)
           : [...run.toolCalls, { ...event.toolCall, status: "waiting_approval" as const }],
       };
     }

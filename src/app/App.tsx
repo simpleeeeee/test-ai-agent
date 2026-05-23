@@ -3,9 +3,11 @@ import { Plus, Send, Settings } from "lucide-react";
 import {
   applyRunEvent,
   createInitialRun,
+  type RunEvent,
   type TestRun,
   type ToolCall,
 } from "../domain/testRun";
+import { runFakeAgent } from "../agent/fakeAgentRuntime";
 import "../ui/styles.css";
 
 const sessions = ["订单模块测试", "支付回归", "优惠券异常"];
@@ -14,7 +16,7 @@ export function App() {
   const [prompt, setPrompt] = useState("");
   const [run, setRun] = useState<TestRun | null>(null);
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     const trimmed = prompt.trim();
     if (!trimmed) return;
@@ -25,50 +27,75 @@ export function App() {
       environmentName: "QA",
       agentName: "订单测试 Agent",
     });
-    const plannedRun = applyRunEvent(applyRunEvent(initialRun, { type: "run:planning" }), {
-      type: "run:plan-ready",
-      plan: [
-        { id: "plan-login", title: "登录测试账号", status: "pending" },
-        { id: "plan-create-order", title: "创建测试订单", status: "pending" },
-        { id: "plan-update-order", title: "修改订单信息", status: "pending" },
-        { id: "plan-check-status", title: "校验订单状态", status: "pending" },
-      ],
-    });
 
-    setRun(plannedRun);
+    let currentRun = initialRun;
+    for await (const event of runFakeAgent(trimmed)) {
+      currentRun = applyRunEvent(currentRun, event);
+    }
+
+    setRun(currentRun);
     setPrompt("");
   }
 
-  function handleStartExecution() {
+  async function handleStartExecution() {
     if (!run) return;
 
-    let nextRun = applyRunEvent(run, { type: "run:status-changed", status: "running" });
-    nextRun = applyRunEvent(nextRun, {
-      type: "tool:call-started",
-      toolCall: {
-        id: "tool-login",
-        toolName: "mcp-user.login",
-        label: "登录测试账号",
-        status: "running",
+    const executionEvents: RunEvent[] = [
+      { type: "run:status-changed", status: "running" },
+      {
+        type: "tool:call-started",
+        toolCall: {
+          id: "tool-login",
+          toolName: "mcp-user.login",
+          label: "登录测试账号",
+          status: "running",
+        },
       },
-    });
-    nextRun = applyRunEvent(nextRun, {
-      type: "tool:call-completed",
-      toolCallId: "tool-login",
-      outputSummary: "测试账号登录成功",
-    });
-    nextRun = applyRunEvent(nextRun, {
-      type: "tool:approval-required",
-      toolCall: {
-        id: "tool-query-order",
-        toolName: "mcp-db.queryOrder",
-        label: "查询订单数据库",
-        status: "waiting_approval",
-        approvalReason: "AI 请求查询订单数据库",
+      {
+        type: "tool:call-completed",
+        toolCallId: "tool-login",
+        outputSummary: "测试账号登录成功",
       },
-    });
+      {
+        type: "tool:call-started",
+        toolCall: {
+          id: "tool-query-order",
+          toolName: "mcp-db.queryOrder",
+          label: "查询订单数据库",
+          status: "running",
+        },
+      },
+      {
+        type: "tool:approval-required",
+        toolCall: {
+          id: "tool-query-order",
+          toolName: "mcp-db.queryOrder",
+          label: "查询订单数据库",
+          status: "waiting_approval",
+          approvalReason: "AI 请求查询订单数据库",
+        },
+      },
+    ];
 
+    let nextRun = run;
+    for (const event of executionEvents) {
+      nextRun = applyRunEvent(nextRun, event);
+    }
     setRun(nextRun);
+  }
+
+  function handleDenyTool() {
+    if (!run) return;
+    const nextRun = applyRunEvent(run, {
+      type: "tool:call-failed",
+      toolCallId: "tool-query-order",
+      outputSummary: "用户拒绝了数据库查询请求",
+    });
+    setRun(nextRun);
+  }
+
+  function handleRevisePlan() {
+    window.alert("计划调整功能将在后续版本中实现");
   }
 
   function handleApproveTool() {
@@ -156,13 +183,13 @@ export function App() {
                       <button className="primary-action" onClick={handleStartExecution} type="button">
                         开始执行
                       </button>
-                      <button className="secondary-action" type="button">
+                      <button className="secondary-action" onClick={handleRevisePlan} type="button">
                         调整计划
                       </button>
                     </div>
                   ) : null}
                 </div>
-                {run.toolCalls.length > 0 ? <ToolCallList onApprove={handleApproveTool} toolCalls={run.toolCalls} /> : null}
+                {run.toolCalls.length > 0 ? <ToolCallList onApprove={handleApproveTool} onDeny={handleDenyTool} toolCalls={run.toolCalls} /> : null}
                 {run.evidence.length > 0 || run.bugDraft ? (
                   <aside className="details-drawer" aria-label="本次测试">
                     <h2>本次测试</h2>
@@ -215,7 +242,7 @@ export function App() {
   );
 }
 
-function ToolCallList({ onApprove, toolCalls }: { onApprove: () => void; toolCalls: ToolCall[] }) {
+function ToolCallList({ onApprove, onDeny, toolCalls }: { onApprove: () => void; onDeny: () => void; toolCalls: ToolCall[] }) {
   return (
     <section className="tool-call-list" aria-label="MCP 工具调用">
       <h2>MCP 工具调用</h2>
@@ -229,7 +256,7 @@ function ToolCallList({ onApprove, toolCalls }: { onApprove: () => void; toolCal
             <div className="approval-box">
               <span>{toolCall.approvalReason}</span>
               <button onClick={onApprove} type="button">允许</button>
-              <button type="button">拒绝</button>
+              <button onClick={onDeny} type="button">拒绝</button>
             </div>
           ) : null}
         </div>

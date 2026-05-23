@@ -179,7 +179,8 @@ h1 {
 .session-item:hover,
 .send-button:hover,
 .primary-action:hover,
-.secondary-action:hover {
+.secondary-action:hover,
+.approval-box button:hover {
   filter: brightness(0.95);
 }
 
@@ -188,7 +189,8 @@ h1 {
 .session-item:focus-visible,
 .send-button:focus-visible,
 .primary-action:focus-visible,
-.secondary-action:focus-visible {
+.secondary-action:focus-visible,
+.approval-box button:focus-visible {
   outline: 2px solid #3d6f8f;
   outline-offset: 2px;
 }
@@ -312,6 +314,22 @@ h1 {
 .tool-status.waiting_approval {
   background: #f8ecd0;
   color: #7c5a19;
+}
+
+.tool-status.failed {
+  background: #fae6e6;
+  color: #8f2f2f;
+}
+
+.tool-status.pending {
+  background: #e9e8e5;
+  color: #625b52;
+}
+
+.tool-status.skipped {
+  background: #e9e8e5;
+  color: #82796d;
+  text-decoration: line-through;
 }
 
 .approval-box {
