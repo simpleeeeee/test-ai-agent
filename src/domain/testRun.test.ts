@@ -78,6 +78,28 @@ describe("applyRunEvent", () => {
     expect(planned.plan).toHaveLength(2);
   });
 
+  it("completes tool calls via updateToolCall", () => {
+    const run = createInitialRun({
+      prompt: "测试订单模块功能",
+      projectName: "电商后台",
+      environmentName: "QA",
+      agentName: "订单测试 Agent",
+    });
+
+    const withTool = applyRunEvent(run, {
+      type: "tool:call-started",
+      toolCall: { id: "tool-1", toolName: "mcp-test.login", label: "登录", status: "running" },
+    });
+    const completed = applyRunEvent(withTool, {
+      type: "tool:call-completed",
+      toolCallId: "tool-1",
+      outputSummary: "登录成功",
+    });
+
+    expect(completed.toolCalls[0].status).toBe("completed");
+    expect(completed.toolCalls[0].outputSummary).toBe("登录成功");
+  });
+
   it("tracks tool calls, evidence, and bug drafts", () => {
     const run = createInitialRun({
       prompt: "测试订单模块功能",
