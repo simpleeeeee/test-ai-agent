@@ -11,5 +11,10 @@ describe("App shell", () => {
     expect(screen.getAllByText("订单模块测试")).toHaveLength(2);
     expect(screen.getByPlaceholderText("输入你想测试的功能，例如：测试订单模块功能")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "发送" })).toBeInTheDocument();
+    expect(screen.getByText("空闲")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "设置" })).toBeInTheDocument();
+    expect(screen.getByText("输入测试目标，AI 会生成计划并调用 MCP 工具执行。")).toBeInTheDocument();
+    expect(screen.getByRole("navigation")).toBeInTheDocument();
+    expect(screen.getByRole("main")).toBeInTheDocument();
   });
 });
