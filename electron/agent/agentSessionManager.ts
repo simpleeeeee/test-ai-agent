@@ -129,6 +129,38 @@ export class AgentSessionManager {
     return this.session(runId).stopTask(taskId);
   }
 
+  listSessions() {
+    return Promise.resolve([]);
+  }
+
+  getSession(_sessionId: string) {
+    return Promise.resolve(null);
+  }
+
+  resumeSession(runId: string, _sessionId: string) {
+    return this.sendMessage(runId, "恢复之前的会话");
+  }
+
+  forkSession(runId: string, _sessionId: string) {
+    return this.sendMessage(runId, "从会话分支继续执行");
+  }
+
+  continueRun(runId: string) {
+    return this.sendMessage(runId, "继续执行");
+  }
+
+  renameSession(_sessionId: string, _title: string) {
+    return Promise.resolve(undefined);
+  }
+
+  tagSession(_sessionId: string, _tag: string) {
+    return Promise.resolve(undefined);
+  }
+
+  deleteSession(_sessionId: string) {
+    return Promise.resolve(undefined);
+  }
+
   private async drainMessages(runId: string, messages: AsyncIterable<unknown>) {
     for await (const message of messages) {
       for (const event of mapSdkMessageToRunEvents(runId, message)) {

@@ -41,6 +41,14 @@ const sessionManager = {
   accountInfo: vi.fn(),
   initializationResult: vi.fn(),
   stopTask: vi.fn(),
+  listSessions: vi.fn(),
+  getSession: vi.fn(),
+  resumeSession: vi.fn(),
+  forkSession: vi.fn(),
+  continueRun: vi.fn(),
+  renameSession: vi.fn(),
+  tagSession: vi.fn(),
+  deleteSession: vi.fn(),
 };
 
 vi.mock("./agent/backendRuntime.js", () => ({
@@ -56,12 +64,29 @@ describe("electron main IPC registration", () => {
 
     const handledChannels = handle.mock.calls.map(([channel]) => channel);
 
-    expect(handledChannels).toEqual(expect.arrayContaining([
-      "sdk:supported-models",
+    expect(handledChannels.sort()).toEqual([
+      "mcp:reconnect",
+      "mcp:set-servers",
       "mcp:status",
+      "mcp:toggle",
+      "run:apply-settings",
+      "run:continue",
+      "run:delete-session",
+      "run:fork",
+      "run:get-session",
+      "run:list-sessions",
+      "run:rename-session",
+      "run:resume",
       "run:set-model",
+      "run:set-permission-mode",
+      "run:tag-session",
+      "sdk:account-info",
+      "sdk:initialization-result",
+      "sdk:supported-agents",
+      "sdk:supported-commands",
+      "sdk:supported-models",
       "task:stop",
-    ]));
+    ]);
   });
 
   it("registers supported send handlers", async () => {
@@ -69,13 +94,14 @@ describe("electron main IPC registration", () => {
 
     const onChannels = on.mock.calls.map(([channel]) => channel);
 
-    expect(onChannels).toEqual(expect.arrayContaining([
-      "run:create",
+    expect(onChannels.sort()).toEqual([
+      "question:answer",
       "run:approve-plan",
+      "run:create",
+      "run:send-message",
+      "run:stop",
       "tool:approve",
       "tool:deny",
-      "question:answer",
-      "run:stop",
-    ]));
+    ]);
   });
 });

@@ -68,6 +68,14 @@ function registerBackendIpc(window: BrowserWindow) {
   handleRequest("sdk:account-info", ({ runId }) => manager.accountInfo(runId));
   handleRequest("sdk:initialization-result", ({ runId }) => manager.initializationResult(runId));
   handleRequest("task:stop", ({ runId, taskId }) => manager.stopTask(runId, taskId));
+  handleRequest("run:list-sessions", () => manager.listSessions());
+  handleRequest("run:get-session", ({ sessionId }) => manager.getSession(sessionId));
+  handleRequest("run:resume", ({ runId, sessionId }) => manager.resumeSession(runId, sessionId));
+  handleRequest("run:fork", ({ runId, sessionId }) => manager.forkSession(runId, sessionId));
+  handleRequest("run:continue", ({ runId }) => manager.continueRun(runId));
+  handleRequest("run:rename-session", ({ sessionId, title }) => manager.renameSession(sessionId, title));
+  handleRequest("run:tag-session", ({ sessionId, tag }) => manager.tagSession(sessionId, tag));
+  handleRequest("run:delete-session", ({ sessionId }) => manager.deleteSession(sessionId));
 }
 
 async function createWindow() {

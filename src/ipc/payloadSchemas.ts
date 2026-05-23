@@ -9,7 +9,6 @@ const noPayload = z.undefined().optional();
 const rendererSchemas = {
   "run:create": z.object({ prompt: nonEmptyString }),
   "run:approve-plan": z.object({ runId: nonEmptyString }),
-  "run:revise-plan": z.object({ runId: nonEmptyString, prompt: nonEmptyString }),
   "tool:approve": z.object({
     runId: nonEmptyString,
     requestId: nonEmptyString,

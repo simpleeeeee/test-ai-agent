@@ -12,6 +12,10 @@ export class ClaudeAgentRuntimeAdapter {
   constructor(private readonly sdk: { query: QueryFunction } = { query: realQuery }) {}
 
   start(input: StartRuntimeInput) {
+    // The SDK's Query type uses complex generics that don't map cleanly to a
+    // dependency-injectable adapter. We cast through `any` here to avoid leaking
+    // SDK generics into all callers — the facade test verifies the runtime surface
+    // contract instead.
     const queryResult = this.sdk.query({
       prompt: input.prompt as any,
       options: {

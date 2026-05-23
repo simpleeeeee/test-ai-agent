@@ -2,17 +2,15 @@ import { describe, expect, it, vi } from "vitest";
 import { createBackendBridge } from "./backendBridge";
 
 describe("backendBridge", () => {
-  it("creates runs, sends messages, revises plans, and stops through typed IPC", () => {
+  it("creates runs, sends messages, and stops through typed IPC", () => {
     const api = { send: vi.fn(), invoke: vi.fn(), on: vi.fn() };
     const bridge = createBackendBridge(api);
 
     bridge.createRun("测试订单模块功能");
-    bridge.revisePlan("run-1", "增加支付异常场景");
     bridge.sendMessage("run-1", "继续执行");
     bridge.stopRun("run-1");
 
     expect(api.send).toHaveBeenCalledWith("run:create", { prompt: "测试订单模块功能" });
-    expect(api.send).toHaveBeenCalledWith("run:revise-plan", { runId: "run-1", prompt: "增加支付异常场景" });
     expect(api.send).toHaveBeenCalledWith("run:send-message", { runId: "run-1", message: "继续执行" });
     expect(api.send).toHaveBeenCalledWith("run:stop", { runId: "run-1" });
   });

@@ -1,7 +1,6 @@
 export const rendererToMainChannels = [
   "run:create",
   "run:approve-plan",
-  "run:revise-plan",
   "tool:approve",
   "tool:deny",
   "run:stop",

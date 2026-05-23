@@ -10,10 +10,17 @@ type Props = {
 export function ToolApprovalCard({ request, onApprove, onDeny }: Props) {
   const [inputText, setInputText] = useState("");
   const [applySuggestions, setApplySuggestions] = useState(false);
+  const [parseError, setParseError] = useState("");
 
   function parseInput() {
     if (!inputText.trim()) return undefined;
-    return JSON.parse(inputText) as Record<string, unknown>;
+    try {
+      setParseError("");
+      return JSON.parse(inputText) as Record<string, unknown>;
+    } catch {
+      setParseError("JSON 格式无效");
+      return undefined;
+    }
   }
 
   return (
@@ -26,6 +33,7 @@ export function ToolApprovalCard({ request, onApprove, onDeny }: Props) {
       <label>
         调整后的工具输入
         <textarea value={inputText} onChange={(event) => setInputText(event.currentTarget.value)} />
+        {parseError ? <span className="sdk-error">{parseError}</span> : null}
       </label>
       <label className="checkbox-line">
         <input type="checkbox" checked={applySuggestions} onChange={(event) => setApplySuggestions(event.currentTarget.checked)} />

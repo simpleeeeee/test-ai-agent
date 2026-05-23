@@ -45,9 +45,6 @@ export function createBackendBridge(api: AiTestAssistantApi) {
     approvePlan(runId: string) {
       api.send("run:approve-plan", { runId });
     },
-    revisePlan(runId: string, prompt: string) {
-      api.send("run:revise-plan", { runId, prompt });
-    },
     sendMessage(runId: string, message: string) {
       api.send("run:send-message", { runId, message });
     },

@@ -28,7 +28,6 @@ describe("IPC channels", () => {
     expect(rendererToMainChannels).toEqual([
       "run:create",
       "run:approve-plan",
-      "run:revise-plan",
       "tool:approve",
       "tool:deny",
       "run:stop",

@@ -65,10 +65,20 @@ export function mapSdkMessageToRunEvents(runId: string, message: any): RunEvent[
     if (message.usage) {
       events.push({ type: "sdk:usage", raw: message.usage });
     }
-    events.push({
-      type: "run:status-changed",
-      status: message.subtype === "success" ? "completed" : "failed",
-    });
+    if (message.subtype === "error") {
+      events.push({
+        type: "sdk:error",
+        message: typeof message.error === "string" ? message.error : "SDK 执行错误",
+        retryable: false,
+        raw: message,
+      });
+      events.push({ type: "run:status-changed", status: "failed" });
+    } else {
+      events.push({
+        type: "run:status-changed",
+        status: message.subtype === "success" ? "completed" : "failed",
+      });
+    }
   }
 
   if (message.type === "system" && message.subtype === "task_progress") {

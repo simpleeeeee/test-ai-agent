@@ -16,6 +16,17 @@ export function SdkControlDrawer({ runId, activeTaskId, bridge }: { runId: strin
   const [model, setModelValue] = useState("");
   const [permissionMode, setPermissionModeValue] = useState("default");
   const [settings, setSettings] = useState("{}");
+  const [settingsError, setSettingsError] = useState("");
+
+  function applySettings() {
+    try {
+      setSettingsError("");
+      const parsed = JSON.parse(settings) as Record<string, unknown>;
+      bridge.applySettings(runId, parsed);
+    } catch {
+      setSettingsError("JSON 格式无效");
+    }
+  }
 
   return (
     <aside className="sdk-control-drawer" aria-label="SDK 控制">
@@ -29,7 +40,8 @@ export function SdkControlDrawer({ runId, activeTaskId, bridge }: { runId: strin
       </label>
       <button type="button" onClick={() => bridge.setPermissionMode(runId, permissionMode)}>应用权限</button>
       <label>Flag Settings JSON<textarea value={settings} onChange={(event) => setSettings(event.currentTarget.value)} /></label>
-      <button type="button" onClick={() => bridge.applySettings(runId, JSON.parse(settings) as Record<string, unknown>)}>应用设置</button>
+      {settingsError ? <span className="sdk-error">{settingsError}</span> : null}
+      <button type="button" onClick={applySettings}>应用设置</button>
       <div className="button-grid">
         <button type="button" onClick={() => bridge.supportedModels(runId)}>支持模型</button>
         <button type="button" onClick={() => bridge.supportedCommands(runId)}>支持命令</button>

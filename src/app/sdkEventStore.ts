@@ -45,11 +45,17 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
   }
 
   if (event.channel === "tool:approval-required") {
-    return { ...state, activeRunId, approvals: [...state.approvals, payload as unknown as ApprovalRequest] };
+    const approvals = state.approvals.length >= 200
+      ? state.approvals
+      : [...state.approvals, payload as unknown as ApprovalRequest];
+    return { ...state, activeRunId, approvals };
   }
 
   if (event.channel === "question:required") {
-    return { ...state, activeRunId, questions: [...state.questions, payload as unknown as QuestionRequest] };
+    const questions = state.questions.length >= 200
+      ? state.questions
+      : [...state.questions, payload as unknown as QuestionRequest];
+    return { ...state, activeRunId, questions };
   }
 
   if (event.channel === "question:answered") {
@@ -62,7 +68,10 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
   }
 
   if (event.channel === "sdk:raw-message") {
-    return { ...state, activeRunId, rawMessages: [...state.rawMessages, payload.message] };
+    const rawMessages = state.rawMessages.length >= 200
+      ? [...state.rawMessages.slice(-199), payload.message]
+      : [...state.rawMessages, payload.message];
+    return { ...state, activeRunId, rawMessages };
   }
 
   if (event.channel === "sdk:usage") {
@@ -73,7 +82,9 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
     return {
       ...state,
       activeRunId,
-      errors: [...state.errors, { message: String(payload.message), retryable: Boolean(payload.retryable) }],
+      errors: state.errors.length >= 200
+        ? [...state.errors.slice(-199), { message: String(payload.message), retryable: Boolean(payload.retryable) }]
+        : [...state.errors, { message: String(payload.message), retryable: Boolean(payload.retryable) }],
     };
   }
 
@@ -81,7 +92,9 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
     return {
       ...state,
       activeRunId,
-      tasks: [...state.tasks, { taskId: String(payload.taskId), summary: typeof payload.summary === "string" ? payload.summary : undefined }],
+      tasks: state.tasks.length >= 200
+        ? [...state.tasks.slice(-199), { taskId: String(payload.taskId), summary: typeof payload.summary === "string" ? payload.summary : undefined }]
+        : [...state.tasks, { taskId: String(payload.taskId), summary: typeof payload.summary === "string" ? payload.summary : undefined }],
     };
   }
 
