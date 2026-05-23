@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { isRendererToMainChannel, isMainToRendererChannel, rendererToMainChannels } from "./channels";
+import {
+  isRendererToMainChannel,
+  isMainToRendererChannel,
+  rendererToMainChannels,
+  mainToRendererChannels,
+} from "./channels";
 
 describe("IPC channels", () => {
   it("allows only explicit renderer-to-main channels", () => {
@@ -19,7 +24,7 @@ describe("IPC channels", () => {
     expect(isRendererToMainChannel("random-string")).toBe(false);
   });
 
-  it("contains the spec-defined renderer-to-main actions", () => {
+  it("contains every backend renderer-to-main action", () => {
     expect(rendererToMainChannels).toEqual([
       "run:create",
       "run:approve-plan",
@@ -27,6 +32,57 @@ describe("IPC channels", () => {
       "tool:approve",
       "tool:deny",
       "run:stop",
+      "run:resume",
+      "run:fork",
+      "run:continue",
+      "run:send-message",
+      "run:set-model",
+      "run:set-permission-mode",
+      "run:apply-settings",
+      "run:list-sessions",
+      "run:get-session",
+      "run:rename-session",
+      "run:tag-session",
+      "run:delete-session",
+      "mcp:set-servers",
+      "mcp:reconnect",
+      "mcp:toggle",
+      "mcp:status",
+      "question:answer",
+      "task:stop",
+      "sdk:supported-models",
+      "sdk:supported-commands",
+      "sdk:supported-agents",
+      "sdk:account-info",
+      "sdk:initialization-result",
+    ]);
+  });
+
+  it("contains every backend main-to-renderer stream event", () => {
+    expect(mainToRendererChannels).toEqual([
+      "run:created",
+      "run:planning",
+      "run:plan-ready",
+      "run:status-changed",
+      "tool:call-started",
+      "tool:approval-required",
+      "tool:call-completed",
+      "tool:call-failed",
+      "evidence:created",
+      "bug-draft:created",
+      "assistant:text-delta",
+      "assistant:message-completed",
+      "sdk:raw-message",
+      "sdk:session-changed",
+      "sdk:status",
+      "sdk:usage",
+      "sdk:error",
+      "sdk:permission-denied",
+      "sdk:mcp-status",
+      "sdk:task-progress",
+      "sdk:hook-event",
+      "question:required",
+      "question:answered",
     ]);
   });
 });
