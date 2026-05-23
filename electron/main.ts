@@ -1,13 +1,73 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import path from "node:path";
-import { isMainToRendererChannel } from "../src/ipc/channels.js";
+import { fileURLToPath } from "node:url";
+import {
+  isMainToRendererChannel,
+  isRendererToMainChannel,
+  type MainToRendererChannel,
+  type RendererToMainChannel,
+} from "../src/ipc/channels.js";
+import { parseRendererToMainPayload } from "../src/ipc/payloadSchemas.js";
+import { createBackendRuntime } from "./agent/backendRuntime.js";
 
-function sendToRenderer(window: BrowserWindow, channel: string, payload: unknown) {
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+function sendToRenderer(window: BrowserWindow, channel: MainToRendererChannel, payload: unknown) {
   if (!isMainToRendererChannel(channel)) {
     console.warn(`Blocked main→renderer channel: ${channel}`);
     return;
   }
   window.webContents.send(channel, payload);
+}
+
+function registerBackendIpc(window: BrowserWindow) {
+  const runtime = createBackendRuntime({
+    send: (channel, payload) => sendToRenderer(window, channel, payload),
+  });
+  const manager = runtime.sessionManager;
+
+  const onRequest = (
+    channel: RendererToMainChannel,
+    handler: (payload: any) => void | Promise<void>,
+  ) => {
+    ipcMain.on(channel, (_event, payload) => {
+      const parsed = parseRendererToMainPayload(channel, payload);
+      void handler(parsed);
+    });
+  };
+
+  const handleRequest = (
+    channel: RendererToMainChannel,
+    handler: (payload: any) => unknown | Promise<unknown>,
+  ) => {
+    ipcMain.handle(channel, (_event, payload) => {
+      const parsed = parseRendererToMainPayload(channel, payload);
+      return handler(parsed);
+    });
+  };
+
+  onRequest("run:create", ({ prompt }) => manager.startRun(crypto.randomUUID(), prompt));
+  onRequest("run:approve-plan", ({ runId }) => manager.approvePlan(runId));
+  onRequest("run:send-message", ({ runId, message }) => manager.sendMessage(runId, message));
+  onRequest("run:stop", ({ runId }) => manager.stopRun(runId));
+  onRequest("tool:approve", ({ runId, requestId, updatedInput, applyPermissionSuggestions }) =>
+    manager.approveTool(runId, requestId, { updatedInput, applyPermissionSuggestions }));
+  onRequest("tool:deny", ({ runId, requestId, message }) => manager.denyTool(runId, requestId, message));
+  onRequest("question:answer", ({ runId, requestId, answers }) => manager.answerQuestion(runId, requestId, answers));
+
+  handleRequest("run:set-model", ({ runId, model }) => manager.setModel(runId, model));
+  handleRequest("run:set-permission-mode", ({ runId, permissionMode }) => manager.setPermissionMode(runId, permissionMode));
+  handleRequest("run:apply-settings", ({ runId, settings }) => manager.applySettings(runId, settings));
+  handleRequest("mcp:status", ({ runId }) => manager.mcpStatus(runId));
+  handleRequest("mcp:set-servers", ({ runId, servers }) => manager.setMcpServers(runId, servers));
+  handleRequest("mcp:reconnect", ({ runId, serverName }) => manager.reconnectMcpServer(runId, serverName));
+  handleRequest("mcp:toggle", ({ runId, serverName, enabled }) => manager.toggleMcpServer(runId, serverName, enabled));
+  handleRequest("sdk:supported-commands", ({ runId }) => manager.supportedCommands(runId));
+  handleRequest("sdk:supported-models", ({ runId }) => manager.supportedModels(runId));
+  handleRequest("sdk:supported-agents", ({ runId }) => manager.supportedAgents(runId));
+  handleRequest("sdk:account-info", ({ runId }) => manager.accountInfo(runId));
+  handleRequest("sdk:initialization-result", ({ runId }) => manager.initializationResult(runId));
+  handleRequest("task:stop", ({ runId, taskId }) => manager.stopTask(runId, taskId));
 }
 
 async function createWindow() {
@@ -24,10 +84,12 @@ async function createWindow() {
     },
   });
 
+  registerBackendIpc(window);
+
   if (process.env.VITE_DEV_SERVER_URL) {
     await window.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
-    await window.loadFile(path.join(__dirname, "../dist/index.html"));
+    await window.loadFile(path.join(__dirname, "../../dist/index.html"));
   }
 }
 
@@ -44,3 +106,5 @@ app.on("activate", () => {
     void createWindow();
   }
 });
+
+export { registerBackendIpc, sendToRenderer };
