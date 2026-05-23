@@ -43,4 +43,20 @@ describe("App shell", () => {
     expect(screen.getByRole("navigation")).toBeInTheDocument();
     expect(screen.getByRole("main")).toBeInTheDocument();
   });
+
+  it("shows MCP tool events after the tester starts execution", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.type(screen.getByLabelText("测试目标"), "测试订单模块功能");
+    await user.click(screen.getByRole("button", { name: "发送" }));
+    await user.click(await screen.findByRole("button", { name: "开始执行" }));
+
+    expect(await screen.findByText("MCP 工具调用")).toBeInTheDocument();
+    expect(screen.getByText("mcp-user.login")).toBeInTheDocument();
+    expect(screen.getByText("测试账号登录成功")).toBeInTheDocument();
+    expect(screen.getByText("AI 请求查询订单数据库")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "允许" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "拒绝" })).toBeInTheDocument();
+  });
 });

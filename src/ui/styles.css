@@ -262,3 +262,69 @@ h1 {
   border: 1px solid #d3cdc3;
   color: #514c45;
 }
+
+.tool-call-list {
+  background: #f7f4ef;
+  border: 1px solid #ded8ce;
+  border-radius: 10px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.tool-call-list h2 {
+  font-size: 14px;
+}
+
+.tool-call-row {
+  align-items: center;
+  background: #fffdfa;
+  border: 1px solid #e7e1d8;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 180px 1fr auto;
+  padding: 9px 10px;
+}
+
+.tool-name {
+  color: #625b52;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+}
+
+.tool-status {
+  border-radius: 999px;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.tool-status.running {
+  background: #e5f0f6;
+  color: #27637f;
+}
+
+.tool-status.completed {
+  background: #e6f2e7;
+  color: #2f6f3a;
+}
+
+.tool-status.waiting_approval {
+  background: #f8ecd0;
+  color: #7c5a19;
+}
+
+.approval-box {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  grid-column: 1 / -1;
+}
+
+.approval-box button {
+  background: #fffdfa;
+  border: 1px solid #d3cdc3;
+  border-radius: 7px;
+  cursor: pointer;
+  padding: 6px 10px;
+}

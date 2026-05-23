@@ -1,6 +1,11 @@
 import { FormEvent, useState } from "react";
 import { Plus, Send, Settings } from "lucide-react";
-import { applyRunEvent, createInitialRun, type TestRun } from "../domain/testRun";
+import {
+  applyRunEvent,
+  createInitialRun,
+  type TestRun,
+  type ToolCall,
+} from "../domain/testRun";
 import "../ui/styles.css";
 
 const sessions = ["订单模块测试", "支付回归", "优惠券异常"];
@@ -32,6 +37,38 @@ export function App() {
 
     setRun(plannedRun);
     setPrompt("");
+  }
+
+  function handleStartExecution() {
+    if (!run) return;
+
+    let nextRun = applyRunEvent(run, { type: "run:status-changed", status: "running" });
+    nextRun = applyRunEvent(nextRun, {
+      type: "tool:call-started",
+      toolCall: {
+        id: "tool-login",
+        toolName: "mcp-user.login",
+        label: "登录测试账号",
+        status: "running",
+      },
+    });
+    nextRun = applyRunEvent(nextRun, {
+      type: "tool:call-completed",
+      toolCallId: "tool-login",
+      outputSummary: "测试账号登录成功",
+    });
+    nextRun = applyRunEvent(nextRun, {
+      type: "tool:approval-required",
+      toolCall: {
+        id: "tool-query-order",
+        toolName: "mcp-db.queryOrder",
+        label: "查询订单数据库",
+        status: "waiting_approval",
+        approvalReason: "AI 请求查询订单数据库",
+      },
+    });
+
+    setRun(nextRun);
   }
 
   return (
@@ -67,7 +104,7 @@ export function App() {
             <p className="eyebrow">当前会话</p>
             <h1>订单模块测试</h1>
           </div>
-          <span className="status-chip">{run ? "等待确认" : "空闲"}</span>
+          <span className="status-chip">{getStatusLabel(run?.status ?? "idle")}</span>
         </header>
         <section className="message-stream" aria-label="消息流">
           {run ? (
@@ -82,15 +119,18 @@ export function App() {
                       <li key={step.id}>{step.title}</li>
                     ))}
                   </ol>
-                  <div className="action-row">
-                    <button className="primary-action" type="button">
-                      开始执行
-                    </button>
-                    <button className="secondary-action" type="button">
-                      调整计划
-                    </button>
-                  </div>
+                  {run.status === "waiting_confirmation" ? (
+                    <div className="action-row">
+                      <button className="primary-action" onClick={handleStartExecution} type="button">
+                        开始执行
+                      </button>
+                      <button className="secondary-action" type="button">
+                        调整计划
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
+                {run.toolCalls.length > 0 ? <ToolCallList toolCalls={run.toolCalls} /> : null}
               </article>
             </>
           ) : (
@@ -115,4 +155,54 @@ export function App() {
       </main>
     </div>
   );
+}
+
+function ToolCallList({ toolCalls }: { toolCalls: ToolCall[] }) {
+  return (
+    <section className="tool-call-list" aria-label="MCP 工具调用">
+      <h2>MCP 工具调用</h2>
+      {toolCalls.map((toolCall) => (
+        <div className="tool-call-row" key={toolCall.id}>
+          <span className="tool-name">{toolCall.toolName}</span>
+          <span>{toolCall.label}</span>
+          <span className={`tool-status ${toolCall.status}`}>{getToolStatusLabel(toolCall.status)}</span>
+          {toolCall.outputSummary ? <span>{toolCall.outputSummary}</span> : null}
+          {toolCall.approvalReason ? (
+            <div className="approval-box">
+              <span>{toolCall.approvalReason}</span>
+              <button type="button">允许</button>
+              <button type="button">拒绝</button>
+            </div>
+          ) : null}
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function getStatusLabel(status: TestRun["status"]) {
+  const labels: Record<TestRun["status"], string> = {
+    idle: "空闲",
+    planning: "正在生成计划",
+    waiting_confirmation: "等待确认",
+    running: "正在执行",
+    waiting_approval: "等待授权",
+    completed: "已完成",
+    failed: "失败",
+    blocked: "已阻塞",
+    stopped: "已停止",
+  };
+  return labels[status];
+}
+
+function getToolStatusLabel(status: ToolCall["status"]) {
+  const labels: Record<ToolCall["status"], string> = {
+    pending: "待执行",
+    running: "执行中",
+    waiting_approval: "待授权",
+    completed: "已完成",
+    failed: "失败",
+    skipped: "已跳过",
+  };
+  return labels[status];
 }
