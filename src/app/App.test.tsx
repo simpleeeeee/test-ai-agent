@@ -59,4 +59,19 @@ describe("App shell", () => {
     expect(screen.getByRole("button", { name: "允许" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "拒绝" })).toBeInTheDocument();
   });
+
+  it("creates evidence and a bug draft after database approval", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.type(screen.getByLabelText("测试目标"), "测试订单模块功能");
+    await user.click(screen.getByRole("button", { name: "发送" }));
+    await user.click(await screen.findByRole("button", { name: "开始执行" }));
+    await user.click(await screen.findByRole("button", { name: "允许" }));
+
+    expect(await screen.findByText("订单状态接口响应")).toBeInTheDocument();
+    expect(screen.getByText("订单取消后状态未同步")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "生成缺陷草稿" })).toBeInTheDocument();
+    expect(screen.getByText("严重级别：P1")).toBeInTheDocument();
+  });
 });

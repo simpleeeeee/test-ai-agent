@@ -328,3 +328,61 @@ h1 {
   cursor: pointer;
   padding: 6px 10px;
 }
+
+.details-drawer {
+  background: #fffdfa;
+  border: 1px solid #ded8ce;
+  border-radius: 10px;
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 14px;
+}
+
+.details-drawer h2 {
+  font-size: 15px;
+}
+
+.details-drawer dl {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+}
+
+.details-drawer dl div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.details-drawer dt {
+  color: #82796d;
+}
+
+.details-drawer dd {
+  margin: 0;
+}
+
+.evidence-card,
+.bug-draft-card {
+  background: #f7f4ef;
+  border: 1px solid #e7e1d8;
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+}
+
+.bug-draft-card h3 {
+  font-size: 15px;
+  margin: 0;
+}
+
+.bug-draft-card button {
+  background: #2f6f8f;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  padding: 8px 10px;
+  width: fit-content;
+}

@@ -71,6 +71,38 @@ export function App() {
     setRun(nextRun);
   }
 
+  function handleApproveTool() {
+    if (!run) return;
+
+    let nextRun = applyRunEvent(run, {
+      type: "tool:call-completed",
+      toolCallId: "tool-query-order",
+      outputSummary: "订单状态为待支付，和预期不一致",
+    });
+    nextRun = applyRunEvent(nextRun, {
+      type: "evidence:created",
+      evidence: {
+        id: "ev-order-status",
+        type: "api_response",
+        title: "订单状态接口响应",
+        summary: "取消订单后接口仍返回待支付",
+      },
+    });
+    nextRun = applyRunEvent(nextRun, {
+      type: "bug-draft:created",
+      bugDraft: {
+        title: "订单取消后状态未同步",
+        severity: "P1",
+        steps: ["登录测试账号", "创建测试订单", "取消订单", "查询订单状态"],
+        expected: "订单状态为已取消",
+        actual: "订单状态仍为待支付",
+        evidenceIds: ["ev-order-status"],
+      },
+    });
+    nextRun = applyRunEvent(nextRun, { type: "run:status-changed", status: "failed" });
+    setRun(nextRun);
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar" aria-label="会话列表">
@@ -130,7 +162,33 @@ export function App() {
                     </div>
                   ) : null}
                 </div>
-                {run.toolCalls.length > 0 ? <ToolCallList toolCalls={run.toolCalls} /> : null}
+                {run.toolCalls.length > 0 ? <ToolCallList onApprove={handleApproveTool} toolCalls={run.toolCalls} /> : null}
+                {run.evidence.length > 0 || run.bugDraft ? (
+                  <aside className="details-drawer" aria-label="本次测试">
+                    <h2>本次测试</h2>
+                    <dl>
+                      <div><dt>当前项目</dt><dd>{run.projectName}</dd></div>
+                      <div><dt>环境</dt><dd>{run.environmentName}</dd></div>
+                      <div><dt>Agent</dt><dd>{run.agentName}</dd></div>
+                      <div><dt>MCP 工具</dt><dd>{run.toolCalls.length} 个</dd></div>
+                      <div><dt>证据</dt><dd>{run.evidence.length} 张</dd></div>
+                    </dl>
+                    {run.evidence.map((evidence) => (
+                      <div className="evidence-card" key={evidence.id}>
+                        <strong>{evidence.title}</strong>
+                        <span>{evidence.summary}</span>
+                      </div>
+                    ))}
+                    {run.bugDraft ? (
+                      <div className="bug-draft-card">
+                        <h3>{run.bugDraft.title}</h3>
+                        <p>严重级别：{run.bugDraft.severity}</p>
+                        <p>实际结果：{run.bugDraft.actual}</p>
+                        <button type="button">生成缺陷草稿</button>
+                      </div>
+                    ) : null}
+                  </aside>
+                ) : null}
               </article>
             </>
           ) : (
@@ -157,7 +215,7 @@ export function App() {
   );
 }
 
-function ToolCallList({ toolCalls }: { toolCalls: ToolCall[] }) {
+function ToolCallList({ onApprove, toolCalls }: { onApprove: () => void; toolCalls: ToolCall[] }) {
   return (
     <section className="tool-call-list" aria-label="MCP 工具调用">
       <h2>MCP 工具调用</h2>
@@ -167,10 +225,10 @@ function ToolCallList({ toolCalls }: { toolCalls: ToolCall[] }) {
           <span>{toolCall.label}</span>
           <span className={`tool-status ${toolCall.status}`}>{getToolStatusLabel(toolCall.status)}</span>
           {toolCall.outputSummary ? <span>{toolCall.outputSummary}</span> : null}
-          {toolCall.approvalReason ? (
+          {toolCall.approvalReason && toolCall.status === "waiting_approval" ? (
             <div className="approval-box">
               <span>{toolCall.approvalReason}</span>
-              <button type="button">允许</button>
+              <button onClick={onApprove} type="button">允许</button>
               <button type="button">拒绝</button>
             </div>
           ) : null}
