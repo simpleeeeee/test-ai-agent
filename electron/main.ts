@@ -1,5 +1,14 @@
 import { app, BrowserWindow } from "electron";
 import path from "node:path";
+import { isMainToRendererChannel } from "../src/ipc/channels.js";
+
+function sendToRenderer(window: BrowserWindow, channel: string, payload: unknown) {
+  if (!isMainToRendererChannel(channel)) {
+    console.warn(`Blocked main→renderer channel: ${channel}`);
+    return;
+  }
+  window.webContents.send(channel, payload);
+}
 
 async function createWindow() {
   const window = new BrowserWindow({

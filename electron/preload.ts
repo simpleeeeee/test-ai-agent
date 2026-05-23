@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import { isRendererToMainChannel, type RendererToMainChannel } from "../src/ipc/channels";
+import { isRendererToMainChannel, type RendererToMainChannel } from "../src/ipc/channels.js";
 
 type IpcSender = {
   send: (channel: string, payload: unknown) => void;

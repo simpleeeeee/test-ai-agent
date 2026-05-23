@@ -5,7 +5,8 @@ vi.mock("electron", () => ({
   ipcRenderer: { send: vi.fn() },
 }));
 
-import { createSafeIpcApi } from "./preload";
+import { contextBridge } from "electron";
+import { createSafeIpcApi } from "./preload.js";
 
 describe("createSafeIpcApi", () => {
   it("sends only allowlisted renderer channels", () => {
@@ -16,5 +17,16 @@ describe("createSafeIpcApi", () => {
 
     expect(send).toHaveBeenCalledWith("run:create", { prompt: "测试订单模块功能" });
     expect(() => api.send("shell:openExternal", {})).toThrow("Unsupported IPC channel");
+  });
+});
+
+describe("preload module-level side effects", () => {
+  it("exposes safe IPC API to renderer via contextBridge at module load", () => {
+    expect(contextBridge.exposeInMainWorld).toHaveBeenCalledWith(
+      "aiTestAssistant",
+      expect.objectContaining({
+        send: expect.any(Function),
+      })
+    );
   });
 });

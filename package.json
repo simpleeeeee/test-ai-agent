@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc -p tsconfig.json && vite build",
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.node.json && vite build",
+    "build:electron": "tsc -p tsconfig.node.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
     "electron": "electron ."
   },
-  "main": "dist-electron/main.js",
+  "main": "dist-electron/electron/main.js",
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
     "electron": "^33.0.0",
