@@ -51,5 +51,6 @@ describe("createInitialRun", () => {
 
     expect(run.id).toBe("run-123");
     expect(typeof run.id).toBe("string");
+    expect(crypto.randomUUID).toHaveBeenCalledOnce();
   });
 });
