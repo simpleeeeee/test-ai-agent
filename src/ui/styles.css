@@ -188,3 +188,73 @@ h1 {
   outline: 2px solid #3d6f8f;
   outline-offset: 2px;
 }
+
+.message-stream {
+  align-content: start;
+  display: grid;
+  gap: 18px;
+  overflow: auto;
+  padding: 36px 0;
+}
+
+.message {
+  border-radius: 10px;
+  max-width: 760px;
+  padding: 14px 16px;
+}
+
+.user-message {
+  background: #fffdfa;
+  border: 1px solid #ded8ce;
+  justify-self: end;
+}
+
+.ai-message {
+  display: grid;
+  gap: 14px;
+  justify-self: start;
+}
+
+.plan-card {
+  background: #fffdfa;
+  border: 1px solid #ded8ce;
+  border-radius: 10px;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.plan-card h2 {
+  font-size: 15px;
+}
+
+.plan-card ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.action-row {
+  display: flex;
+  gap: 8px;
+}
+
+.primary-action,
+.secondary-action {
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+}
+
+.primary-action {
+  background: #2f6f8f;
+  border: 1px solid #2f6f8f;
+  color: #fff;
+}
+
+.secondary-action {
+  background: #fffdfa;
+  border: 1px solid #d3cdc3;
+  color: #514c45;
+}

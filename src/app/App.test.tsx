@@ -1,8 +1,24 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { App } from "./App";
 
 describe("App shell", () => {
+  it("turns a Chinese prompt into a plan awaiting confirmation", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.type(screen.getByLabelText("测试目标"), "测试订单模块功能");
+    await user.click(screen.getByRole("button", { name: "发送" }));
+
+    expect(await screen.findByText("测试订单模块功能")).toBeInTheDocument();
+    expect(await screen.findByText("我将基于订单模块的测试工具生成执行计划。")).toBeInTheDocument();
+    expect(await screen.findByText("测试计划")).toBeInTheDocument();
+    expect(screen.getByText("登录测试账号")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "开始执行" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "调整计划" })).toBeInTheDocument();
+  });
+
   it("renders a Chinese Claude Desktop style conversation workspace", () => {
     render(<App />);
 
