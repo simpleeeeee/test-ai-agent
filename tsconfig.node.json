@@ -10,5 +10,5 @@
     "rootDir": "."
   },
   "include": ["electron"],
-  "exclude": ["electron/*.test.ts"]
+  "exclude": ["electron/**/*.test.ts"]
 }
