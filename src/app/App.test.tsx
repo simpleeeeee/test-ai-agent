@@ -19,6 +19,16 @@ describe("App shell", () => {
     expect(screen.getByRole("button", { name: "调整计划" })).toBeInTheDocument();
   });
 
+  it("does not create a plan when submitting empty input", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "发送" }));
+
+    expect(screen.queryByText("测试计划")).not.toBeInTheDocument();
+    expect(screen.getByText("输入测试目标，AI 会生成计划并调用 MCP 工具执行。")).toBeInTheDocument();
+  });
+
   it("renders a Chinese Claude Desktop style conversation workspace", () => {
     render(<App />);
 

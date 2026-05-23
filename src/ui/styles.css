@@ -177,14 +177,18 @@ h1 {
 .new-test-button:hover,
 .settings-button:hover,
 .session-item:hover,
-.send-button:hover {
+.send-button:hover,
+.primary-action:hover,
+.secondary-action:hover {
   filter: brightness(0.95);
 }
 
 .new-test-button:focus-visible,
 .settings-button:focus-visible,
 .session-item:focus-visible,
-.send-button:focus-visible {
+.send-button:focus-visible,
+.primary-action:focus-visible,
+.secondary-action:focus-visible {
   outline: 2px solid #3d6f8f;
   outline-offset: 2px;
 }
