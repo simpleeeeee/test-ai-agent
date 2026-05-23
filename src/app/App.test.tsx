@@ -1,84 +1,103 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 
-describe("App shell", () => {
-  it("turns a Chinese prompt into a plan and shows confirmation buttons", async () => {
+const send = vi.fn();
+const invoke = vi.fn();
+const listeners = new Map<string, (payload: unknown) => void>();
+
+beforeEach(() => {
+  send.mockReset();
+  invoke.mockReset();
+  listeners.clear();
+  vi.stubGlobal("window", {
+    ...window,
+    alert: vi.fn(),
+    aiTestAssistant: {
+      send,
+      invoke,
+      on: vi.fn((channel: string, listener: (payload: unknown) => void) => {
+        listeners.set(channel, listener);
+        return () => listeners.delete(channel);
+      }),
+    },
+  });
+});
+
+function emit(channel: string, payload: unknown) {
+  const listener = listeners.get(channel);
+  if (!listener) throw new Error(`No listener for ${channel}`);
+  listener(payload);
+}
+
+describe("App backend integration", () => {
+  it("creates a run through IPC and renders streamed SDK events", async () => {
     const user = userEvent.setup();
     render(<App />);
 
     await user.type(screen.getByLabelText("测试目标"), "测试订单模块功能");
     await user.click(screen.getByRole("button", { name: "发送" }));
 
-    expect(await screen.findByText("测试订单模块功能")).toBeInTheDocument();
-    expect(await screen.findByText("我将基于订单模块的测试工具生成执行计划。")).toBeInTheDocument();
-    expect(await screen.findByText("测试计划")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "开始执行" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "调整计划" })).toBeInTheDocument();
-    expect(screen.queryByText("MCP 工具调用")).not.toBeInTheDocument();
+    expect(send).toHaveBeenCalledWith("run:create", { prompt: "测试订单模块功能" });
+
+    emit("assistant:text-delta", { runId: "run-1", messageId: "msg-1", delta: "正在生成计划" });
+    emit("tool:approval-required", {
+      runId: "run-1",
+      requestId: "approval-1",
+      toolCall: { id: "approval-1", toolName: "mcp-db.query", label: "查询订单数据库", status: "waiting_approval" },
+    });
+    emit("question:required", {
+      runId: "run-1",
+      requestId: "question-1",
+      questions: [{ id: "scope", label: "测试范围", options: ["冒烟", "回归"] }],
+    });
+
+    expect(await screen.findByText("正在生成计划")).toBeInTheDocument();
+    expect(screen.getByText("查询订单数据库")).toBeInTheDocument();
+    expect(screen.getByText("需要补充信息")).toBeInTheDocument();
   });
 
-  it("does not create a plan when submitting empty input", async () => {
+  it("uses IPC for plan revision, tool decisions, questions, and SDK controls", async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "发送" }));
+    emit("assistant:text-delta", { runId: "run-1", messageId: "msg-1", delta: "计划草稿" });
+    emit("tool:approval-required", {
+      runId: "run-1",
+      requestId: "approval-1",
+      toolCall: { id: "approval-1", toolName: "mcp-db.query", label: "查询订单数据库", status: "waiting_approval" },
+    });
+    emit("question:required", {
+      runId: "run-1",
+      requestId: "question-1",
+      questions: [{ id: "scope", label: "测试范围", options: ["冒烟", "回归"] }],
+    });
 
-    expect(screen.queryByText("测试计划")).not.toBeInTheDocument();
-    expect(screen.getByText("输入测试目标，AI 会生成计划并调用 MCP 工具执行。")).toBeInTheDocument();
+    await user.type(screen.getByLabelText("补充指令"), "增加支付异常场景");
+    await user.click(screen.getByRole("button", { name: "发送补充" }));
+    await user.click(screen.getByRole("button", { name: "允许并继续" }));
+    await user.selectOptions(screen.getByLabelText("测试范围"), "回归");
+    await user.click(screen.getByRole("button", { name: "提交回答" }));
+    await user.click(screen.getByRole("button", { name: "SDK 控制" }));
+    await user.type(screen.getByLabelText("模型"), "gateway-model");
+    await user.click(screen.getByRole("button", { name: "应用模型" }));
+
+    expect(send).toHaveBeenCalledWith("run:send-message", { runId: "run-1", message: "增加支付异常场景" });
+    expect(send).toHaveBeenCalledWith("tool:approve", expect.objectContaining({ runId: "run-1", requestId: "approval-1" }));
+    expect(send).toHaveBeenCalledWith("question:answer", { runId: "run-1", requestId: "question-1", answers: { scope: "回归" } });
+    expect(invoke).toHaveBeenCalledWith("run:set-model", { runId: "run-1", model: "gateway-model" });
   });
 
-  it("renders a Chinese Claude Desktop style conversation workspace", () => {
-    render(<App />);
-
-    expect(screen.getByText("AI 测试助手")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "新建测试" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "订单模块测试" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "订单模块测试" })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("输入你想测试的功能，例如：测试订单模块功能")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "发送" })).toBeInTheDocument();
-    expect(screen.getByText("空闲")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "设置" })).toBeInTheDocument();
-    expect(screen.getByText("输入测试目标，AI 会生成计划并调用 MCP 工具执行。")).toBeInTheDocument();
-    expect(screen.getByRole("navigation")).toBeInTheDocument();
-    expect(screen.getByRole("main")).toBeInTheDocument();
-  });
-
-  it("shows MCP tool events after clicking start execution", async () => {
+  it("does not keep the old alert-based plan revision path", async () => {
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => undefined);
     const user = userEvent.setup();
     render(<App />);
 
-    await user.type(screen.getByLabelText("测试目标"), "测试订单模块功能");
-    await user.click(screen.getByRole("button", { name: "发送" }));
+    await user.type(screen.getByLabelText("补充指令"), "调整计划");
+    await user.click(screen.getByRole("button", { name: "发送补充" }));
 
-    expect(await screen.findByRole("button", { name: "开始执行" })).toBeInTheDocument();
-    expect(screen.queryByText("MCP 工具调用")).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "开始执行" }));
-
-    expect(await screen.findByText("MCP 工具调用")).toBeInTheDocument();
-    expect(screen.getByText("mcp-user.login")).toBeInTheDocument();
-    expect(screen.getByText("测试账号登录成功")).toBeInTheDocument();
-    expect(screen.getByText("AI 请求查询订单数据库")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "允许" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "拒绝" })).toBeInTheDocument();
-  });
-
-  it("creates evidence and a bug draft after database approval", async () => {
-    const user = userEvent.setup();
-    render(<App />);
-
-    await user.type(screen.getByLabelText("测试目标"), "测试订单模块功能");
-    await user.click(screen.getByRole("button", { name: "发送" }));
-    await user.click(await screen.findByRole("button", { name: "开始执行" }));
-    await user.click(await screen.findByRole("button", { name: "允许" }));
-
-    expect(await screen.findByText("订单状态接口响应")).toBeInTheDocument();
-    expect(screen.getByText("订单取消后状态未同步")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "生成缺陷草稿" })).toBeInTheDocument();
-    expect(screen.getByText("严重级别：P1")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "允许" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "拒绝" })).not.toBeInTheDocument();
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(send).toHaveBeenCalledWith("run:send-message", expect.objectContaining({ message: "调整计划" }));
   });
 });

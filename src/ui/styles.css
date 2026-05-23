@@ -404,3 +404,53 @@ h1 {
   padding: 8px 10px;
   width: fit-content;
 }
+
+.sdk-card,
+.sdk-control-drawer,
+.session-panel,
+.mcp-status-panel,
+.sdk-status-list {
+  background: #fffdfa;
+  border: 1px solid #ded8ce;
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.sdk-control-drawer {
+  border-left: 1px solid #ded8ce;
+  height: 100vh;
+  overflow: auto;
+  width: 320px;
+}
+
+.sdk-card textarea,
+.sdk-control-drawer textarea,
+.sdk-control-drawer input,
+.question-card input,
+.question-card select {
+  border: 1px solid #d3cdc3;
+  border-radius: 7px;
+  padding: 8px;
+  width: 100%;
+}
+
+.mono {
+  color: #625b52;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+}
+
+.checkbox-line,
+.mcp-row,
+.button-grid {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.follow-up-composer {
+  margin-top: 10px;
+}
