@@ -26,3 +26,7 @@ export type MainToRendererChannel = (typeof mainToRendererChannels)[number];
 export function isRendererToMainChannel(value: string): value is RendererToMainChannel {
   return rendererToMainChannels.includes(value as RendererToMainChannel);
 }
+
+export function isMainToRendererChannel(value: string): value is MainToRendererChannel {
+  return mainToRendererChannels.includes(value as MainToRendererChannel);
+}
