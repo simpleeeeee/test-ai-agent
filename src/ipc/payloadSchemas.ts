@@ -68,6 +68,7 @@ export function parseRendererToMainPayload(channel: RendererToMainChannel, paylo
 }
 
 export function parseMainToRendererPayload(channel: MainToRendererChannel, payload: unknown): unknown {
-  const schema = mainSchemas[channel];
+  const schemas: Partial<Record<MainToRendererChannel, z.ZodTypeAny>> = mainSchemas;
+  const schema = schemas[channel];
   return schema ? schema.parse(payload) : payload;
 }

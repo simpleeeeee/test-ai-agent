@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { applyRunEvent, createInitialRun } from "./testRun";
+import { applyRunEvent, createInitialRun, type RunEvent } from "./testRun";
 
 describe("createInitialRun", () => {
   afterEach(() => {
@@ -202,7 +202,7 @@ describe("applyRunEvent", () => {
       { type: "sdk:usage", raw: { input_tokens: 1 } },
       { type: "question:required", requestId: "q-1", questions: [{ question: "选择环境" }] },
       { type: "question:answered", requestId: "q-1" },
-    ] as const;
+    ] as RunEvent[];
 
     const finalRun = events.reduce((current, event) => applyRunEvent(current, event), run);
 

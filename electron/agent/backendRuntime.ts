@@ -1,4 +1,4 @@
-import type { MainToRendererChannel } from "../../src/ipc/channels";
+import type { MainToRendererChannel } from "../../src/ipc/channels.js";
 import { AgentSessionManager } from "./agentSessionManager.js";
 
 export type BackendRuntime = {
