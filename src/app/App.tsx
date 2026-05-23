@@ -68,6 +68,11 @@ export function App() {
           onAnswer={bridge.answerQuestion}
         />
         <McpStatusPanel runId={activeRunId} servers={state.mcpServers} bridge={bridge} />
+        <div className="action-row">
+          <button className="primary-action" type="button" onClick={() => bridge.approvePlan(activeRunId)}>
+            确认计划并执行
+          </button>
+        </div>
         <form className="composer" onSubmit={handleSubmit}>
           <textarea
             aria-label="测试目标"
