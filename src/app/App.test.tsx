@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { App } from "./App";
 
 describe("App shell", () => {
-  it("turns a Chinese prompt into a plan with tool execution and approval", async () => {
+  it("turns a Chinese prompt into a plan and shows confirmation buttons", async () => {
     const user = userEvent.setup();
     render(<App />);
 
@@ -14,12 +14,9 @@ describe("App shell", () => {
     expect(await screen.findByText("测试订单模块功能")).toBeInTheDocument();
     expect(await screen.findByText("我将基于订单模块的测试工具生成执行计划。")).toBeInTheDocument();
     expect(await screen.findByText("测试计划")).toBeInTheDocument();
-    expect(screen.getByText("MCP 工具调用")).toBeInTheDocument();
-    expect(screen.getByText("mcp-user.login")).toBeInTheDocument();
-    expect(screen.getByText("测试账号登录成功")).toBeInTheDocument();
-    expect(screen.getByText("AI 请求查询订单数据库")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "允许" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "拒绝" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "开始执行" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "调整计划" })).toBeInTheDocument();
+    expect(screen.queryByText("MCP 工具调用")).not.toBeInTheDocument();
   });
 
   it("does not create a plan when submitting empty input", async () => {
@@ -48,12 +45,17 @@ describe("App shell", () => {
     expect(screen.getByRole("main")).toBeInTheDocument();
   });
 
-  it("shows MCP tool events after submitting a prompt", async () => {
+  it("shows MCP tool events after clicking start execution", async () => {
     const user = userEvent.setup();
     render(<App />);
 
     await user.type(screen.getByLabelText("测试目标"), "测试订单模块功能");
     await user.click(screen.getByRole("button", { name: "发送" }));
+
+    expect(await screen.findByRole("button", { name: "开始执行" })).toBeInTheDocument();
+    expect(screen.queryByText("MCP 工具调用")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "开始执行" }));
 
     expect(await screen.findByText("MCP 工具调用")).toBeInTheDocument();
     expect(screen.getByText("mcp-user.login")).toBeInTheDocument();
@@ -69,6 +71,7 @@ describe("App shell", () => {
 
     await user.type(screen.getByLabelText("测试目标"), "测试订单模块功能");
     await user.click(screen.getByRole("button", { name: "发送" }));
+    await user.click(await screen.findByRole("button", { name: "开始执行" }));
     await user.click(await screen.findByRole("button", { name: "允许" }));
 
     expect(await screen.findByText("订单状态接口响应")).toBeInTheDocument();
