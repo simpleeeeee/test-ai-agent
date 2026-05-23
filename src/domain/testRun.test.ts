@@ -185,4 +185,27 @@ describe("applyRunEvent", () => {
     expect(second.toolCalls).toHaveLength(1);
     expect(second.toolCalls[0].status).toBe("running");
   });
+
+  it("accepts SDK text, raw, session, status, usage, and question events without mutating reducer state", () => {
+    const run = createInitialRun({
+      prompt: "测试订单模块功能",
+      projectName: "电商后台",
+      environmentName: "QA",
+      agentName: "订单测试 Agent",
+    });
+
+    const events = [
+      { type: "assistant:text-delta", messageId: "msg-1", delta: "计划" },
+      { type: "sdk:raw-message", runId: run.id, message: { type: "stream_event" } },
+      { type: "sdk:session-changed", sessionId: "session-1" },
+      { type: "sdk:status", status: "requesting", raw: { status: "requesting" } },
+      { type: "sdk:usage", raw: { input_tokens: 1 } },
+      { type: "question:required", requestId: "q-1", questions: [{ question: "选择环境" }] },
+      { type: "question:answered", requestId: "q-1" },
+    ] as const;
+
+    const finalRun = events.reduce((current, event) => applyRunEvent(current, event), run);
+
+    expect(finalRun).toEqual(run);
+  });
 });

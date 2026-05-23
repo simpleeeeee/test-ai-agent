@@ -80,7 +80,20 @@ export type RunEvent =
   | { type: "tool:call-completed"; toolCallId: string; outputSummary?: string }
   | { type: "tool:call-failed"; toolCallId: string; outputSummary?: string }
   | { type: "evidence:created"; evidence: Evidence }
-  | { type: "bug-draft:created"; bugDraft: BugDraft };
+  | { type: "bug-draft:created"; bugDraft: BugDraft }
+  | { type: "assistant:text-delta"; messageId: string; delta: string }
+  | { type: "assistant:message-completed"; messageId: string }
+  | { type: "sdk:raw-message"; runId: string; message: unknown }
+  | { type: "sdk:session-changed"; sessionId: string }
+  | { type: "sdk:status"; status: string; raw?: unknown }
+  | { type: "sdk:usage"; raw: unknown }
+  | { type: "sdk:error"; message: string; retryable: boolean; raw?: unknown }
+  | { type: "sdk:permission-denied"; toolName: string; raw?: unknown }
+  | { type: "sdk:mcp-status"; servers: unknown[] }
+  | { type: "sdk:task-progress"; taskId: string; summary?: string; raw?: unknown }
+  | { type: "sdk:hook-event"; hookName: string; raw: unknown }
+  | { type: "question:required"; requestId: string; questions: unknown[] }
+  | { type: "question:answered"; requestId: string };
 
 export function applyRunEvent(run: TestRun, event: RunEvent): TestRun {
   switch (event.type) {
@@ -125,6 +138,20 @@ export function applyRunEvent(run: TestRun, event: RunEvent): TestRun {
       return { ...run, evidence: [...run.evidence, event.evidence] };
     case "bug-draft:created":
       return { ...run, bugDraft: event.bugDraft };
+    case "assistant:text-delta":
+    case "assistant:message-completed":
+    case "sdk:raw-message":
+    case "sdk:session-changed":
+    case "sdk:status":
+    case "sdk:usage":
+    case "sdk:error":
+    case "sdk:permission-denied":
+    case "sdk:mcp-status":
+    case "sdk:task-progress":
+    case "sdk:hook-event":
+    case "question:required":
+    case "question:answered":
+      return run;
   }
 }
 
