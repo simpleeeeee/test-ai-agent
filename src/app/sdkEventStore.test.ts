@@ -61,4 +61,88 @@ describe("sdkEventStore", () => {
     expect(state.errors[0].message).toBe("网关认证失败");
     expect(state.tasks[0].summary).toBe("正在执行子任务");
   });
+
+  it("keeps ordinary chat and plan events out of test execution mode", () => {
+    let state = createInitialSdkUiState();
+
+    state = reduceSdkUiEvent(state, {
+      channel: "assistant:text-delta",
+      payload: { runId: "run-1", messageId: "msg-1", delta: "你好" },
+    });
+    state = reduceSdkUiEvent(state, {
+      channel: "run:plan-ready",
+      payload: { runId: "run-1", plan: [] },
+    });
+    state = reduceSdkUiEvent(state, {
+      channel: "question:required",
+      payload: { runId: "run-1", requestId: "q-1", questions: [] },
+    });
+
+    expect(state.workspaceModes).toEqual({});
+  });
+
+  it("marks only the active run as test execution after local confirmation", () => {
+    let state = createInitialSdkUiState();
+
+    state = reduceSdkUiEvent(state, {
+      channel: "ui:test-execution-confirmed",
+      payload: { runId: "run-1" },
+    });
+
+    expect(state.workspaceModes).toEqual({
+      "run-1": { hasTestExecution: true },
+    });
+  });
+
+  it("marks test execution from backend execution evidence while keeping runs isolated", () => {
+    let state = createInitialSdkUiState();
+
+    // run-1: tool:approval-required
+    state = reduceSdkUiEvent(state, {
+      channel: "tool:approval-required",
+      payload: {
+        runId: "run-1",
+        requestId: "req-1",
+        toolCall: { id: "tc-1", toolName: "click", label: "点击登录按钮", status: "waiting_approval" },
+      },
+    });
+
+    // run-2: evidence:created
+    state = reduceSdkUiEvent(state, {
+      channel: "evidence:created",
+      payload: {
+        runId: "run-2",
+        evidence: { id: "ev-1", type: "screenshot", title: "登录页面截图", summary: "显示登录表单" },
+      },
+    });
+
+    // run-2: bug-draft:created
+    state = reduceSdkUiEvent(state, {
+      channel: "bug-draft:created",
+      payload: {
+        runId: "run-2",
+        bugDraft: {
+          title: "登录按钮无响应",
+          severity: "P1",
+          steps: ["点击登录"],
+          expected: "跳转到首页",
+          actual: "无任何反应",
+          evidenceIds: ["ev-1"],
+        },
+      },
+    });
+
+    // Both runs should have test execution marked
+    expect(state.workspaceModes).toEqual({
+      "run-1": { hasTestExecution: true },
+      "run-2": { hasTestExecution: true },
+    });
+
+    // Evidence should have 1 entry
+    expect(state.evidence).toHaveLength(1);
+    expect(state.evidence[0].title).toBe("登录页面截图");
+
+    // Bug draft should be set
+    expect(state.bugDraft?.title).toBe("登录按钮无响应");
+  });
 });
