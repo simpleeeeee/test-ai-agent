@@ -1,5 +1,5 @@
 import type { MainToRendererChannel } from "../ipc/channels";
-import type { ToolCall } from "../domain/testRun";
+import type { BugDraft, Evidence, ToolCall } from "../domain/testRun";
 
 export type SdkMessage = {
   id: string;
@@ -37,6 +37,15 @@ export type SdkTaskProgress = {
   summary?: string;
 };
 
+export type SessionWorkspaceMode = {
+  hasTestExecution: boolean;
+};
+
+export type LocalUiEvent = {
+  channel: "ui:test-execution-confirmed";
+  payload: { runId: string };
+};
+
 export type SdkUiState = {
   activeRunId?: string;
   messages: SdkMessage[];
@@ -48,9 +57,11 @@ export type SdkUiState = {
   errors: Array<{ message: string; retryable: boolean }>;
   tasks: SdkTaskProgress[];
   sessions: SessionSummary[];
+  workspaceModes: Record<string, SessionWorkspaceMode>;
+  evidence: Evidence[];
+  bugDraft?: BugDraft;
 };
 
-export type SdkUiEvent = {
-  channel: MainToRendererChannel;
-  payload: unknown;
-};
+export type SdkUiEvent =
+  | { channel: MainToRendererChannel; payload: unknown }
+  | LocalUiEvent;

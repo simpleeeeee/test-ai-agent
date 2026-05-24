@@ -31,20 +31,20 @@ export function ToolApprovalCard({ request, onApprove, onDeny }: Props) {
         {request.toolCall.approvalReason ? <p>{request.toolCall.approvalReason}</p> : null}
       </div>
       <label>
-        调整后的工具输入
+        调整工具输入
         <textarea value={inputText} onChange={(event) => setInputText(event.currentTarget.value)} />
         {parseError ? <span className="sdk-error">{parseError}</span> : null}
       </label>
       <label className="checkbox-line">
         <input type="checkbox" checked={applySuggestions} onChange={(event) => setApplySuggestions(event.currentTarget.checked)} />
-        应用 SDK 权限建议
+        应用权限建议
       </label>
       <div className="action-row">
         <button type="button" onClick={() => onApprove(request.runId, request.requestId, {
           updatedInput: parseInput(),
           applyPermissionSuggestions: applySuggestions,
         })}>
-          允许并继续
+          允许
         </button>
         <button type="button" onClick={() => onDeny(request.runId, request.requestId, "用户拒绝了工具调用")}>拒绝</button>
       </div>

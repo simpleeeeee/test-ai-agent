@@ -1,3 +1,4 @@
+import type { BugDraft, Evidence } from "../domain/testRun";
 import type { ApprovalRequest, McpServerUiStatus, QuestionRequest, SdkUiEvent, SdkUiState } from "./sdkUiTypes";
 
 function payloadRecord(payload: unknown): Record<string, unknown> {
@@ -6,6 +7,29 @@ function payloadRecord(payload: unknown): Record<string, unknown> {
 
 function runIdFrom(payload: Record<string, unknown>) {
   return typeof payload.runId === "string" ? payload.runId : undefined;
+}
+
+const testExecutionChannels = new Set([
+  "tool:call-started",
+  "tool:approval-required",
+  "tool:call-completed",
+  "tool:call-failed",
+  "evidence:created",
+  "bug-draft:created",
+  "sdk:task-progress",
+  "sdk:mcp-status",
+]);
+
+function markHasTestExecution(state: SdkUiState, runId: string | undefined): SdkUiState {
+  if (!runId) return state;
+  if (state.workspaceModes[runId]?.hasTestExecution) return state;
+  return {
+    ...state,
+    workspaceModes: {
+      ...state.workspaceModes,
+      [runId]: { hasTestExecution: true },
+    },
+  };
 }
 
 export function createInitialSdkUiState(): SdkUiState {
@@ -18,12 +42,18 @@ export function createInitialSdkUiState(): SdkUiState {
     errors: [],
     tasks: [],
     sessions: [],
+    workspaceModes: {},
+    evidence: [],
   };
 }
 
 export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiState {
   const payload = payloadRecord(event.payload);
   const activeRunId = runIdFrom(payload) ?? state.activeRunId;
+
+  if (event.channel === "ui:test-execution-confirmed") {
+    return markHasTestExecution({ ...state, activeRunId }, activeRunId);
+  }
 
   if (event.channel === "assistant:text-delta") {
     const messageId = String(payload.messageId);
@@ -48,7 +78,7 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
     const approvals = state.approvals.length >= 200
       ? state.approvals
       : [...state.approvals, payload as unknown as ApprovalRequest];
-    return { ...state, activeRunId, approvals };
+    return markHasTestExecution({ ...state, activeRunId, approvals }, activeRunId);
   }
 
   if (event.channel === "question:required") {
@@ -63,8 +93,19 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
     return { ...state, activeRunId, questions: state.questions.filter((question) => question.requestId !== requestId) };
   }
 
+  if (event.channel === "evidence:created") {
+    const evidence = state.evidence.length >= 200
+      ? state.evidence
+      : [...state.evidence, payload.evidence as Evidence];
+    return markHasTestExecution({ ...state, activeRunId, evidence }, activeRunId);
+  }
+
+  if (event.channel === "bug-draft:created") {
+    return markHasTestExecution({ ...state, activeRunId, bugDraft: payload.bugDraft as BugDraft }, activeRunId);
+  }
+
   if (event.channel === "sdk:mcp-status") {
-    return { ...state, activeRunId, mcpServers: (payload.servers as McpServerUiStatus[]) ?? [] };
+    return markHasTestExecution({ ...state, activeRunId, mcpServers: (payload.servers as McpServerUiStatus[]) ?? [] }, activeRunId);
   }
 
   if (event.channel === "sdk:raw-message") {
@@ -89,13 +130,17 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
   }
 
   if (event.channel === "sdk:task-progress") {
-    return {
+    return markHasTestExecution({
       ...state,
       activeRunId,
       tasks: state.tasks.length >= 200
         ? [...state.tasks.slice(-199), { taskId: String(payload.taskId), summary: typeof payload.summary === "string" ? payload.summary : undefined }]
         : [...state.tasks, { taskId: String(payload.taskId), summary: typeof payload.summary === "string" ? payload.summary : undefined }],
-    };
+    }, activeRunId);
+  }
+
+  if (testExecutionChannels.has(event.channel)) {
+    return markHasTestExecution({ ...state, activeRunId }, activeRunId);
   }
 
   return { ...state, activeRunId };

@@ -1,11 +1,10 @@
-import { FormEvent, useEffect, useMemo, useReducer, useState } from "react";
-import { Plus, Send, Settings } from "lucide-react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { createBackendBridge } from "./backendBridge";
 import { createInitialSdkUiState, reduceSdkUiEvent } from "./sdkEventStore";
-import { McpStatusPanel } from "./components/McpStatusPanel";
+import { ClaudeSidebar } from "./components/ClaudeSidebar";
+import { Composer } from "./components/Composer";
 import { MessageStream } from "./components/MessageStream";
-import { SdkControlDrawer } from "./components/SdkControlDrawer";
-import { SessionPanel } from "./components/SessionPanel";
+import { TestConsole } from "./components/TestConsole";
 import "../ui/styles.css";
 
 const fallbackApi = {
@@ -14,85 +13,82 @@ const fallbackApi = {
   on: () => () => undefined,
 };
 
+let chatInstance = 0;
+
 export function App() {
-  const [prompt, setPrompt] = useState("");
-  const [followUp, setFollowUp] = useState("");
-  const [controlOpen, setControlOpen] = useState(false);
+  const [chatKey, setChatKey] = useState(0);
+  const [composerValue, setComposerValue] = useState("");
   const [state, dispatch] = useReducer(reduceSdkUiEvent, undefined, createInitialSdkUiState);
   const bridge = useMemo(() => createBackendBridge(window.aiTestAssistant ?? fallbackApi), []);
-  const activeRunId = state.activeRunId ?? "run-1";
+  const activeRunId = state.activeRunId;
   const activeTaskId = state.tasks.at(-1)?.taskId;
+  const shouldShowTestConsole = Boolean(activeRunId && state.workspaceModes[activeRunId]?.hasTestExecution);
 
   useEffect(() => bridge.subscribe(dispatch), [bridge]);
 
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    const trimmed = prompt.trim();
-    if (!trimmed) return;
-    bridge.createRun(trimmed);
-    setPrompt("");
+  function handleNewChat() {
+    chatInstance += 1;
+    setChatKey(chatInstance);
   }
 
-  function handleFollowUp(event: FormEvent) {
-    event.preventDefault();
-    const trimmed = followUp.trim();
-    if (!trimmed) return;
-    bridge.sendMessage(activeRunId, trimmed);
-    setFollowUp("");
+  function handleComposerSubmit(value: string) {
+    if (activeRunId) {
+      bridge.sendMessage(activeRunId, value);
+    } else {
+      bridge.createRun(value);
+    }
+    setComposerValue("");
+  }
+
+  function handleApprovePlan() {
+    const runId = activeRunId ?? "run-1";
+    dispatch({ channel: "ui:test-execution-confirmed", payload: { runId } });
+    bridge.approvePlan(runId);
   }
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar" aria-label="会话列表">
-        <div className="sidebar-header">
-          <div className="app-title">AI 测试助手</div>
-          <button className="new-test-button" type="button"><Plus size={16} />新建测试</button>
-        </div>
-        <SessionPanel runId={activeRunId} sessions={state.sessions} bridge={bridge} />
-        <button className="settings-button" type="button" onClick={() => setControlOpen((value) => !value)}>
-          <Settings size={16} />SDK 控制
-        </button>
-      </aside>
-      <main className="conversation" aria-label="测试对话">
+    <div key={chatKey} className={shouldShowTestConsole ? "app-shell test-mode" : "app-shell chat-mode"}>
+      <ClaudeSidebar
+        activeRunId={activeRunId}
+        sessions={state.sessions}
+        onNewChat={handleNewChat}
+        onResumeSession={(sessionId) => activeRunId && bridge.resumeSession(activeRunId, sessionId)}
+        onViewAll={() => bridge.listSessions()}
+      />
+      <main className="conversation" aria-label="对话">
         <header className="conversation-header">
-          <div>
-            <p className="eyebrow">当前会话</p>
-            <h1>{activeRunId}</h1>
-          </div>
-          <span className="status-chip">{state.errors.length ? "需要处理" : "就绪"}</span>
+          <button className="conversation-title" type="button">
+            {activeRunId ?? "新对话"}
+          </button>
         </header>
         <MessageStream
           state={state}
           onApprove={bridge.approveTool}
           onDeny={bridge.denyTool}
           onAnswer={bridge.answerQuestion}
+          onCopyMessage={(content) => { navigator.clipboard?.writeText(content); }}
+          onRetryMessage={(messageId) => { bridge.sendMessage(activeRunId ?? "", messageId); }}
         />
-        <McpStatusPanel runId={activeRunId} servers={state.mcpServers} bridge={bridge} />
-        <div className="action-row">
-          <button className="primary-action" type="button" onClick={() => bridge.approvePlan(activeRunId)}>
-            确认计划并执行
-          </button>
-        </div>
-        <form className="composer" onSubmit={handleSubmit}>
-          <textarea
-            aria-label="测试目标"
-            onChange={(event) => setPrompt(event.currentTarget.value)}
-            placeholder="输入你想测试的功能，例如：测试订单模块功能"
-            value={prompt}
-          />
-          <button className="send-button" type="submit"><Send size={16} />发送</button>
-        </form>
-        <form className="composer follow-up-composer" onSubmit={handleFollowUp}>
-          <textarea
-            aria-label="补充指令"
-            onChange={(event) => setFollowUp(event.currentTarget.value)}
-            placeholder="补充指令、调整计划或继续执行"
-            value={followUp}
-          />
-          <button className="send-button" type="submit">发送补充</button>
-        </form>
+        {activeRunId ? (
+          <div className="plan-action-row">
+            <button className="primary-action" type="button" onClick={handleApprovePlan}>
+              确认计划并执行
+            </button>
+          </div>
+        ) : null}
+        <Composer value={composerValue} onChange={setComposerValue} onSubmit={handleComposerSubmit} />
       </main>
-      {controlOpen ? <SdkControlDrawer runId={activeRunId} activeTaskId={activeTaskId} bridge={bridge} /> : null}
+      {shouldShowTestConsole ? (
+        <TestConsole
+          activeTaskId={activeTaskId}
+          mcpServers={state.mcpServers}
+          tasks={state.tasks}
+          evidence={state.evidence}
+          bugDraft={state.bugDraft}
+          onApprovePlan={handleApprovePlan}
+          onStopTask={(taskId) => activeRunId && bridge.stopTask(activeRunId, taskId)}
+        />
+      ) : null}
     </div>
   );
 }

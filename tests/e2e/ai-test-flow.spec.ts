@@ -1,19 +1,43 @@
 import { expect, test } from "@playwright/test";
 
-test("tester can submit an order module request and approve MCP access", async ({ page }) => {
+test("ordinary chat stays in chat mode before test execution", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByLabel("测试目标").fill("测试订单模块功能");
+  await expect(page.getByRole("navigation", { name: "会话导航" })).toBeVisible();
+  await expect(page.getByRole("complementary", { name: "测试监控台" })).toHaveCount(0);
+
+  await page.getByLabel("消息输入").fill("帮我分析订单模块测试风险");
   await page.getByRole("button", { name: "发送" }).click();
 
-  await expect(page.getByText("测试计划")).toBeVisible();
-  await page.getByRole("button", { name: "开始执行" }).click();
+  await expect(page.getByText("测试监控台")).toHaveCount(0);
+});
 
-  await expect(page.getByText("mcp-user.login")).toBeVisible();
-  await expect(page.getByText("AI 请求查询订单数据库")).toBeVisible();
-  await page.getByRole("button", { name: "允许" }).click();
+test("confirmed execution opens the test console", async ({ page }) => {
+  await page.goto("/");
 
-  await expect(page.getByText("订单状态接口响应")).toBeVisible();
-  await expect(page.getByText("订单取消后状态未同步")).toBeVisible();
-  await expect(page.getByRole("button", { name: "生成缺陷草稿" })).toBeVisible();
+  await page.getByLabel("消息输入").fill("测试订单模块功能");
+  await page.getByRole("button", { name: "发送" }).click();
+  await page.getByRole("button", { name: "确认计划并执行" }).click();
+
+  await expect(page.getByRole("complementary", { name: "测试监控台" })).toBeVisible();
+  await expect(page.getByText("MCP 服务")).toBeVisible();
+  await expect(page.getByText("证据")).toBeVisible();
+});
+
+test("tool approval and evidence flow renders in test console after execution", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByLabel("消息输入").fill("测试订单模块");
+  await page.getByRole("button", { name: "发送" }).click();
+  await page.getByRole("button", { name: "确认计划并执行" }).click();
+
+  await expect(page.getByRole("complementary", { name: "测试监控台" })).toBeVisible();
+
+  await expect(page.getByText("计划进度")).toBeVisible();
+  await expect(page.getByText("MCP 服务")).toBeVisible();
+  await expect(page.getByText("证据")).toBeVisible();
+  await expect(page.getByText("缺陷草稿")).toBeVisible();
+
+  await expect(page.getByRole("button", { name: "确认执行" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "停止" })).toBeVisible();
 });
