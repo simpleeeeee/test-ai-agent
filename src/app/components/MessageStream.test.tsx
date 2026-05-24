@@ -19,6 +19,8 @@ describe("MessageStream", () => {
       errors: [{ message: "网关认证失败", retryable: true }],
       tasks: [{ taskId: "task-1", summary: "正在执行子任务" }],
       sessions: [],
+      workspaceModes: {},
+      evidence: [],
     }} onApprove={vi.fn()} onDeny={vi.fn()} onAnswer={vi.fn()} />);
 
     expect(screen.getByText("正在生成计划")).toBeInTheDocument();

@@ -21,7 +21,7 @@ const testExecutionChannels = new Set([
   "ui:test-execution-confirmed",
 ]);
 
-function markHasTestExecution(state: SdkUiState, runId: string): SdkUiState {
+function markHasTestExecution(state: SdkUiState, runId: string | undefined): SdkUiState {
   if (!runId) return state;
   if (state.workspaceModes[runId]?.hasTestExecution) return state;
   return {
