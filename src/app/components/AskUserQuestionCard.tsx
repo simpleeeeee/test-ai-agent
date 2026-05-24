@@ -21,7 +21,7 @@ export function AskUserQuestionCard({ request, onAnswer }: Props) {
   }
 
   return (
-    <form className="sdk-card question-card" aria-label="Agent 澄清问题" onSubmit={submit}>
+    <form className="sdk-card question-card" aria-label="需要补充信息" onSubmit={submit}>
       <h3>需要补充信息</h3>
       {(request.questions as Question[]).map((question, index) => {
         const id = question.id ?? `question-${index}`;

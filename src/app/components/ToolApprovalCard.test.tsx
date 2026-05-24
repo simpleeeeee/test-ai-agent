@@ -23,9 +23,9 @@ describe("ToolApprovalCard", () => {
 
     render(<ToolApprovalCard request={request} onApprove={approve} onDeny={deny} />);
 
-    fireEvent.change(screen.getByLabelText("调整后的工具输入"), { target: { value: "{\"limit\":1}" } });
-    await user.click(screen.getByRole("checkbox", { name: "应用 SDK 权限建议" }));
-    await user.click(screen.getByRole("button", { name: "允许并继续" }));
+    fireEvent.change(screen.getByLabelText("调整工具输入"), { target: { value: "{\"limit\":1}" } });
+    await user.click(screen.getByRole("checkbox", { name: "应用权限建议" }));
+    await user.click(screen.getByRole("button", { name: "允许" }));
     await user.click(screen.getByRole("button", { name: "拒绝" }));
 
     expect(approve).toHaveBeenCalledWith("run-1", "approval-1", {
