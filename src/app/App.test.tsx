@@ -116,7 +116,9 @@ describe("App dual-mode workspace", () => {
 
     expect(screen.queryByLabelText("测试监控台")).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "确认计划并执行" }));
+    emit("assistant:text-delta", { runId: "run-1", messageId: "msg-1", delta: "计划草稿" });
+
+    await user.click(await screen.findByRole("button", { name: "确认计划并执行" }));
 
     expect(screen.getByLabelText("测试监控台")).toBeInTheDocument();
     expect(document.querySelector(".app-shell.test-mode")).toBeInTheDocument();

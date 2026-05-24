@@ -59,11 +59,13 @@ export function App() {
           onDeny={bridge.denyTool}
           onAnswer={bridge.answerQuestion}
         />
-        <div className="plan-action-row">
-          <button className="primary-action" type="button" onClick={handleApprovePlan}>
-            确认计划并执行
-          </button>
-        </div>
+        {activeRunId ? (
+          <div className="plan-action-row">
+            <button className="primary-action" type="button" onClick={handleApprovePlan}>
+              确认计划并执行
+            </button>
+          </div>
+        ) : null}
         <Composer value={composerValue} onChange={setComposerValue} onSubmit={handleComposerSubmit} />
       </main>
       {shouldShowTestConsole ? (
