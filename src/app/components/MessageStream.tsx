@@ -8,9 +8,11 @@ type Props = {
   onApprove: (runId: string, requestId: string, options: { updatedInput?: Record<string, unknown>; applyPermissionSuggestions?: boolean }) => void;
   onDeny: (runId: string, requestId: string, message: string) => void;
   onAnswer: (runId: string, requestId: string, answers: Record<string, unknown>) => void;
+  onCopyMessage: (content: string) => void;
+  onRetryMessage: (messageId: string) => void;
 };
 
-export function MessageStream({ state, onApprove, onDeny, onAnswer }: Props) {
+export function MessageStream({ state, onApprove, onDeny, onAnswer, onCopyMessage, onRetryMessage }: Props) {
   return (
     <section className="message-stream" aria-label="消息流">
       {state.messages.map((message) => (
@@ -21,8 +23,8 @@ export function MessageStream({ state, onApprove, onDeny, onAnswer }: Props) {
               <div>
                 <p>{message.content}</p>
                 <div className="assistant-actions">
-                  <button aria-label="复制回复" type="button"><Copy aria-hidden="true" size={14} />复制</button>
-                  <button aria-label="重试回复" type="button"><RefreshCcw aria-hidden="true" size={14} />重试</button>
+                  <button aria-label="复制回复" type="button" onClick={() => onCopyMessage(message.content)}><Copy aria-hidden="true" size={14} />复制</button>
+                  <button aria-label="重试回复" type="button" onClick={() => onRetryMessage(message.id)}><RefreshCcw aria-hidden="true" size={14} />重试</button>
                 </div>
               </div>
             </>

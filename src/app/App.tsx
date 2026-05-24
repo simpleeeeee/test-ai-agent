@@ -13,7 +13,10 @@ const fallbackApi = {
   on: () => () => undefined,
 };
 
+let chatInstance = 0;
+
 export function App() {
+  const [chatKey, setChatKey] = useState(0);
   const [composerValue, setComposerValue] = useState("");
   const [state, dispatch] = useReducer(reduceSdkUiEvent, undefined, createInitialSdkUiState);
   const bridge = useMemo(() => createBackendBridge(window.aiTestAssistant ?? fallbackApi), []);
@@ -22,6 +25,11 @@ export function App() {
   const shouldShowTestConsole = Boolean(activeRunId && state.workspaceModes[activeRunId]?.hasTestExecution);
 
   useEffect(() => bridge.subscribe(dispatch), [bridge]);
+
+  function handleNewChat() {
+    chatInstance += 1;
+    setChatKey(chatInstance);
+  }
 
   function handleComposerSubmit(value: string) {
     if (activeRunId) {
@@ -39,11 +47,11 @@ export function App() {
   }
 
   return (
-    <div className={shouldShowTestConsole ? "app-shell test-mode" : "app-shell chat-mode"}>
+    <div key={chatKey} className={shouldShowTestConsole ? "app-shell test-mode" : "app-shell chat-mode"}>
       <ClaudeSidebar
         activeRunId={activeRunId}
         sessions={state.sessions}
-        onNewChat={() => setComposerValue("")}
+        onNewChat={handleNewChat}
         onResumeSession={(sessionId) => activeRunId && bridge.resumeSession(activeRunId, sessionId)}
         onViewAll={() => bridge.listSessions()}
       />
@@ -58,6 +66,8 @@ export function App() {
           onApprove={bridge.approveTool}
           onDeny={bridge.denyTool}
           onAnswer={bridge.answerQuestion}
+          onCopyMessage={(content) => { navigator.clipboard?.writeText(content); }}
+          onRetryMessage={(messageId) => { bridge.sendMessage(activeRunId ?? "", messageId); }}
         />
         {activeRunId ? (
           <div className="plan-action-row">

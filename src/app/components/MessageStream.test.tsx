@@ -24,7 +24,7 @@ describe("MessageStream", () => {
       errors: [{ message: "网关认证失败", retryable: true }],
       tasks: [{ taskId: "task-1", summary: "正在执行子任务" }],
       sessions: [],
-    }} onApprove={vi.fn()} onDeny={vi.fn()} onAnswer={vi.fn()} />);
+    }} onApprove={vi.fn()} onDeny={vi.fn()} onAnswer={vi.fn()} onCopyMessage={vi.fn()} onRetryMessage={vi.fn()} />);
 
     expect(screen.getByText("帮我分析订单风险")).toBeInTheDocument();
     expect(screen.getByText("正在生成计划")).toBeInTheDocument();

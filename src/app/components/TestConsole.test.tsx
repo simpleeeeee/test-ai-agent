@@ -43,6 +43,7 @@ describe("TestConsole", () => {
     expect(screen.getByText("接口")).toBeInTheDocument();
     expect(screen.getByText("连接失败")).toBeInTheDocument();
     expect(screen.getByText("需要授权")).toBeInTheDocument();
+    expect(screen.getByText("认证")).toBeInTheDocument();
     expect(screen.getByText("证据 2 条")).toBeInTheDocument();
     expect(screen.getByText("支付回调重复通知导致状态异常")).toBeInTheDocument();
 

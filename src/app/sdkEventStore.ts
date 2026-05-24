@@ -18,7 +18,6 @@ const testExecutionChannels = new Set([
   "bug-draft:created",
   "sdk:task-progress",
   "sdk:mcp-status",
-  "ui:test-execution-confirmed",
 ]);
 
 function markHasTestExecution(state: SdkUiState, runId: string | undefined): SdkUiState {
