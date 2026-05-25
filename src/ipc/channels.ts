@@ -27,6 +27,9 @@ export const rendererToMainChannels = [
   "sdk:supported-agents",
   "sdk:account-info",
   "sdk:initialization-result",
+  "window:minimize",
+  "window:toggle-maximize",
+  "window:close",
 ] as const;
 
 export const mainToRendererChannels = [

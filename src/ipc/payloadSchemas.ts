@@ -44,6 +44,9 @@ const rendererSchemas = {
   "sdk:supported-agents": z.object({ runId: nonEmptyString }),
   "sdk:account-info": z.object({ runId: nonEmptyString }),
   "sdk:initialization-result": z.object({ runId: nonEmptyString }),
+  "window:minimize": noPayload,
+  "window:toggle-maximize": noPayload,
+  "window:close": noPayload,
 } satisfies Record<RendererToMainChannel, z.ZodTypeAny>;
 
 const mainSchemas = {
