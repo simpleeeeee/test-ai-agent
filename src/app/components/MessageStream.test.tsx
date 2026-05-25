@@ -6,7 +6,6 @@ describe("MessageStream", () => {
   it("renders messages in one narrow column without SDK debug details or reaction controls", () => {
     render(<MessageStream state={{
       activeRunId: "run-1",
-      workspaceModes: {},
       messages: [
         { id: "msg-user", role: "user", content: "帮我分析订单风险", complete: true },
         { id: "msg-1", role: "assistant", content: "正在生成计划", complete: false },

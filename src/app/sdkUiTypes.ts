@@ -39,7 +39,6 @@ export type SdkTaskProgress = {
 
 export type SdkUiState = {
   activeRunId?: string;
-  workspaceModes?: Record<string, unknown>;
   messages: SdkMessage[];
   approvals: ApprovalRequest[];
   questions: QuestionRequest[];

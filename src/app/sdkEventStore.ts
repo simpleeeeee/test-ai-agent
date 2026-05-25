@@ -10,7 +10,6 @@ function runIdFrom(payload: Record<string, unknown>) {
 
 export function createInitialSdkUiState(): SdkUiState {
   return {
-    workspaceModes: {},
     messages: [],
     approvals: [],
     questions: [],
@@ -87,6 +86,17 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
       errors: state.errors.length >= 200
         ? [...state.errors.slice(-199), { message: String(payload.message), retryable: Boolean(payload.retryable) }]
         : [...state.errors, { message: String(payload.message), retryable: Boolean(payload.retryable) }],
+    };
+  }
+
+  if (event.channel === "evidence:created") {
+    const evidence = state.evidence ?? [];
+    return {
+      ...state,
+      activeRunId,
+      evidence: evidence.length >= 200
+        ? [...evidence.slice(-199), payload]
+        : [...evidence, payload],
     };
   }
 

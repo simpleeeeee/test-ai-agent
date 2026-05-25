@@ -92,7 +92,7 @@ export function App() {
         onDeny={bridge.denyTool}
         onAnswer={bridge.answerQuestion}
         onCopyMessage={(content) => { navigator.clipboard?.writeText(content); }}
-        onRetryMessage={(messageId) => { bridge.sendMessage(activeRunId, messageId); }}
+        onRetryMessage={(content) => { bridge.sendMessage(activeRunId, content); }}
         onApprovePlan={handleApprovePlan}
         onComposerChange={setComposerValue}
         onComposerSubmit={handleComposerSubmit}

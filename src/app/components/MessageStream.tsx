@@ -9,7 +9,7 @@ type Props = {
   onDeny: (runId: string, requestId: string, message: string) => void;
   onAnswer: (runId: string, requestId: string, answers: Record<string, unknown>) => void;
   onCopyMessage: (content: string) => void;
-  onRetryMessage: (messageId: string) => void;
+  onRetryMessage: (content: string) => void;
 };
 
 export function MessageStream({ state, onApprove, onDeny, onAnswer, onCopyMessage, onRetryMessage }: Props) {
@@ -24,7 +24,7 @@ export function MessageStream({ state, onApprove, onDeny, onAnswer, onCopyMessag
                 <p>{message.content}</p>
                 <div className="assistant-actions">
                   <button aria-label="复制回复" type="button" onClick={() => onCopyMessage(message.content)}><Copy aria-hidden="true" size={14} />复制</button>
-                  <button aria-label="重试回复" type="button" onClick={() => onRetryMessage(message.id)}><RefreshCcw aria-hidden="true" size={14} />重试</button>
+                  <button aria-label="重试回复" type="button" onClick={() => onRetryMessage(message.content)}><RefreshCcw aria-hidden="true" size={14} />重试</button>
                 </div>
               </div>
             </>
