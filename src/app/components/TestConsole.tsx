@@ -58,7 +58,7 @@ export function TestConsole({
 
   return (
     <aside className="test-console" role="complementary" aria-label="测试监控台">
-      <header className="console-header">
+      <header className="test-console-header">
         <h2>测试监控台</h2>
       </header>
 
@@ -95,7 +95,7 @@ export function TestConsole({
         </section>
       ) : null}
 
-      <footer className="console-footer">
+      <footer className="test-console-footer">
         <button className="primary-action" type="button" onClick={onApprovePlan}>
           确认执行
         </button>

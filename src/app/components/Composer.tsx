@@ -23,7 +23,7 @@ export function Composer({ value, onChange, onSubmit, placeholder }: Props) {
 
   return (
     <form
-      className="composer"
+      className="composer-shell"
       onSubmit={(event) => {
         event.preventDefault();
         handleSubmit();
@@ -36,15 +36,17 @@ export function Composer({ value, onChange, onSubmit, placeholder }: Props) {
         placeholder={placeholder}
         value={value}
       />
-      <div className="composer-actions">
-        <button className="composer-tool-button" type="button" aria-label="添加内容">
-          <Plus aria-hidden="true" size={16} />
-        </button>
-        <button className="composer-tool-button" type="button" aria-label="工具">
-          <Wrench aria-hidden="true" size={16} />
-        </button>
-        <span className="composer-model-label">Claude Sonnet 4</span>
-        <button className="send-button" type="submit" aria-label="发送">
+      <div className="composer-toolbar">
+        <div className="composer-tools">
+          <button className="icon-button" type="button" aria-label="添加内容">
+            <Plus aria-hidden="true" size={16} />
+          </button>
+          <button className="icon-button" type="button" aria-label="工具">
+            <Wrench aria-hidden="true" size={16} />
+          </button>
+          <span className="model-pill">Claude Sonnet 4</span>
+        </div>
+        <button className="composer-send" type="submit" aria-label="发送">
           <Send aria-hidden="true" size={16} />
         </button>
       </div>

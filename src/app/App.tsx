@@ -1,17 +1,49 @@
 import { useEffect, useMemo, useReducer, useState } from "react";
 import { createBackendBridge } from "./backendBridge";
 import { createInitialSdkUiState, reduceSdkUiEvent } from "./sdkEventStore";
+import { ClaudeSidebar } from "./components/ClaudeSidebar";
 import { ConversationPane } from "./components/ConversationPane";
-import { McpStatusPanel } from "./components/McpStatusPanel";
 import { SdkControlDrawer } from "./components/SdkControlDrawer";
-import { SessionPanel } from "./components/SessionPanel";
-import { Plus, Settings } from "lucide-react";
+import { TestConsole } from "./components/TestConsole";
 import "../ui/styles.css";
 
+const fallbackListeners = new Map<string, Array<(payload: unknown) => void>>();
+
+function emitFallback(channel: string, payload: unknown) {
+  const entries = fallbackListeners.get(channel);
+  if (entries) {
+    for (const fn of entries) fn(payload);
+  }
+}
+
 const fallbackApi = {
-  send: () => undefined,
+  send: (channel: string, payload: unknown) => {
+    if (channel === "run:create") {
+      const prompt = (payload as { prompt?: string })?.prompt ?? "";
+      const runId = "run-1";
+      setTimeout(() => {
+        emitFallback("run:created", { runId, prompt });
+        emitFallback("assistant:text-delta", { runId, messageId: "msg-1", delta: `已根据"${prompt}"生成测试计划，请审核后点击确认执行。` });
+        emitFallback("assistant:message-completed", { runId, messageId: "msg-1" });
+        emitFallback("sdk:task-progress", { runId, taskId: "task-1", summary: "等待审核测试计划" });
+        emitFallback("sdk:mcp-status", { runId, servers: [{ name: "browser", status: "connected" }, { name: "api", status: "pending" }] });
+      }, 0);
+    }
+  },
   invoke: () => Promise.resolve(undefined),
-  on: () => () => undefined,
+  on: (channel: string, listener: (payload: unknown) => void) => {
+    if (!fallbackListeners.has(channel)) {
+      fallbackListeners.set(channel, []);
+    }
+    fallbackListeners.get(channel)!.push(listener);
+    return () => {
+      const arr = fallbackListeners.get(channel);
+      if (arr) {
+        const idx = arr.indexOf(listener);
+        if (idx >= 0) arr.splice(idx, 1);
+      }
+    };
+  },
 };
 
 export function App() {
@@ -39,17 +71,16 @@ export function App() {
   }
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar" aria-label="会话列表">
-        <div className="sidebar-header">
-          <div className="app-title">AI 测试助手</div>
-          <button className="new-test-button" type="button"><Plus size={16} />新建测试</button>
-        </div>
-        <SessionPanel runId={activeRunId} sessions={state.sessions} bridge={bridge} />
-        <button className="settings-button" type="button" onClick={() => setControlOpen((value) => !value)}>
-          <Settings size={16} />SDK 控制
-        </button>
-      </aside>
+    <div className={shouldShowTestConsole ? "app-shell test-mode" : "app-shell chat-mode"}>
+      <ClaudeSidebar
+        activeRunId={activeRunId}
+        sessions={state.sessions}
+        onNewChat={() => {
+          setComposerValue("");
+          setControlOpen(false);
+        }}
+        onResumeSession={() => {}}
+      />
       <ConversationPane
         state={state}
         title={activeRunId ?? "新对话"}
@@ -67,7 +98,19 @@ export function App() {
         onMinimizeWindow={bridge.minimizeWindow}
         onToggleMaximizeWindow={bridge.toggleMaximizeWindow}
         onCloseWindow={bridge.closeWindow}
+        onToggleSdkControl={() => setControlOpen((v) => !v)}
       />
+      {shouldShowTestConsole ? (
+        <TestConsole
+          activeTaskId={activeTaskId}
+          mcpServers={state.mcpServers}
+          tasks={state.tasks}
+          evidence={state.evidence}
+          bugDraft={undefined}
+          onApprovePlan={handleApprovePlan}
+          onStopTask={(taskId: string) => { bridge.stopTask(activeRunId, taskId); }}
+        />
+      ) : null}
       {controlOpen ? <SdkControlDrawer runId={activeRunId} activeTaskId={activeTaskId} bridge={bridge} /> : null}
     </div>
   );

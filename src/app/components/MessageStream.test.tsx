@@ -33,8 +33,8 @@ describe("MessageStream", () => {
       sessions: [],
     }} onApprove={vi.fn()} onDeny={vi.fn()} onAnswer={vi.fn()} onCopyMessage={vi.fn()} onRetryMessage={vi.fn()} />);
 
-    const stream = screen.getByRole("region", { name: "消息流" });
-    expect(stream.querySelector(".message-column")).toBeInTheDocument();
+    const column = document.querySelector(".message-column");
+    expect(column).toBeInTheDocument();
 
     const userMessage = screen.getByText("帮我分析订单风险").closest(".user-bubble");
     expect(userMessage).toBeInTheDocument();

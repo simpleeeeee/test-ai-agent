@@ -1,3 +1,4 @@
+import { Settings } from "lucide-react";
 import type { SdkUiState } from "../sdkUiTypes";
 import { Composer } from "./Composer";
 import { EmptyConversationState } from "./EmptyConversationState";
@@ -21,6 +22,7 @@ type Props = {
   onMinimizeWindow: () => void;
   onToggleMaximizeWindow: () => void;
   onCloseWindow: () => void;
+  onToggleSdkControl?: () => void;
 };
 
 export function ConversationPane({
@@ -40,6 +42,7 @@ export function ConversationPane({
   onMinimizeWindow,
   onToggleMaximizeWindow,
   onCloseWindow,
+  onToggleSdkControl,
 }: Props) {
   const isEmpty = state.messages.length === 0 && state.approvals.length === 0 && state.questions.length === 0;
   const placeholder = hasTestExecution ? "补充测试指令或继续提问…" : "向 AI 测试助手提问…";
@@ -48,33 +51,42 @@ export function ConversationPane({
     <main className="conversation" aria-label="对话">
       <header className="conversation-header">
         <span className="conversation-title">{title}</span>
-        <WindowControls
-          onMinimize={onMinimizeWindow}
-          onToggleMaximize={onToggleMaximizeWindow}
-          onClose={onCloseWindow}
-        />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {onToggleSdkControl ? (
+            <button className="window-control" type="button" aria-label="SDK 控制" title="SDK 控制" onClick={onToggleSdkControl}>
+              <Settings aria-hidden="true" size={16} />
+            </button>
+          ) : null}
+          <WindowControls
+            onMinimize={onMinimizeWindow}
+            onToggleMaximize={onToggleMaximizeWindow}
+            onClose={onCloseWindow}
+          />
+        </div>
       </header>
       {isEmpty ? (
         <section className="message-stream" aria-label="消息流">
           <EmptyConversationState />
         </section>
       ) : (
-        <MessageStream
-          state={state}
-          onApprove={onApprove}
-          onDeny={onDeny}
-          onAnswer={onAnswer}
-          onCopyMessage={onCopyMessage}
-          onRetryMessage={onRetryMessage}
-        />
+        <section className="message-stream" aria-label="消息流">
+          <MessageStream
+            state={state}
+            onApprove={onApprove}
+            onDeny={onDeny}
+            onAnswer={onAnswer}
+            onCopyMessage={onCopyMessage}
+            onRetryMessage={onRetryMessage}
+          />
+          {activeRunId ? (
+            <div className="plan-action-row">
+              <button className="primary-action" type="button" onClick={onApprovePlan}>
+                确认计划并执行
+              </button>
+            </div>
+          ) : null}
+        </section>
       )}
-      {activeRunId ? (
-        <div className="plan-action-row">
-          <button className="primary-action" type="button" onClick={onApprovePlan}>
-            确认计划并执行
-          </button>
-        </div>
-      ) : null}
       <Composer value={composerValue} onChange={onComposerChange} onSubmit={onComposerSubmit} placeholder={placeholder} />
     </main>
   );
