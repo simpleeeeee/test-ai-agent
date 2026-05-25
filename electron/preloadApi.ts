@@ -1,8 +1,3 @@
-// This file is compiled as CommonJS by tsconfig.preload.json
-// because Electron sandboxed preload scripts do not support ESM imports.
-// All logic is inlined because sandboxed preloads can only require("electron").
-const { contextBridge, ipcRenderer } = require("electron");
-
 const rendererToMainChannels = [
   "run:create", "run:approve-plan", "tool:approve", "tool:deny",
   "run:stop", "run:resume", "run:fork", "run:continue",
@@ -27,29 +22,44 @@ const mainToRendererChannels = [
   "question:required", "question:answered",
 ];
 
-if (typeof contextBridge !== "undefined") {
-  contextBridge.exposeInMainWorld("aiTestAssistant", {
+export function isRendererToMainChannel(value: string): boolean {
+  return rendererToMainChannels.includes(value);
+}
+
+export function isMainToRendererChannel(value: string): boolean {
+  return mainToRendererChannels.includes(value);
+}
+
+export type IpcSender = {
+  send: (channel: string, payload: unknown) => void;
+  invoke: (channel: string, payload: unknown) => Promise<unknown>;
+  on: (channel: string, listener: (event: unknown, payload: unknown) => void) => void;
+  off: (channel: string, listener: (event: unknown, payload: unknown) => void) => void;
+};
+
+export function createSafeIpcApi(sender: IpcSender) {
+  return {
     send(channel: string, payload: unknown) {
-      if (!rendererToMainChannels.includes(channel)) {
+      if (!isRendererToMainChannel(channel)) {
         throw new Error("Unsupported IPC channel: " + channel);
       }
-      ipcRenderer.send(channel, payload);
+      sender.send(channel, payload);
     },
     invoke(channel: string, payload: unknown) {
-      if (!rendererToMainChannels.includes(channel)) {
+      if (!isRendererToMainChannel(channel)) {
         throw new Error("Unsupported IPC channel: " + channel);
       }
-      return ipcRenderer.invoke(channel, payload);
+      return sender.invoke(channel, payload);
     },
     on(channel: string, listener: (payload: unknown) => void) {
-      if (!mainToRendererChannels.includes(channel)) {
+      if (!isMainToRendererChannel(channel)) {
         throw new Error("Unsupported IPC channel: " + channel);
       }
       const wrapped = (_event: unknown, payload: unknown) => listener(payload);
-      ipcRenderer.on(channel, wrapped);
+      sender.on(channel, wrapped);
       return () => {
-        ipcRenderer.off(channel, wrapped);
+        sender.off(channel, wrapped);
       };
     },
-  });
+  };
 }

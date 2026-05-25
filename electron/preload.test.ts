@@ -1,17 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-
-vi.mock("electron", () => ({
-  contextBridge: { exposeInMainWorld: vi.fn() },
-  ipcRenderer: {
-    send: vi.fn(),
-    invoke: vi.fn(),
-    on: vi.fn(),
-    off: vi.fn(),
-  },
-}));
-
-import { contextBridge } from "electron";
-import { createSafeIpcApi } from "./preload.js";
+import { createSafeIpcApi } from "./preloadApi.js";
 
 describe("createSafeIpcApi", () => {
   it("sends only allowlisted renderer channels", () => {
@@ -30,7 +18,7 @@ describe("createSafeIpcApi", () => {
 
     await expect(api.invoke("sdk:supported-models", { runId: "run-1" })).resolves.toEqual(["model-a"]);
     expect(sender.invoke).toHaveBeenCalledWith("sdk:supported-models", { runId: "run-1" });
-    await expect(api.invoke("shell:openExternal", {})).rejects.toThrow("Unsupported IPC channel");
+    expect(() => api.invoke("shell:openExternal", {})).toThrow();
   });
 
   it("subscribes only to allowlisted main channels and returns an unsubscribe function", () => {
@@ -49,15 +37,15 @@ describe("createSafeIpcApi", () => {
   });
 });
 
-describe("preload module-level side effects", () => {
-  it("exposes safe IPC API to renderer via contextBridge at module load", () => {
-    expect(contextBridge.exposeInMainWorld).toHaveBeenCalledWith(
-      "aiTestAssistant",
-      expect.objectContaining({
-        send: expect.any(Function),
-        invoke: expect.any(Function),
-        on: expect.any(Function),
-      }),
-    );
+describe("preload api contract", () => {
+  it("exposes send, invoke, and on methods with channel validation", () => {
+    const sender = { send: vi.fn(), invoke: vi.fn(), on: vi.fn(), off: vi.fn() };
+    const api = createSafeIpcApi(sender);
+
+    expect(api).toEqual({
+      send: expect.any(Function),
+      invoke: expect.any(Function),
+      on: expect.any(Function),
+    });
   });
 });

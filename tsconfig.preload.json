@@ -1,14 +1,13 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
     "strict": true,
     "skipLibCheck": true,
     "types": ["node"],
     "outDir": "dist-electron",
     "rootDir": "."
   },
-  "include": ["electron"],
-  "exclude": ["electron/**/*.test.ts", "electron/preload.ts"]
+  "include": ["electron/preload.ts"]
 }
