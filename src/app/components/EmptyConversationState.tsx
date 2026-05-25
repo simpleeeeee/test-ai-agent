@@ -6,7 +6,11 @@ const suggestions = [
   "解释接口回归测试怎么做",
 ];
 
-export function EmptyConversationState() {
+type Props = {
+  onSuggestionClick?: (suggestion: string) => void;
+};
+
+export function EmptyConversationState({ onSuggestionClick }: Props) {
   return (
     <div className="empty-state">
       <div className="empty-icon" aria-hidden="true">
@@ -16,7 +20,8 @@ export function EmptyConversationState() {
       <p>可以直接提问，也可以描述一个业务流程，我会先帮你梳理风险和测试思路。</p>
       <div className="suggestions" aria-label="建议入口">
         {suggestions.map((suggestion) => (
-          <button className="suggestion" key={suggestion} type="button">
+          <button className="suggestion" key={suggestion} type="button"
+            onClick={() => onSuggestionClick?.(suggestion)}>
             {suggestion}
           </button>
         ))}

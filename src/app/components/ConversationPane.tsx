@@ -66,7 +66,7 @@ export function ConversationPane({
       </header>
       {isEmpty ? (
         <section className="message-stream" aria-label="消息流">
-          <EmptyConversationState />
+          <EmptyConversationState onSuggestionClick={onComposerChange} />
         </section>
       ) : (
         <section className="message-stream" aria-label="消息流">

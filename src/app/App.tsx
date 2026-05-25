@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { createBackendBridge } from "./backendBridge";
 import { createInitialSdkUiState, reduceSdkUiEvent } from "./sdkEventStore";
 import { ClaudeSidebar } from "./components/ClaudeSidebar";
@@ -28,6 +28,21 @@ const fallbackApi = {
         emitFallback("assistant:message-completed", { runId, messageId: "msg-1" });
         emitFallback("sdk:task-progress", { runId, taskId: "task-1", summary: "等待审核测试计划" });
         emitFallback("sdk:mcp-status", { runId, servers: [{ name: "browser", status: "connected" }, { name: "api", status: "pending" }] });
+      }, 0);
+    } else if (channel === "run:approve-plan") {
+      const runId = (payload as { runId?: string })?.runId ?? "run-1";
+      setTimeout(() => {
+        emitFallback("sdk:task-progress", { runId, taskId: "task-2", summary: "执行测试计划中…" });
+        emitFallback("assistant:text-delta", { runId, messageId: "msg-2", delta: "计划已确认，开始执行测试。" });
+        emitFallback("assistant:message-completed", { runId, messageId: "msg-2" });
+      }, 0);
+    } else if (channel === "run:send-message") {
+      const runId = (payload as { runId?: string })?.runId ?? "run-1";
+      const message = (payload as { message?: string })?.message ?? "";
+      setTimeout(() => {
+        emitFallback("assistant:text-delta", { runId, messageId: `msg-${Date.now()}`, delta: `已收到补充指令："${message}"，继续执行测试。` });
+        emitFallback("assistant:message-completed", { runId, messageId: `msg-${Date.now()}` });
+        emitFallback("sdk:task-progress", { runId, taskId: `task-${Date.now()}`, summary: "已处理补充指令" });
       }, 0);
     }
   },
@@ -80,7 +95,7 @@ export function App() {
           setComposerValue("");
           setControlOpen(false);
         }}
-        onResumeSession={() => {}}
+        onResumeSession={(sessionId) => { bridge.resumeSession(activeRunId, sessionId); }}
       />
       <ConversationPane
         state={state}
