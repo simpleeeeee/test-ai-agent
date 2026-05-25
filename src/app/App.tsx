@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { createBackendBridge } from "./backendBridge";
 import { createInitialSdkUiState, reduceSdkUiEvent } from "./sdkEventStore";
 import { ClaudeSidebar } from "./components/ClaudeSidebar";
@@ -66,7 +66,10 @@ export function App() {
   const [composerValue, setComposerValue] = useState("");
   const [controlOpen, setControlOpen] = useState(false);
   const [state, dispatch] = useReducer(reduceSdkUiEvent, undefined, createInitialSdkUiState);
-  const bridge = useMemo(() => createBackendBridge(window.aiTestAssistant ?? fallbackApi), []);
+  const bridge = useMemo(() => {
+    const api = window.aiTestAssistant ?? fallbackApi;
+    return createBackendBridge(api);
+  }, []);
   const activeRunId = state.activeRunId ?? "run-1";
   const activeTaskId = state.tasks.at(-1)?.taskId;
   const shouldShowTestConsole = !!state.activeRunId;

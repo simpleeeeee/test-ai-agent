@@ -17,23 +17,25 @@ export function createSafeIpcApi(sender: IpcSender) {
   return {
     send(channel: string, payload: unknown) {
       if (!isRendererToMainChannel(channel)) {
-        throw new Error("Unsupported IPC channel");
+        throw new Error("Unsupported IPC channel: " + channel);
       }
       sender.send(channel, payload);
     },
     async invoke(channel: string, payload: unknown) {
       if (!isRendererToMainChannel(channel)) {
-        throw new Error("Unsupported IPC channel");
+        throw new Error("Unsupported IPC channel: " + channel);
       }
       return sender.invoke(channel, payload);
     },
     on(channel: string, listener: (payload: unknown) => void) {
       if (!isMainToRendererChannel(channel)) {
-        throw new Error("Unsupported IPC channel");
+        throw new Error("Unsupported IPC channel: " + channel);
       }
       const wrapped = (_event: unknown, payload: unknown) => listener(payload);
       sender.on(channel, wrapped);
-      return () => sender.off(channel, wrapped);
+      return () => {
+        sender.off(channel, wrapped);
+      };
     },
   };
 }
