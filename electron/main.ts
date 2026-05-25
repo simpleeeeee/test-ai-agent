@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, Menu } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -78,13 +78,41 @@ function registerBackendIpc(window: BrowserWindow) {
   handleRequest("run:delete-session", ({ sessionId }) => manager.deleteSession(sessionId));
 }
 
+function focusedWindow() {
+  return BrowserWindow.getFocusedWindow();
+}
+
+function registerWindowControlIpc() {
+  ipcMain.on("window:minimize", () => {
+    focusedWindow()?.minimize();
+  });
+
+  ipcMain.on("window:toggle-maximize", () => {
+    const window = focusedWindow();
+    if (!window) return;
+    if (window.isMaximized()) {
+      window.unmaximize();
+    } else {
+      window.maximize();
+    }
+  });
+
+  ipcMain.on("window:close", () => {
+    focusedWindow()?.close();
+  });
+}
+
 async function createWindow() {
+  Menu.setApplicationMenu(null);
+  registerWindowControlIpc();
+
   const window = new BrowserWindow({
     width: 1280,
     height: 820,
     minWidth: 960,
     minHeight: 640,
     title: "AI 测试助手",
+    frame: false,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,

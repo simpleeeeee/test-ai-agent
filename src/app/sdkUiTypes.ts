@@ -52,6 +52,7 @@ export type SdkUiState = {
   approvals: ApprovalRequest[];
   questions: QuestionRequest[];
   mcpServers: McpServerUiStatus[];
+  evidence?: unknown[];
   rawMessages: unknown[];
   usage?: unknown;
   errors: Array<{ message: string; retryable: boolean }>;

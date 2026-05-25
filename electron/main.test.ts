@@ -3,6 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 const handle = vi.fn();
 const on = vi.fn();
 const send = vi.fn();
+const setApplicationMenu = vi.fn();
+const minimize = vi.fn();
+const maximize = vi.fn();
+const unmaximize = vi.fn();
+const close = vi.fn();
+const isMaximized = vi.fn(() => false);
+const browserWindowOptions: unknown[] = [];
+const focusedWindow = { minimize, maximize, unmaximize, close, isMaximized };
 
 vi.mock("electron", () => ({
   app: {
@@ -10,13 +18,26 @@ vi.mock("electron", () => ({
     on: vi.fn(),
     quit: vi.fn(),
   },
-  BrowserWindow: vi.fn(function BrowserWindow() {
-    return {
-      loadURL: vi.fn(),
-      loadFile: vi.fn(),
-      webContents: { send },
-    };
-  }),
+  BrowserWindow: Object.assign(
+    vi.fn(function BrowserWindow(options: unknown) {
+      browserWindowOptions.push(options);
+      return {
+        loadURL: vi.fn(),
+        loadFile: vi.fn(),
+        webContents: { send },
+        minimize,
+        maximize,
+        unmaximize,
+        close,
+        isMaximized,
+      };
+    }),
+    {
+      getFocusedWindow: vi.fn(() => focusedWindow),
+      getAllWindows: vi.fn(() => []),
+    },
+  ),
+  Menu: { setApplicationMenu },
   ipcMain: { handle, on },
 }));
 
@@ -102,6 +123,33 @@ describe("electron main IPC registration", () => {
       "run:stop",
       "tool:approve",
       "tool:deny",
+      "window:close",
+      "window:minimize",
+      "window:toggle-maximize",
     ]);
+  });
+
+  it("hides the native menu and creates a frameless app window", async () => {
+    await import("./main.js");
+
+    expect(setApplicationMenu).toHaveBeenCalledWith(null);
+    expect(browserWindowOptions[0]).toEqual(expect.objectContaining({
+      width: 1280,
+      height: 820,
+      minWidth: 960,
+      minHeight: 640,
+      title: "AI 测试助手",
+      frame: false,
+    }));
+  });
+
+  it("registers window control handlers", async () => {
+    await import("./main.js");
+
+    const onChannels = on.mock.calls.map(([channel]) => channel);
+
+    expect(onChannels).toContain("window:minimize");
+    expect(onChannels).toContain("window:toggle-maximize");
+    expect(onChannels).toContain("window:close");
   });
 });

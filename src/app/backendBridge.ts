@@ -127,6 +127,15 @@ export function createBackendBridge(api: AiTestAssistantApi) {
       const cleanups = streamChannels.map((channel) => api.on(channel, (payload) => listener({ channel, payload })));
       return () => cleanups.forEach((cleanup) => cleanup());
     },
+    minimizeWindow() {
+      api.send("window:minimize", undefined);
+    },
+    toggleMaximizeWindow() {
+      api.send("window:toggle-maximize", undefined);
+    },
+    closeWindow() {
+      api.send("window:close", undefined);
+    },
   };
 }
 

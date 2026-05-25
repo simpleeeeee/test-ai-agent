@@ -71,6 +71,23 @@ describe("backendBridge", () => {
     expect(api.invoke).toHaveBeenCalledWith("run:resume", { runId: "run-1", sessionId: "session-1" });
   });
 
+  it("sends window control events", () => {
+    const api = {
+      send: vi.fn(),
+      invoke: vi.fn(),
+      on: vi.fn(() => () => undefined),
+    };
+    const bridge = createBackendBridge(api);
+
+    bridge.minimizeWindow();
+    bridge.toggleMaximizeWindow();
+    bridge.closeWindow();
+
+    expect(api.send).toHaveBeenCalledWith("window:minimize", undefined);
+    expect(api.send).toHaveBeenCalledWith("window:toggle-maximize", undefined);
+    expect(api.send).toHaveBeenCalledWith("window:close", undefined);
+  });
+
   it("subscribes to every main-to-renderer stream and returns a cleanup function", () => {
     const cleanup = vi.fn();
     const api = { send: vi.fn(), invoke: vi.fn(), on: vi.fn(() => cleanup) };

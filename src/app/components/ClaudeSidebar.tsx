@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Folder, MessageSquare, Plus, Sparkles } from "lucide-react";
+import { ChevronDown, Folder, MessageSquare, Plus, Sparkles } from "lucide-react";
 import type { SessionSummary } from "../sdkUiTypes";
 
 type Props = {
@@ -6,15 +6,14 @@ type Props = {
   sessions: SessionSummary[];
   onNewChat: () => void;
   onResumeSession: (sessionId: string) => void;
-  onViewAll: () => void;
 };
 
-export function ClaudeSidebar({ activeRunId, sessions, onNewChat, onResumeSession, onViewAll }: Props) {
+export function ClaudeSidebar({ activeRunId, sessions, onNewChat, onResumeSession }: Props) {
   return (
     <aside className="claude-sidebar" aria-label="会话导航">
       <div className="claude-brand">
-        <Sparkles aria-hidden="true" className="claude-brand-icon" size={24} />
-        <span>Claude</span>
+        <Sparkles aria-hidden="true" className="claude-brand-icon" size={23} />
+        <span>AI 测试助手</span>
       </div>
       <nav className="claude-nav" aria-label="主导航">
         <button className="claude-nav-item" type="button" onClick={onNewChat}>
@@ -32,6 +31,7 @@ export function ClaudeSidebar({ activeRunId, sessions, onNewChat, onResumeSessio
       </nav>
       <div className="recent-section">
         <p className="recent-title">最近</p>
+        {sessions.length === 0 ? <p className="recent-empty">暂无最近对话</p> : null}
         {sessions.map((session) => (
           <button
             className={session.id === activeRunId ? "recent-session active" : "recent-session"}
@@ -42,10 +42,6 @@ export function ClaudeSidebar({ activeRunId, sessions, onNewChat, onResumeSessio
             {session.title}
           </button>
         ))}
-        <button className="recent-view-all" type="button" onClick={onViewAll}>
-          <span>查看全部</span>
-          <ChevronRight aria-hidden="true" size={16} />
-        </button>
       </div>
       <div className="claude-profile">
         <span className="profile-avatar">测</span>

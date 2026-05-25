@@ -41,4 +41,14 @@ describe("IPC payload schemas", () => {
       delta: "正在生成测试计划",
     });
   });
+
+  it("accepts only empty payloads for window controls", () => {
+    expect(() => parseRendererToMainPayload("window:minimize", undefined)).not.toThrow();
+    expect(() => parseRendererToMainPayload("window:toggle-maximize", undefined)).not.toThrow();
+    expect(() => parseRendererToMainPayload("window:close", undefined)).not.toThrow();
+
+    expect(() => parseRendererToMainPayload("window:minimize", { value: true })).toThrow();
+    expect(() => parseRendererToMainPayload("window:toggle-maximize", { value: true })).toThrow();
+    expect(() => parseRendererToMainPayload("window:close", { value: true })).toThrow();
+  });
 });

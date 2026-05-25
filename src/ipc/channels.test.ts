@@ -54,7 +54,16 @@ describe("IPC channels", () => {
       "sdk:supported-agents",
       "sdk:account-info",
       "sdk:initialization-result",
+      "window:minimize",
+      "window:toggle-maximize",
+      "window:close",
     ]);
+  });
+
+  it("allows renderer window control channels", () => {
+    expect(isRendererToMainChannel("window:minimize")).toBe(true);
+    expect(isRendererToMainChannel("window:toggle-maximize")).toBe(true);
+    expect(isRendererToMainChannel("window:close")).toBe(true);
   });
 
   it("contains every backend main-to-renderer stream event", () => {

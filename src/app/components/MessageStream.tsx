@@ -9,12 +9,12 @@ type Props = {
   onDeny: (runId: string, requestId: string, message: string) => void;
   onAnswer: (runId: string, requestId: string, answers: Record<string, unknown>) => void;
   onCopyMessage: (content: string) => void;
-  onRetryMessage: (messageId: string) => void;
+  onRetryMessage: (content: string) => void;
 };
 
 export function MessageStream({ state, onApprove, onDeny, onAnswer, onCopyMessage, onRetryMessage }: Props) {
   return (
-    <section className="message-stream" aria-label="消息流">
+    <div className="message-column">
       {state.messages.map((message) => (
         <article className={`message ${message.role}-message`} key={message.id}>
           {message.role === "assistant" ? (
@@ -24,11 +24,16 @@ export function MessageStream({ state, onApprove, onDeny, onAnswer, onCopyMessag
                 <p>{message.content}</p>
                 <div className="assistant-actions">
                   <button aria-label="复制回复" type="button" onClick={() => onCopyMessage(message.content)}><Copy aria-hidden="true" size={14} />复制</button>
-                  <button aria-label="重试回复" type="button" onClick={() => onRetryMessage(message.id)}><RefreshCcw aria-hidden="true" size={14} />重试</button>
+                  <button aria-label="重试回复" type="button" onClick={() => onRetryMessage(message.content)}><RefreshCcw aria-hidden="true" size={14} />重试</button>
                 </div>
               </div>
             </>
-          ) : message.content}
+          ) : (
+            <div className="user-bubble">
+              <span className="profile-avatar">测</span>
+              <span>{message.content}</span>
+            </div>
+          )}
         </article>
       ))}
       {state.approvals.map((request) => (
@@ -39,13 +44,6 @@ export function MessageStream({ state, onApprove, onDeny, onAnswer, onCopyMessag
       ))}
       {state.errors.map((error, index) => <p className="sdk-error" key={`${error.message}-${index}`}>{error.message}</p>)}
       {state.tasks.map((task) => <p className="sdk-task" key={task.taskId}>{task.summary ?? task.taskId}</p>)}
-      {state.usage ? <details><summary>SDK Usage</summary><pre>{JSON.stringify(state.usage, null, 2)}</pre></details> : null}
-      {state.rawMessages.map((raw, index) => (
-        <details key={index}>
-          <summary>SDK Raw Message {index + 1}</summary>
-          <pre>{JSON.stringify(raw, null, 2)}</pre>
-        </details>
-      ))}
-    </section>
+    </div>
   );
 }
