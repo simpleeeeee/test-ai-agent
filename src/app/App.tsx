@@ -5,6 +5,7 @@ import { ClaudeSidebar } from "./components/ClaudeSidebar";
 import { ConversationPane } from "./components/ConversationPane";
 import { SdkControlDrawer } from "./components/SdkControlDrawer";
 import { TestConsole } from "./components/TestConsole";
+import type { Evidence } from "../domain/testRun";
 import "../ui/styles.css";
 
 const fallbackListeners = new Map<string, Array<(payload: unknown) => void>>();
@@ -105,7 +106,7 @@ export function App() {
           activeTaskId={activeTaskId}
           mcpServers={state.mcpServers}
           tasks={state.tasks}
-          evidence={state.evidence}
+          evidence={(state.evidence ?? []) as Evidence[]}
           bugDraft={undefined}
           onApprovePlan={handleApprovePlan}
           onStopTask={(taskId: string) => { bridge.stopTask(activeRunId, taskId); }}
