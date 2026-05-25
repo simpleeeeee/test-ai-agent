@@ -52,14 +52,13 @@ export type SdkUiState = {
   approvals: ApprovalRequest[];
   questions: QuestionRequest[];
   mcpServers: McpServerUiStatus[];
-  evidence?: unknown[];
+  evidence?: Evidence[];
   rawMessages: unknown[];
   usage?: unknown;
   errors: Array<{ message: string; retryable: boolean }>;
   tasks: SdkTaskProgress[];
   sessions: SessionSummary[];
   workspaceModes: Record<string, SessionWorkspaceMode>;
-  evidence: Evidence[];
   bugDraft?: BugDraft;
 };
 

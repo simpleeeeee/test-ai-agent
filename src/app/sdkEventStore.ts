@@ -34,6 +34,7 @@ function markHasTestExecution(state: SdkUiState, runId: string | undefined): Sdk
 
 export function createInitialSdkUiState(): SdkUiState {
   return {
+    workspaceModes: {},
     messages: [],
     approvals: [],
     questions: [],
@@ -43,8 +44,6 @@ export function createInitialSdkUiState(): SdkUiState {
     errors: [],
     tasks: [],
     sessions: [],
-    workspaceModes: {},
-    evidence: [],
   };
 }
 
@@ -95,9 +94,10 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
   }
 
   if (event.channel === "evidence:created") {
-    const evidence = state.evidence.length >= 200
-      ? state.evidence
-      : [...state.evidence, payload.evidence as Evidence];
+    const current = state.evidence ?? [];
+    const evidence = current.length >= 200
+      ? current
+      : [...current, payload.evidence as Evidence];
     return markHasTestExecution({ ...state, activeRunId, evidence }, activeRunId);
   }
 
@@ -127,17 +127,6 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
       errors: state.errors.length >= 200
         ? [...state.errors.slice(-199), { message: String(payload.message), retryable: Boolean(payload.retryable) }]
         : [...state.errors, { message: String(payload.message), retryable: Boolean(payload.retryable) }],
-    };
-  }
-
-  if (event.channel === "evidence:created") {
-    const evidence = state.evidence ?? [];
-    return {
-      ...state,
-      activeRunId,
-      evidence: evidence.length >= 200
-        ? [...evidence.slice(-199), payload]
-        : [...evidence, payload],
     };
   }
 

@@ -139,8 +139,8 @@ describe("sdkEventStore", () => {
     });
 
     // Evidence should have 1 entry
-    expect(state.evidence).toHaveLength(1);
-    expect(state.evidence[0].title).toBe("登录页面截图");
+    expect(state.evidence!).toHaveLength(1);
+    expect(state.evidence![0].title).toBe("登录页面截图");
 
     // Bug draft should be set
     expect(state.bugDraft?.title).toBe("登录按钮无响应");
