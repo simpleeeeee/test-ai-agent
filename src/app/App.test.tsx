@@ -36,7 +36,7 @@ describe("App backend integration", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.type(screen.getByLabelText("测试目标"), "测试订单模块功能");
+    await user.type(screen.getByLabelText("消息输入"), "测试订单模块功能");
     await user.click(screen.getByRole("button", { name: "发送" }));
 
     expect(send).toHaveBeenCalledWith("run:create", { prompt: "测试订单模块功能" });
@@ -74,8 +74,8 @@ describe("App backend integration", () => {
       questions: [{ id: "scope", label: "测试范围", options: ["冒烟", "回归"] }],
     });
 
-    await user.type(screen.getByLabelText("补充指令"), "增加支付异常场景");
-    await user.click(screen.getByRole("button", { name: "发送补充" }));
+    await user.type(screen.getByLabelText("消息输入"), "增加支付异常场景");
+    await user.click(screen.getByRole("button", { name: "发送" }));
     await user.click(screen.getByRole("button", { name: "允许并继续" }));
     await user.selectOptions(screen.getByLabelText("测试范围"), "回归");
     await user.click(screen.getByRole("button", { name: "提交回答" }));
@@ -94,8 +94,10 @@ describe("App backend integration", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.type(screen.getByLabelText("补充指令"), "调整计划");
-    await user.click(screen.getByRole("button", { name: "发送补充" }));
+    emit("assistant:text-delta", { runId: "run-1", messageId: "msg-1", delta: "计划草稿" });
+
+    await user.type(screen.getByLabelText("消息输入"), "调整计划");
+    await user.click(screen.getByRole("button", { name: "发送" }));
 
     expect(alertSpy).not.toHaveBeenCalled();
     expect(send).toHaveBeenCalledWith("run:send-message", expect.objectContaining({ message: "调整计划" }));
