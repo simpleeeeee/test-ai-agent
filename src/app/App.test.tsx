@@ -54,7 +54,7 @@ describe("App backend integration", () => {
     });
 
     expect(await screen.findByText("正在生成计划")).toBeInTheDocument();
-    expect(screen.getByText("查询订单数据库")).toBeInTheDocument();
+    expect(screen.getAllByText("查询订单数据库", { exact: false }).length).toBeGreaterThan(0);
     expect(screen.getByText("需要补充信息")).toBeInTheDocument();
   });
 
@@ -76,7 +76,7 @@ describe("App backend integration", () => {
 
     await user.type(screen.getByLabelText("消息输入"), "增加支付异常场景");
     await user.click(screen.getByRole("button", { name: "发送" }));
-    await user.click(screen.getByRole("button", { name: "允许并继续" }));
+    await user.click(screen.getByRole("button", { name: "允许一次" }));
     await user.selectOptions(screen.getByLabelText("测试范围"), "回归");
     await user.click(screen.getByRole("button", { name: "提交回答" }));
     await user.click(screen.getByRole("button", { name: "SDK 控制" }));

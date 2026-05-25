@@ -10,10 +10,12 @@ function runIdFrom(payload: Record<string, unknown>) {
 
 export function createInitialSdkUiState(): SdkUiState {
   return {
+    workspaceModes: {},
     messages: [],
     approvals: [],
     questions: [],
     mcpServers: [],
+    evidence: [],
     rawMessages: [],
     errors: [],
     tasks: [],

@@ -32,8 +32,8 @@ export function ConversationPane({
   onApprove,
   onDeny,
   onAnswer,
-  onCopyMessage: _onCopyMessage,
-  onRetryMessage: _onRetryMessage,
+  onCopyMessage,
+  onRetryMessage,
   onApprovePlan,
   onComposerChange,
   onComposerSubmit,
@@ -64,6 +64,8 @@ export function ConversationPane({
           onApprove={onApprove}
           onDeny={onDeny}
           onAnswer={onAnswer}
+          onCopyMessage={onCopyMessage}
+          onRetryMessage={onRetryMessage}
         />
       )}
       {activeRunId ? (

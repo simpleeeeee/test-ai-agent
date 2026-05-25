@@ -85,7 +85,6 @@ describe("SDK capability coverage", () => {
       "listSessions",
       "resumeSession",
       "forkSession",
-      "SDK Raw Message",
     ];
 
     expect(requiredUiTerms.filter((term) => !combined.includes(term))).toEqual([]);

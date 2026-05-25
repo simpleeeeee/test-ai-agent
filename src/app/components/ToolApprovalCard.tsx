@@ -1,3 +1,4 @@
+import { ChevronDown, ChevronUp, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import type { ApprovalRequest } from "../sdkUiTypes";
 
@@ -7,46 +8,76 @@ type Props = {
   onDeny: (runId: string, requestId: string, message: string) => void;
 };
 
-export function ToolApprovalCard({ request, onApprove, onDeny }: Props) {
-  const [inputText, setInputText] = useState("");
-  const [applySuggestions, setApplySuggestions] = useState(false);
-  const [parseError, setParseError] = useState("");
+function inputSummary(request: ApprovalRequest) {
+  const summary = request.toolCall.inputSummary?.trim();
+  if (summary) {
+    return `工具：${request.toolCall.toolName}\n${summary}`;
+  }
+  return `工具：${request.toolCall.toolName}\n操作：等待工具输入摘要`;
+}
 
-  function parseInput() {
-    if (!inputText.trim()) return undefined;
-    try {
-      setParseError("");
-      return JSON.parse(inputText) as Record<string, unknown>;
-    } catch {
-      setParseError("JSON 格式无效");
-      return undefined;
-    }
+function approvalReason(request: ApprovalRequest) {
+  return request.toolCall.approvalReason?.trim() || `${request.toolCall.label} 请求执行工具调用。`;
+}
+
+export function ToolApprovalCard({ request, onApprove, onDeny }: Props) {
+  const [expanded, setExpanded] = useState(false);
+  const [denyReason, setDenyReason] = useState("");
+  const [decision, setDecision] = useState<"pending" | "allow-once" | "allow-session" | "denied">("pending");
+  const disabled = decision !== "pending";
+
+  function approve(applyPermissionSuggestions: boolean) {
+    onApprove(request.runId, request.requestId, {
+      updatedInput: undefined,
+      applyPermissionSuggestions,
+    });
+    setDecision(applyPermissionSuggestions ? "allow-session" : "allow-once");
   }
 
+  function deny() {
+    const message = denyReason.trim() || "用户拒绝了此次工具调用";
+    onDeny(request.runId, request.requestId, message);
+    setDecision("denied");
+  }
+
+  const statusLabel = decision === "allow-once"
+    ? "已允许一次"
+    : decision === "allow-session"
+      ? "已在本会话允许"
+      : decision === "denied"
+        ? "已拒绝"
+        : "等待审核";
+
   return (
-    <section className="sdk-card approval-card" aria-label="工具授权请求">
-      <div>
-        <h3>{request.toolCall.label}</h3>
-        <p className="mono">{request.toolCall.toolName}</p>
-        {request.toolCall.approvalReason ? <p>{request.toolCall.approvalReason}</p> : null}
+    <section className={disabled ? "message review-card completed" : "message review-card"} aria-label="需要审核工具调用">
+      <div className="review-head">
+        <div className="review-icon" aria-hidden="true">
+          <ShieldCheck size={17} />
+        </div>
+        <div className="review-copy">
+          <strong>AI 测试助手想使用{request.toolCall.label}</strong>
+          <span>需要你审核后才能继续执行</span>
+        </div>
+        <span className="review-status">{statusLabel}</span>
       </div>
-      <label>
-        调整后的工具输入
-        <textarea value={inputText} onChange={(event) => setInputText(event.currentTarget.value)} />
-        {parseError ? <span className="sdk-error">{parseError}</span> : null}
+      <p className="review-summary">{approvalReason(request)}</p>
+      <pre className="review-code">{inputSummary(request)}</pre>
+      <p className="review-impact">影响范围：会访问当前测试环境页面，并把结果写入本次会话证据。</p>
+      <button className="review-detail" type="button" onClick={() => setExpanded((value) => !value)}>
+        {expanded ? "收起详情" : "查看详情"}
+        {expanded ? <ChevronUp aria-hidden="true" size={13} /> : <ChevronDown aria-hidden="true" size={13} />}
+      </button>
+      {expanded ? (
+        <pre className="review-code" aria-label="原始工具输入">{JSON.stringify(request.toolCall, null, 2)}</pre>
+      ) : null}
+      <label className="deny-reason">
+        拒绝原因
+        <input value={denyReason} onChange={(event) => setDenyReason(event.currentTarget.value)} disabled={disabled} />
       </label>
-      <label className="checkbox-line">
-        <input type="checkbox" checked={applySuggestions} onChange={(event) => setApplySuggestions(event.currentTarget.checked)} />
-        应用 SDK 权限建议
-      </label>
-      <div className="action-row">
-        <button type="button" onClick={() => onApprove(request.runId, request.requestId, {
-          updatedInput: parseInput(),
-          applyPermissionSuggestions: applySuggestions,
-        })}>
-          允许并继续
-        </button>
-        <button type="button" onClick={() => onDeny(request.runId, request.requestId, "用户拒绝了工具调用")}>拒绝</button>
+      <div className="review-actions">
+        <button className="review-button primary" type="button" onClick={() => approve(false)} disabled={disabled}>允许一次</button>
+        <button className="review-button session" type="button" onClick={() => approve(true)} disabled={disabled}>本会话允许</button>
+        <button className="review-button deny" type="button" onClick={deny} disabled={disabled}>拒绝</button>
       </div>
     </section>
   );
