@@ -47,13 +47,31 @@ describe("sdkSettings", () => {
     });
   });
 
-  it("returns empty UI values when settings.json does not exist", () => {
+  it("returns empty UI values when neither settings file exists (no .claude directory)", () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-settings-"));
 
     expect(loadClaudeCodeSettings({ cwd })).toEqual({
       baseUrl: "",
       apiKey: "",
       model: "",
+    });
+  });
+
+  it("reads from settings.local.json when settings.json does not exist", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-settings-"));
+    fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
+    fs.writeFileSync(settingsLocalPathForCwd(cwd), JSON.stringify({
+      env: {
+        ANTHROPIC_BASE_URL: "https://local-only.example.com",
+        ANTHROPIC_AUTH_TOKEN: "local-only-token",
+        ANTHROPIC_MODEL: "local-only-model",
+      },
+    }, null, 2));
+
+    expect(loadClaudeCodeSettings({ cwd })).toEqual({
+      baseUrl: "https://local-only.example.com",
+      apiKey: "local-only-token",
+      model: "local-only-model",
     });
   });
 
