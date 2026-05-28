@@ -5,7 +5,6 @@ import { loadClaudeCodeSettings } from "./sdkSettings.js";
 export type AgentRuntimeConfig = {
   cwd: string;
   sdkOptions: Record<string, unknown>;
-  sanitizedEnv: Record<string, string>;
 };
 
 const forbiddenAnthropicEnv = new Set([
@@ -55,9 +54,7 @@ function assertThirdPartyBaseUrl(baseUrl: string) {
 
 export function loadAgentRuntimeConfig(input: {
   cwd: string;
-  env?: NodeJS.ProcessEnv;
 }): AgentRuntimeConfig {
-  const env = input.env ?? process.env;
   const settings = loadClaudeCodeSettings({ cwd: input.cwd });
   const baseUrl = settings.baseUrl.trim();
   const authToken = settings.apiKey.trim();
@@ -80,12 +77,10 @@ export function loadAgentRuntimeConfig(input: {
   }
   assertThirdPartyBaseUrl(baseUrl);
 
-  const sanitizedEnv = sanitizeProcessEnv(env);
   const pathToClaudeCodeExecutable = pathToClaudeCodeExecutableForCwd(input.cwd);
 
   return {
     cwd: input.cwd,
-    sanitizedEnv,
     sdkOptions: {
       cwd: input.cwd,
       ...(pathToClaudeCodeExecutable ? { pathToClaudeCodeExecutable } : {}),

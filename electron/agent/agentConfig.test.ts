@@ -47,12 +47,7 @@ describe("loadAgentRuntimeConfig", () => {
       },
     }, null, 2));
 
-    const config = loadAgentRuntimeConfig({
-      cwd,
-      env: {
-        PATH: "C:/bin",
-      },
-    });
+    const config = loadAgentRuntimeConfig({ cwd });
 
     expect(config.sdkOptions).toEqual(expect.objectContaining({
       cwd,
@@ -66,7 +61,7 @@ describe("loadAgentRuntimeConfig", () => {
   it("fails fast when required env fields are missing from both settings files", () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
 
-    expect(() => loadAgentRuntimeConfig({ cwd, env: {} }))
+    expect(() => loadAgentRuntimeConfig({ cwd }))
       .toThrow(/\.claude\/settings\.json.*\.claude\/settings\.local\.json/);
   });
 
@@ -83,7 +78,6 @@ describe("loadAgentRuntimeConfig", () => {
 
     expect(() => loadAgentRuntimeConfig({
       cwd,
-      env: {},
     })).toThrow("Official Anthropic endpoints are not allowed");
   });
 });
