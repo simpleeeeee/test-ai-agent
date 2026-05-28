@@ -203,14 +203,14 @@ describe("electron main IPC registration", () => {
 
   it("emits sdk:error when creating a run fails before streaming starts", async () => {
     await import("./main.js");
-    sessionManager.startRun.mockRejectedValueOnce(new Error("AI_TEST_LLM_BASE_URL is required"));
+    sessionManager.startRun.mockRejectedValueOnce(new Error(".claude/settings.json or .claude/settings.local.json is required: env.ANTHROPIC_BASE_URL is missing"));
     const [, handler] = on.mock.calls.find(([channel]) => channel === "run:create")!;
 
     handler({}, { prompt: "测试订单模块功能" });
     await Promise.resolve();
 
     expect(send).toHaveBeenCalledWith("sdk:error", expect.objectContaining({
-      message: "AI_TEST_LLM_BASE_URL is required",
+      message: ".claude/settings.json or .claude/settings.local.json is required: env.ANTHROPIC_BASE_URL is missing",
       retryable: true,
     }));
   });

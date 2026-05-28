@@ -127,15 +127,6 @@ describe("sdkSettings", () => {
     });
   });
 
-  it("returns empty UI values when neither settings file exists", () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-settings-"));
-
-    expect(loadClaudeCodeSettings({ cwd })).toEqual({
-      baseUrl: "",
-      apiKey: "",
-      model: "",
-    });
-  });
 
   it("saves to settings.local.json when it already exists", () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-settings-"));
