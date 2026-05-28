@@ -13,8 +13,6 @@ export type SettingsFormValues = {
   model: string;
 };
 
-export const CLAUDE_SETTINGS_SCHEMA = "https://json.schemastore.org/claude-code-settings.json";
-
 export function settingsPathForCwd(cwd: string) {
   return path.join(cwd, ".claude", "settings.json");
 }
@@ -65,12 +63,19 @@ export function ensureClaudeCodeSettings({ cwd }: { cwd: string }) {
 }
 
 export function saveClaudeCodeSettings(input: SettingsFormValues & { cwd: string }): NativeClaudeCodeSettings {
-  const settingsPath = settingsPathForCwd(input.cwd);
-  const existing = readNativeSettings(settingsPath);
-  const { model: _legacyModel, ...existingWithoutLegacyModel } = existing;
+  const localPath = settingsLocalPathForCwd(input.cwd);
+  const sharedPath = settingsPathForCwd(input.cwd);
+
+  let targetPath: string;
+  if (fs.existsSync(localPath)) {
+    targetPath = localPath;
+  } else {
+    targetPath = sharedPath;
+  }
+
+  const existing = readNativeSettings(targetPath);
   const settings: NativeClaudeCodeSettings = {
-    ...existingWithoutLegacyModel,
-    $schema: CLAUDE_SETTINGS_SCHEMA,
+    ...existing,
     env: {
       ...(existing.env ?? {}),
       ANTHROPIC_BASE_URL: input.baseUrl.trim(),
@@ -79,7 +84,7 @@ export function saveClaudeCodeSettings(input: SettingsFormValues & { cwd: string
     },
   };
 
-  fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
-  fs.writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`, "utf8");
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  fs.writeFileSync(targetPath, `${JSON.stringify(settings, null, 2)}\n`, "utf8");
   return settings;
 }
