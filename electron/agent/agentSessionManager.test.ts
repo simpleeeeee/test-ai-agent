@@ -37,6 +37,23 @@ describe("AgentSessionManager", () => {
     }));
   });
 
+  it("loads SDK settings from the configured app directory instead of process cwd", async () => {
+    async function* messages() {
+      yield { type: "result", subtype: "success", session_id: "session-1" };
+    }
+    const loadConfig = vi.fn(() => ({ sdkOptions: { cwd: "D:/app" } }));
+    const manager = new AgentSessionManager({
+      adapter: { start: vi.fn(() => ({ messages: messages(), close: vi.fn() })) } as any,
+      loadConfig,
+      emit: vi.fn(),
+      cwd: "D:/app",
+    });
+
+    await manager.startRun("run-1", "测试订单模块功能");
+
+    expect(loadConfig).toHaveBeenCalledWith({ cwd: "D:/app" });
+  });
+
   it("streams approved plan continuation into the active SDK session", async () => {
     async function* messages() {
       yield { type: "result", subtype: "success", session_id: "session-1" };
@@ -56,6 +73,56 @@ describe("AgentSessionManager", () => {
       type: "user",
       message: { role: "user", content: "用户已确认计划，开始执行。" },
     });
+  });
+
+  it("uses stable message.id from message_start for all deltas in the same turn", async () => {
+    async function* messages() {
+      yield {
+        type: "stream_event",
+        uuid: "uuid-1",
+        event: { type: "message_start", message: { id: "msg_stable_abc" } },
+      };
+      yield {
+        type: "stream_event",
+        uuid: "uuid-2",
+        event: { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "你" } },
+      };
+      yield {
+        type: "stream_event",
+        uuid: "uuid-3",
+        event: { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "好" } },
+      };
+      yield {
+        type: "stream_event",
+        uuid: "uuid-4",
+        event: { type: "message_stop" },
+      };
+      yield { type: "result", subtype: "success" };
+    }
+    const emit = vi.fn();
+    const adapter = { start: vi.fn(() => ({ messages: messages(), close: vi.fn() })) };
+    const manager = new AgentSessionManager({
+      adapter: adapter as any,
+      loadConfig: () => ({ sdkOptions: {} }),
+      emit,
+    });
+
+    await manager.startRun("run-1", "测试");
+
+    expect(emit).toHaveBeenCalledWith("assistant:text-delta", expect.objectContaining({
+      runId: "run-1",
+      messageId: "msg_stable_abc",
+      delta: "你",
+    }));
+    expect(emit).toHaveBeenCalledWith("assistant:text-delta", expect.objectContaining({
+      runId: "run-1",
+      messageId: "msg_stable_abc",
+      delta: "好",
+    }));
+    expect(emit).toHaveBeenCalledWith("assistant:message-completed", expect.objectContaining({
+      runId: "run-1",
+      messageId: "msg_stable_abc",
+    }));
   });
 
   it("forwards model, permission, MCP, task, and support query controls", async () => {

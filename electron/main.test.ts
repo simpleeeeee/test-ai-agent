@@ -11,12 +11,16 @@ const close = vi.fn();
 const isMaximized = vi.fn(() => false);
 const browserWindowOptions: unknown[] = [];
 const focusedWindow = { minimize, maximize, unmaximize, close, isMaximized };
+const appExePath = "D:\\pythonProject\\test ai agent\\release\\win-unpacked\\AI 测试助手.exe";
+const appDir = "D:\\pythonProject\\test ai agent\\release\\win-unpacked";
 
 vi.mock("electron", () => ({
   app: {
     whenReady: vi.fn(() => Promise.resolve()),
     on: vi.fn(),
     quit: vi.fn(),
+    isPackaged: true,
+    getPath: vi.fn((name: string) => name === "exe" ? appExePath : ""),
   },
   BrowserWindow: Object.assign(
     vi.fn(function BrowserWindow(options: unknown) {
@@ -72,14 +76,56 @@ const sessionManager = {
   deleteSession: vi.fn(),
 };
 
+const createBackendRuntime = vi.fn(() => ({
+  sessionManager,
+  emit: vi.fn(),
+}));
+
 vi.mock("./agent/backendRuntime.js", () => ({
-  createBackendRuntime: vi.fn(() => ({
-    sessionManager,
-    emit: vi.fn(),
-  })),
+  createBackendRuntime,
+}));
+
+const ensureClaudeCodeSettings = vi.fn();
+const loadClaudeCodeSettings = vi.fn(() => ({
+  baseUrl: "",
+  apiKey: "",
+  model: "",
+}));
+const saveClaudeCodeSettings = vi.fn();
+
+vi.mock("./agent/sdkSettings.js", () => ({
+  ensureClaudeCodeSettings,
+  loadClaudeCodeSettings,
+  saveClaudeCodeSettings,
 }));
 
 describe("electron main IPC registration", () => {
+  it("creates Claude SDK settings in the packaged app directory on startup", async () => {
+    await import("./main.js");
+
+    expect(ensureClaudeCodeSettings).toHaveBeenCalledWith({ cwd: appDir });
+    expect(createBackendRuntime).toHaveBeenCalledWith(expect.objectContaining({ cwd: appDir }));
+  });
+
+  it("uses the packaged app directory for settings handlers", async () => {
+    await import("./main.js");
+    const [, saveHandler] = handle.mock.calls.find(([channel]) => channel === "settings:save")!;
+
+    saveHandler({}, {
+      baseUrl: "https://gateway.example.com/anthropic",
+      apiKey: "plain-text-key",
+      model: "claude-compatible-model",
+    });
+
+    expect(saveClaudeCodeSettings).toHaveBeenCalledWith({
+      cwd: appDir,
+      baseUrl: "https://gateway.example.com/anthropic",
+      apiKey: "plain-text-key",
+      model: "claude-compatible-model",
+    });
+    expect(loadClaudeCodeSettings).toHaveBeenCalledWith({ cwd: appDir });
+  });
+
   it("registers supported invoke handlers", async () => {
     await import("./main.js");
 
@@ -106,6 +152,8 @@ describe("electron main IPC registration", () => {
       "sdk:supported-agents",
       "sdk:supported-commands",
       "sdk:supported-models",
+      "settings:get",
+      "settings:save",
       "task:stop",
     ]);
   });
@@ -151,5 +199,19 @@ describe("electron main IPC registration", () => {
     expect(onChannels).toContain("window:minimize");
     expect(onChannels).toContain("window:toggle-maximize");
     expect(onChannels).toContain("window:close");
+  });
+
+  it("emits sdk:error when creating a run fails before streaming starts", async () => {
+    await import("./main.js");
+    sessionManager.startRun.mockRejectedValueOnce(new Error("AI_TEST_LLM_BASE_URL is required"));
+    const [, handler] = on.mock.calls.find(([channel]) => channel === "run:create")!;
+
+    handler({}, { prompt: "测试订单模块功能" });
+    await Promise.resolve();
+
+    expect(send).toHaveBeenCalledWith("sdk:error", expect.objectContaining({
+      message: "AI_TEST_LLM_BASE_URL is required",
+      retryable: true,
+    }));
   });
 });
