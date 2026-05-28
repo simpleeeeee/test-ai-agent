@@ -1,16 +1,9 @@
-import { z } from "zod";
-
-export type ThirdPartyAnthropicGatewayConfig = {
-  baseUrl: string;
-  authToken: string;
-  model?: string;
-  customHeaders: Record<string, string>;
-  enableModelDiscovery: boolean;
-};
+import fs from "node:fs";
+import path from "node:path";
+import { loadClaudeCodeSettings } from "./sdkSettings.js";
 
 export type AgentRuntimeConfig = {
   cwd: string;
-  gateway: ThirdPartyAnthropicGatewayConfig;
   sdkOptions: Record<string, unknown>;
   sanitizedEnv: Record<string, string>;
 };
@@ -20,9 +13,26 @@ const forbiddenAnthropicEnv = new Set([
   "ANTHROPIC_AUTH_TOKEN",
   "ANTHROPIC_BASE_URL",
   "ANTHROPIC_CUSTOM_HEADERS",
+  "ANTHROPIC_MODEL",
 ]);
 
-const headersSchema = z.record(z.string(), z.string());
+function claudeNativePackageName(platform = process.platform, arch = process.arch) {
+  return `claude-agent-sdk-${platform}-${arch}`;
+}
+
+function claudeNativeBinaryName(platform = process.platform) {
+  return platform === "win32" ? "claude.exe" : "claude";
+}
+
+export function pathToClaudeCodeExecutableForCwd(cwd: string) {
+  const packageName = claudeNativePackageName();
+  const binaryName = claudeNativeBinaryName();
+  const candidates = [
+    path.join(cwd, "resources", "app.asar.unpacked", "node_modules", "@anthropic-ai", packageName, binaryName),
+    path.join(cwd, "node_modules", "@anthropic-ai", packageName, binaryName),
+  ];
+  return candidates.find((candidate) => fs.existsSync(candidate));
+}
 
 export function sanitizeProcessEnv(env: NodeJS.ProcessEnv): Record<string, string> {
   const sanitized: Record<string, string> = {};
@@ -33,13 +43,6 @@ export function sanitizeProcessEnv(env: NodeJS.ProcessEnv): Record<string, strin
     sanitized[key] = value;
   }
   return sanitized;
-}
-
-function parseHeaders(raw: string | undefined): Record<string, string> {
-  if (!raw) {
-    return {};
-  }
-  return headersSchema.parse(JSON.parse(raw));
 }
 
 function assertThirdPartyBaseUrl(baseUrl: string) {
@@ -55,42 +58,37 @@ export function loadAgentRuntimeConfig(input: {
   env?: NodeJS.ProcessEnv;
 }): AgentRuntimeConfig {
   const env = input.env ?? process.env;
-  const baseUrl = env.AI_TEST_LLM_BASE_URL?.trim();
-  const authToken = env.AI_TEST_LLM_AUTH_TOKEN?.trim();
+  const settings = loadClaudeCodeSettings({ cwd: input.cwd });
+  const baseUrl = settings.baseUrl.trim();
+  const authToken = settings.apiKey.trim();
+  const model = settings.model.trim();
 
   if (!baseUrl) {
-    throw new Error("AI_TEST_LLM_BASE_URL is required");
+    throw new Error(
+      ".claude/settings.json or .claude/settings.local.json is required: env.ANTHROPIC_BASE_URL is missing",
+    );
   }
   if (!authToken) {
-    throw new Error("AI_TEST_LLM_AUTH_TOKEN is required");
+    throw new Error(
+      ".claude/settings.json or .claude/settings.local.json is required: env.ANTHROPIC_AUTH_TOKEN is missing",
+    );
+  }
+  if (!model) {
+    throw new Error(
+      ".claude/settings.json or .claude/settings.local.json is required: env.ANTHROPIC_MODEL is missing",
+    );
   }
   assertThirdPartyBaseUrl(baseUrl);
 
-  const customHeaders = parseHeaders(env.AI_TEST_LLM_CUSTOM_HEADERS_JSON);
-  const enableModelDiscovery = env.AI_TEST_LLM_ENABLE_MODEL_DISCOVERY === "1";
-  const model = env.AI_TEST_LLM_MODEL?.trim() || undefined;
-  const sanitizedEnv = {
-    ...sanitizeProcessEnv(env),
-    ANTHROPIC_BASE_URL: baseUrl,
-    ANTHROPIC_AUTH_TOKEN: authToken,
-    ANTHROPIC_CUSTOM_HEADERS: JSON.stringify(customHeaders),
-    CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY: enableModelDiscovery ? "1" : "0",
-  };
+  const sanitizedEnv = sanitizeProcessEnv(env);
+  const pathToClaudeCodeExecutable = pathToClaudeCodeExecutableForCwd(input.cwd);
 
   return {
     cwd: input.cwd,
-    gateway: {
-      baseUrl,
-      authToken,
-      model,
-      customHeaders,
-      enableModelDiscovery,
-    },
     sanitizedEnv,
     sdkOptions: {
       cwd: input.cwd,
-      model,
-      env: sanitizedEnv,
+      ...(pathToClaudeCodeExecutable ? { pathToClaudeCodeExecutable } : {}),
       includePartialMessages: true,
       permissionMode: "default",
     },

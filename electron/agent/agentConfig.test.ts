@@ -1,5 +1,9 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { loadAgentRuntimeConfig, sanitizeProcessEnv } from "./agentConfig.js";
+import { settingsPathForCwd } from "./sdkSettings.js";
 
 describe("sanitizeProcessEnv", () => {
   it("removes official Anthropic environment variables before SDK launch", () => {
@@ -10,6 +14,7 @@ describe("sanitizeProcessEnv", () => {
       ANTHROPIC_AUTH_TOKEN: "old-token",
       ANTHROPIC_BASE_URL: "https://api.anthropic.com",
       ANTHROPIC_CUSTOM_HEADERS: "x-secret=1",
+      ANTHROPIC_MODEL: "external-model",
     });
 
     expect(env).toEqual({
@@ -20,45 +25,65 @@ describe("sanitizeProcessEnv", () => {
 });
 
 describe("loadAgentRuntimeConfig", () => {
-  it("builds SDK env from third-party gateway variables", () => {
+  it("uses app base directory as cwd and does not force settings path", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
+    fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
+    const unpackedClaudeExe = path.join(
+      cwd,
+      "resources",
+      "app.asar.unpacked",
+      "node_modules",
+      "@anthropic-ai",
+      "claude-agent-sdk-win32-x64",
+      "claude.exe",
+    );
+    fs.mkdirSync(path.dirname(unpackedClaudeExe), { recursive: true });
+    fs.writeFileSync(unpackedClaudeExe, "");
+    fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
+      env: {
+        ANTHROPIC_BASE_URL: "https://gateway.example.com/anthropic",
+        ANTHROPIC_AUTH_TOKEN: "third-party-token",
+        ANTHROPIC_MODEL: "claude-compatible-test-model",
+      },
+    }, null, 2));
+
     const config = loadAgentRuntimeConfig({
-      cwd: "D:/pythonProject/test ai agent",
+      cwd,
       env: {
         PATH: "C:/bin",
-        AI_TEST_LLM_BASE_URL: "https://gateway.example.com/anthropic",
-        AI_TEST_LLM_AUTH_TOKEN: "third-party-token",
-        AI_TEST_LLM_MODEL: "claude-compatible-test-model",
-        AI_TEST_LLM_CUSTOM_HEADERS_JSON: "{\"x-tenant\":\"qa\"}",
-        AI_TEST_LLM_ENABLE_MODEL_DISCOVERY: "1",
       },
     });
 
-    expect(config.gateway).toEqual({
-      baseUrl: "https://gateway.example.com/anthropic",
-      authToken: "third-party-token",
-      model: "claude-compatible-test-model",
-      customHeaders: { "x-tenant": "qa" },
-      enableModelDiscovery: true,
-    });
-    expect(config.sanitizedEnv.ANTHROPIC_BASE_URL).toBe("https://gateway.example.com/anthropic");
-    expect(config.sanitizedEnv.ANTHROPIC_AUTH_TOKEN).toBe("third-party-token");
-    expect(config.sanitizedEnv.ANTHROPIC_CUSTOM_HEADERS).toBe("{\"x-tenant\":\"qa\"}");
-    expect(config.sanitizedEnv.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY).toBe("1");
-    expect(config.sdkOptions.model).toBe("claude-compatible-test-model");
+    expect(config.sdkOptions).toEqual(expect.objectContaining({
+      cwd,
+      includePartialMessages: true,
+      permissionMode: "default",
+    }));
+    expect(config.sdkOptions).not.toHaveProperty("settings");
+    expect(config.sdkOptions).not.toHaveProperty("model");
   });
 
-  it("fails fast when no third-party gateway base URL is configured", () => {
-    expect(() => loadAgentRuntimeConfig({ cwd: "D:/repo", env: { AI_TEST_LLM_AUTH_TOKEN: "token" } }))
-      .toThrow("AI_TEST_LLM_BASE_URL is required");
+  it("fails fast when required env fields are missing from both settings files", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
+
+    expect(() => loadAgentRuntimeConfig({ cwd, env: {} }))
+      .toThrow(/\.claude\/settings\.json.*\.claude\/settings\.local\.json/);
   });
 
   it("rejects official Anthropic endpoints", () => {
-    expect(() => loadAgentRuntimeConfig({
-      cwd: "D:/repo",
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
+    fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
+    fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
       env: {
-        AI_TEST_LLM_BASE_URL: "https://api.anthropic.com",
-        AI_TEST_LLM_AUTH_TOKEN: "token",
+        ANTHROPIC_BASE_URL: "https://api.anthropic.com",
+        ANTHROPIC_AUTH_TOKEN: "token",
+        ANTHROPIC_MODEL: "claude-compatible-test-model",
       },
+    }, null, 2));
+
+    expect(() => loadAgentRuntimeConfig({
+      cwd,
+      env: {},
     })).toThrow("Official Anthropic endpoints are not allowed");
   });
 });
