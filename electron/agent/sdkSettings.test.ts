@@ -86,6 +86,39 @@ describe("sdkSettings", () => {
     expect(fs.existsSync(settingsPathForCwd(cwd))).toBe(false);
   });
 
+  it("merges settings.local.json over settings.json for UI fields", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-settings-"));
+    fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
+    fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
+      env: {
+        ANTHROPIC_BASE_URL: "https://shared.example.com",
+        ANTHROPIC_AUTH_TOKEN: "shared-token",
+        ANTHROPIC_MODEL: "shared-model",
+      },
+    }, null, 2));
+    fs.writeFileSync(settingsLocalPathForCwd(cwd), JSON.stringify({
+      env: {
+        ANTHROPIC_MODEL: "local-model",
+      },
+    }, null, 2));
+
+    expect(loadClaudeCodeSettings({ cwd })).toEqual({
+      baseUrl: "https://shared.example.com",
+      apiKey: "shared-token",
+      model: "local-model",
+    });
+  });
+
+  it("returns empty UI values when neither settings file exists", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-settings-"));
+
+    expect(loadClaudeCodeSettings({ cwd })).toEqual({
+      baseUrl: "",
+      apiKey: "",
+      model: "",
+    });
+  });
+
   it("does not overwrite an existing native settings file on startup", () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-settings-"));
     fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });

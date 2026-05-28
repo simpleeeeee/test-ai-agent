@@ -45,11 +45,12 @@ function stringValue(value: unknown) {
 }
 
 export function loadClaudeCodeSettings({ cwd }: { cwd: string }): SettingsFormValues {
-  const settings = readNativeSettings(settingsPathForCwd(cwd));
+  const shared = readNativeSettings(settingsPathForCwd(cwd));
+  const local = readNativeSettings(settingsLocalPathForCwd(cwd));
   return {
-    baseUrl: stringValue(settings.env?.ANTHROPIC_BASE_URL),
-    apiKey: stringValue(settings.env?.ANTHROPIC_AUTH_TOKEN),
-    model: stringValue(settings.env?.ANTHROPIC_MODEL),
+    baseUrl: stringValue(local.env?.ANTHROPIC_BASE_URL ?? shared.env?.ANTHROPIC_BASE_URL),
+    apiKey: stringValue(local.env?.ANTHROPIC_AUTH_TOKEN ?? shared.env?.ANTHROPIC_AUTH_TOKEN),
+    model: stringValue(local.env?.ANTHROPIC_MODEL ?? shared.env?.ANTHROPIC_MODEL),
   };
 }
 
