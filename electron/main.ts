@@ -9,6 +9,8 @@ import {
 } from "../src/ipc/channels.js";
 import { parseRendererToMainPayload } from "../src/ipc/payloadSchemas.js";
 import { createBackendRuntime } from "./agent/backendRuntime.js";
+import { resolveClaudeConfigDir } from "./agent/claudeConfigDir.js";
+import { ensureClaudeCodeSettings, loadClaudeCodeSettings, saveClaudeCodeSettings } from "./agent/sdkSettings.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -20,8 +22,32 @@ function sendToRenderer(window: BrowserWindow, channel: MainToRendererChannel, p
   window.webContents.send(channel, payload);
 }
 
-function registerBackendIpc(window: BrowserWindow) {
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function runIdFromPayload(payload: unknown) {
+  return payload && typeof payload === "object" && "runId" in payload && typeof payload.runId === "string"
+    ? payload.runId
+    : undefined;
+}
+
+function sendIpcError(window: BrowserWindow, error: unknown, payload?: unknown) {
+  sendToRenderer(window, "sdk:error", {
+    runId: runIdFromPayload(payload),
+    message: errorMessage(error),
+    retryable: true,
+  });
+}
+
+function appBaseDirectory() {
+  return app.isPackaged ? path.dirname(app.getPath("exe")) : process.cwd();
+}
+
+function registerBackendIpc(window: BrowserWindow, cwd: string, configDir: string | null) {
   const runtime = createBackendRuntime({
+    cwd,
+    configDir,
     send: (channel, payload) => sendToRenderer(window, channel, payload),
   });
   const manager = runtime.sessionManager;
@@ -31,8 +57,17 @@ function registerBackendIpc(window: BrowserWindow) {
     handler: (payload: any) => void | Promise<void>,
   ) => {
     ipcMain.on(channel, (_event, payload) => {
-      const parsed = parseRendererToMainPayload(channel, payload);
-      void handler(parsed);
+      let parsed: unknown;
+      try {
+        parsed = parseRendererToMainPayload(channel, payload);
+      } catch (error) {
+        sendIpcError(window, error, payload);
+        return;
+      }
+
+      void Promise.resolve(handler(parsed)).catch((error) => {
+        sendIpcError(window, error, parsed);
+      });
     });
   };
 
@@ -67,15 +102,42 @@ function registerBackendIpc(window: BrowserWindow) {
   handleRequest("sdk:supported-agents", ({ runId }) => manager.supportedAgents(runId));
   handleRequest("sdk:account-info", ({ runId }) => manager.accountInfo(runId));
   handleRequest("sdk:initialization-result", ({ runId }) => manager.initializationResult(runId));
+  handleRequest("settings:get", () => loadClaudeCodeSettings({ cwd }));
+  handleRequest("settings:save", ({ baseUrl, apiKey, model }) => {
+    saveClaudeCodeSettings({ cwd, baseUrl, apiKey, model });
+    return loadClaudeCodeSettings({ cwd });
+  });
   handleRequest("task:stop", ({ runId, taskId }) => manager.stopTask(runId, taskId));
-  handleRequest("run:list-sessions", () => manager.listSessions());
-  handleRequest("run:get-session", ({ sessionId }) => manager.getSession(sessionId));
-  handleRequest("run:resume", ({ runId, sessionId }) => manager.resumeSession(runId, sessionId));
-  handleRequest("run:fork", ({ runId, sessionId }) => manager.forkSession(runId, sessionId));
-  handleRequest("run:continue", ({ runId }) => manager.continueRun(runId));
-  handleRequest("run:rename-session", ({ sessionId, title }) => manager.renameSession(sessionId, title));
-  handleRequest("run:tag-session", ({ sessionId, tag }) => manager.tagSession(sessionId, tag));
-  handleRequest("run:delete-session", ({ sessionId }) => manager.deleteSession(sessionId));
+  handleRequest("run:list-sessions", () =>
+    manager.listSessions().catch((e) => {
+      console.error("listSessions failed:", e);
+      return [];
+    })
+  );
+  handleRequest("run:get-session", ({ sessionId }) =>
+    manager.getSession(sessionId).catch((e) => {
+      console.error("getSession failed:", e);
+      return null;
+    })
+  );
+  handleRequest("run:resume", ({ runId, sessionId }) =>
+    manager.resumeSession(runId, sessionId).catch((e) => ({ error: errorMessage(e), code: "SDK_ERROR" }))
+  );
+  handleRequest("run:fork", ({ runId, sessionId }) =>
+    manager.forkSession(runId, sessionId).catch((e) => ({ error: errorMessage(e), code: "SDK_ERROR" }))
+  );
+  handleRequest("run:continue", ({ runId }) =>
+    manager.continueRun(runId).catch((e) => ({ error: errorMessage(e), code: "SDK_ERROR" }))
+  );
+  handleRequest("run:rename-session", ({ sessionId, title }) =>
+    manager.renameSession(sessionId, title).catch((e) => ({ error: errorMessage(e), code: "SDK_ERROR" }))
+  );
+  handleRequest("run:tag-session", ({ sessionId, tag }) =>
+    manager.tagSession(sessionId, tag).catch((e) => ({ error: errorMessage(e), code: "SDK_ERROR" }))
+  );
+  handleRequest("run:delete-session", ({ sessionId }) =>
+    manager.deleteSession(sessionId).catch((e) => ({ error: errorMessage(e), code: "SDK_ERROR" }))
+  );
 }
 
 function focusedWindow() {
@@ -105,6 +167,9 @@ function registerWindowControlIpc() {
 async function createWindow() {
   Menu.setApplicationMenu(null);
   registerWindowControlIpc();
+  const cwd = appBaseDirectory();
+  const configDir = resolveClaudeConfigDir({ appDir: cwd, isPackaged: app.isPackaged });
+  ensureClaudeCodeSettings({ cwd });
 
   const window = new BrowserWindow({
     width: 1280,
@@ -120,7 +185,7 @@ async function createWindow() {
     },
   });
 
-  registerBackendIpc(window);
+  registerBackendIpc(window, cwd, configDir);
 
   if (process.env.VITE_DEV_SERVER_URL) {
     await window.loadURL(process.env.VITE_DEV_SERVER_URL);
@@ -143,4 +208,4 @@ app.on("activate", () => {
   }
 });
 
-export { registerBackendIpc, sendToRenderer };
+export { appBaseDirectory, registerBackendIpc, sendToRenderer };

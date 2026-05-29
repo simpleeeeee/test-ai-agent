@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const handle = vi.fn();
 const on = vi.fn();
@@ -85,6 +85,14 @@ vi.mock("./agent/backendRuntime.js", () => ({
   createBackendRuntime,
 }));
 
+const resolveClaudeConfigDir = vi.fn(({ appDir, isPackaged }: { appDir: string; isPackaged: boolean }) => {
+  return isPackaged ? `${appDir}/.claude` : null;
+});
+
+vi.mock("./agent/claudeConfigDir.js", () => ({
+  resolveClaudeConfigDir,
+}));
+
 const ensureClaudeCodeSettings = vi.fn();
 const loadClaudeCodeSettings = vi.fn(() => ({
   baseUrl: "",
@@ -100,15 +108,39 @@ vi.mock("./agent/sdkSettings.js", () => ({
 }));
 
 describe("electron main IPC registration", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    handle.mockClear();
+    on.mockClear();
+    send.mockClear();
+    setApplicationMenu.mockClear();
+    sessionManager.startRun.mockClear();
+    createBackendRuntime.mockClear();
+    ensureClaudeCodeSettings.mockClear();
+    loadClaudeCodeSettings.mockClear();
+    saveClaudeCodeSettings.mockClear();
+  });
+
+  async function flushMicrotasks() {
+    // Give the event loop time to process app.whenReady().then(createWindow).
+    // Multiple ticks may be needed because createWindow() is async (it awaits loadURL/loadFile).
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+  }
+
   it("creates Claude SDK settings in the packaged app directory on startup", async () => {
     await import("./main.js");
+    await flushMicrotasks();
 
     expect(ensureClaudeCodeSettings).toHaveBeenCalledWith({ cwd: appDir });
-    expect(createBackendRuntime).toHaveBeenCalledWith(expect.objectContaining({ cwd: appDir }));
+    expect(createBackendRuntime).toHaveBeenCalledWith(expect.objectContaining({
+      cwd: appDir,
+      configDir: `${appDir}/.claude`,
+    }));
   });
 
   it("uses the packaged app directory for settings handlers", async () => {
     await import("./main.js");
+    await flushMicrotasks();
     const [, saveHandler] = handle.mock.calls.find(([channel]) => channel === "settings:save")!;
 
     saveHandler({}, {
@@ -128,6 +160,7 @@ describe("electron main IPC registration", () => {
 
   it("registers supported invoke handlers", async () => {
     await import("./main.js");
+    await flushMicrotasks();
 
     const handledChannels = handle.mock.calls.map(([channel]) => channel);
 
@@ -160,6 +193,7 @@ describe("electron main IPC registration", () => {
 
   it("registers supported send handlers", async () => {
     await import("./main.js");
+    await flushMicrotasks();
 
     const onChannels = on.mock.calls.map(([channel]) => channel);
 
@@ -179,6 +213,7 @@ describe("electron main IPC registration", () => {
 
   it("hides the native menu and creates a frameless app window", async () => {
     await import("./main.js");
+    await flushMicrotasks();
 
     expect(setApplicationMenu).toHaveBeenCalledWith(null);
     expect(browserWindowOptions[0]).toEqual(expect.objectContaining({
@@ -193,6 +228,7 @@ describe("electron main IPC registration", () => {
 
   it("registers window control handlers", async () => {
     await import("./main.js");
+    await flushMicrotasks();
 
     const onChannels = on.mock.calls.map(([channel]) => channel);
 
@@ -203,6 +239,7 @@ describe("electron main IPC registration", () => {
 
   it("emits sdk:error when creating a run fails before streaming starts", async () => {
     await import("./main.js");
+    await flushMicrotasks();
     sessionManager.startRun.mockRejectedValueOnce(new Error(".claude/settings.json or .claude/settings.local.json is required: env.ANTHROPIC_BASE_URL is missing"));
     const [, handler] = on.mock.calls.find(([channel]) => channel === "run:create")!;
 

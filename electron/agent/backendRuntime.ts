@@ -7,6 +7,8 @@ export type BackendRuntime = {
 };
 
 export function createBackendRuntime(input: {
+  cwd?: string;
+  configDir?: string | null;
   send: (channel: MainToRendererChannel, payload: unknown) => void;
 }): BackendRuntime {
   const emit = (channel: MainToRendererChannel, payload: unknown) => {
@@ -14,6 +16,6 @@ export function createBackendRuntime(input: {
   };
   return {
     emit,
-    sessionManager: new AgentSessionManager({ emit }),
+    sessionManager: new AgentSessionManager({ cwd: input.cwd, configDir: input.configDir, emit }),
   };
 }

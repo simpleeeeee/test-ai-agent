@@ -13,4 +13,13 @@ describe("createBackendRuntime", () => {
 
     expect(send).toHaveBeenCalledWith("sdk:error", { message: "错误", retryable: false });
   });
+
+  it("passes configDir to AgentSessionManager when provided", () => {
+    const send = vi.fn();
+    const runtime = createBackendRuntime({
+      send,
+      configDir: "D:/app/.claude",
+    });
+    expect(runtime.sessionManager).toBeDefined();
+  });
 });

@@ -191,7 +191,7 @@ export class AgentSessionManager {
   }
 
   private resolveDir(): string {
-    return this.deps.cwd ?? process.cwd();
+    return this.deps.configDir ?? this.deps.cwd ?? process.cwd();
   }
 
   private async drainMessages(runId: string, messages: AsyncIterable<unknown>) {
