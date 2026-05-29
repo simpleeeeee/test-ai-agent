@@ -67,10 +67,10 @@ describe("App backend integration", () => {
     expect(screen.queryByRole("complementary", { name: "账户菜单" })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "添加内容" }));
-    expect(screen.getByRole("status")).toHaveTextContent("添加内容功能即将开放");
+    expect(await screen.findByText("添加内容功能即将开放")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "工具" }));
-    expect(screen.getByRole("status")).toHaveTextContent("工具面板即将开放");
+    expect(await screen.findByText("工具面板即将开放")).toBeInTheDocument();
 
     invoke.mockResolvedValueOnce({ baseUrl: "", apiKey: "", model: "" });
     await user.click(screen.getByRole("button", { name: "Claude Sonnet 4" }));

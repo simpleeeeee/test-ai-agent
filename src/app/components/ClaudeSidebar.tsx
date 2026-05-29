@@ -5,10 +5,12 @@ type Props = {
   activeRunId?: string;
   sessions: SessionSummary[];
   onNewChat: () => void;
+  onSelectConversation: () => void;
+  onSelectProjects: () => void;
   onResumeSession: (sessionId: string) => void;
 };
 
-export function ClaudeSidebar({ activeRunId, sessions, onNewChat, onResumeSession }: Props) {
+export function ClaudeSidebar({ activeRunId, sessions, onNewChat, onSelectConversation, onSelectProjects, onResumeSession }: Props) {
   return (
     <aside className="claude-sidebar" aria-label="会话导航">
       <div className="claude-brand">
@@ -20,11 +22,11 @@ export function ClaudeSidebar({ activeRunId, sessions, onNewChat, onResumeSessio
           <Plus aria-hidden="true" size={18} />
           新建聊天
         </button>
-        <button className="claude-nav-item active" type="button">
+        <button className="claude-nav-item active" type="button" onClick={onSelectConversation}>
           <MessageSquare aria-hidden="true" size={18} />
           对话
         </button>
-        <button className="claude-nav-item" type="button">
+        <button className="claude-nav-item" type="button" onClick={onSelectProjects}>
           <Folder aria-hidden="true" size={18} />
           项目
         </button>

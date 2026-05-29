@@ -31,7 +31,7 @@ export function mapPermissionRequestToRunEvent(
   };
 }
 
-export function mapSdkMessageToRunEvents(runId: string, message: any): RunEvent[] {
+export function mapSdkMessageToRunEvents(runId: string, message: any, assistantMessageId?: string): RunEvent[] {
   const events: RunEvent[] = [];
 
   if (message.type === "stream_event") {
@@ -39,8 +39,14 @@ export function mapSdkMessageToRunEvents(runId: string, message: any): RunEvent[
     if (sdkEvent?.type === "content_block_delta" && sdkEvent.delta?.type === "text_delta") {
       events.push({
         type: "assistant:text-delta",
-        messageId: message.uuid,
+        messageId: assistantMessageId ?? message.uuid,
         delta: sdkEvent.delta.text,
+      });
+    }
+    if (sdkEvent?.type === "message_stop" && assistantMessageId) {
+      events.push({
+        type: "assistant:message-completed",
+        messageId: assistantMessageId,
       });
     }
     if (sdkEvent?.type === "content_block_start" && sdkEvent.content_block?.type === "tool_use") {

@@ -99,6 +99,12 @@ export function createBackendBridge(api: AiTestAssistantApi) {
     stopTask(runId: string, taskId: string) {
       return api.invoke("task:stop", { runId, taskId });
     },
+    loadSettings() {
+      return api.invoke("settings:get", undefined) as Promise<{ baseUrl: string; apiKey: string; model: string }>;
+    },
+    saveSettings(settings: { baseUrl: string; apiKey: string; model: string }) {
+      return api.invoke("settings:save", settings);
+    },
     listSessions() {
       return api.invoke("run:list-sessions", undefined);
     },

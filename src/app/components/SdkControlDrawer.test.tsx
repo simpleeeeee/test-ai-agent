@@ -1,43 +1,58 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { SdkControlDrawer } from "./SdkControlDrawer";
 
 describe("SdkControlDrawer", () => {
-  it("calls every SDK control exposed by the backend bridge", async () => {
+  it("loads settings on mount and saves with updated values", async () => {
     const user = userEvent.setup();
+    const saveSettings = vi.fn().mockResolvedValue({});
+    const onModelSaved = vi.fn();
     const bridge = {
-      setModel: vi.fn(),
-      setPermissionMode: vi.fn(),
-      applySettings: vi.fn(),
-      supportedModels: vi.fn(),
-      supportedCommands: vi.fn(),
-      supportedAgents: vi.fn(),
-      accountInfo: vi.fn(),
-      initializationResult: vi.fn(),
-      stopTask: vi.fn(),
+      loadSettings: vi.fn().mockResolvedValue({
+        baseUrl: "https://gateway.example.com/anthropic",
+        apiKey: "plain-text-key",
+        model: "claude-sonnet-4",
+      }),
+      saveSettings,
     };
 
-    render(<SdkControlDrawer runId="run-1" activeTaskId="task-1" bridge={bridge} />);
+    render(<SdkControlDrawer bridge={bridge} onModelSaved={onModelSaved} />);
 
-    await user.type(screen.getByLabelText("模型"), "gateway-model");
-    await user.selectOptions(screen.getByLabelText("权限模式"), "plan");
-    // Use fireEvent.change for JSON input since userEvent v14 treats { and } as keyboard modifier descriptors
-    fireEvent.change(screen.getByLabelText("Flag Settings JSON"), { target: { value: "{\"maxTurns\":5}" } });
-    await user.click(screen.getByRole("button", { name: "应用模型" }));
-    await user.click(screen.getByRole("button", { name: "应用权限" }));
-    await user.click(screen.getByRole("button", { name: "应用设置" }));
-    await user.click(screen.getByRole("button", { name: "支持模型" }));
-    await user.click(screen.getByRole("button", { name: "支持命令" }));
-    await user.click(screen.getByRole("button", { name: "支持 Agents" }));
-    await user.click(screen.getByRole("button", { name: "账号信息" }));
-    await user.click(screen.getByRole("button", { name: "初始化结果" }));
-    await user.click(screen.getByRole("button", { name: "停止任务" }));
+    // 挂载后加载设置
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("https://gateway.example.com/anthropic")).toBeInTheDocument();
+    });
+    expect(screen.getByDisplayValue("plain-text-key")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("claude-sonnet-4")).toBeInTheDocument();
 
-    expect(bridge.setModel).toHaveBeenCalledWith("run-1", "gateway-model");
-    expect(bridge.setPermissionMode).toHaveBeenCalledWith("run-1", "plan");
-    expect(bridge.applySettings).toHaveBeenCalledWith("run-1", { maxTurns: 5 });
-    expect(bridge.supportedModels).toHaveBeenCalledWith("run-1");
-    expect(bridge.stopTask).toHaveBeenCalledWith("run-1", "task-1");
+    // 修改模型名称并保存
+    await user.clear(screen.getByDisplayValue("claude-sonnet-4"));
+    await user.type(screen.getByLabelText("模型名称"), "claude-opus-4");
+    await user.click(screen.getByRole("button", { name: "保存设置" }));
+
+    await waitFor(() => {
+      expect(bridge.saveSettings).toHaveBeenCalledWith({
+        baseUrl: "https://gateway.example.com/anthropic",
+        apiKey: "plain-text-key",
+        model: "claude-opus-4",
+      });
+    });
+    expect(onModelSaved).toHaveBeenCalledWith("claude-opus-4");
+    expect(screen.getByText("设置已保存")).toBeInTheDocument();
+  });
+
+  it("renders empty form when loadSettings is not yet resolved", () => {
+    const bridge = {
+      loadSettings: vi.fn(() => new Promise(() => {})),
+      saveSettings: vi.fn(),
+    };
+
+    render(<SdkControlDrawer bridge={bridge} />);
+
+    expect(screen.getByLabelText("Base URL")).toBeInTheDocument();
+    expect(screen.getByLabelText("API Key")).toBeInTheDocument();
+    expect(screen.getByLabelText("模型名称")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "保存设置" })).toBeInTheDocument();
   });
 });

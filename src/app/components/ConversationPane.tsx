@@ -11,6 +11,7 @@ type Props = {
   composerValue: string;
   hasTestExecution: boolean;
   activeRunId?: string;
+  modelName?: string;
   onApprove: (runId: string, requestId: string, options: { updatedInput?: Record<string, unknown>; applyPermissionSuggestions?: boolean }) => void;
   onDeny: (runId: string, requestId: string, message: string) => void;
   onAnswer: (runId: string, requestId: string, answers: Record<string, unknown>) => void;
@@ -19,6 +20,9 @@ type Props = {
   onApprovePlan: () => void;
   onComposerChange: (value: string) => void;
   onComposerSubmit: (value: string) => void;
+  onAddContent: () => void;
+  onOpenTools: () => void;
+  onOpenModelSettings: () => void;
   onMinimizeWindow: () => void;
   onToggleMaximizeWindow: () => void;
   onCloseWindow: () => void;
@@ -31,6 +35,7 @@ export function ConversationPane({
   composerValue,
   hasTestExecution,
   activeRunId,
+  modelName = "Claude Sonnet 4",
   onApprove,
   onDeny,
   onAnswer,
@@ -39,12 +44,15 @@ export function ConversationPane({
   onApprovePlan,
   onComposerChange,
   onComposerSubmit,
+  onAddContent,
+  onOpenTools,
+  onOpenModelSettings,
   onMinimizeWindow,
   onToggleMaximizeWindow,
   onCloseWindow,
   onToggleSdkControl,
 }: Props) {
-  const isEmpty = state.messages.length === 0 && state.approvals.length === 0 && state.questions.length === 0;
+  const isEmpty = state.messages.length === 0 && state.approvals.length === 0 && state.questions.length === 0 && state.errors.length === 0;
   const placeholder = hasTestExecution ? "补充测试指令或继续提问…" : "向 AI 测试助手提问…";
 
   return (
@@ -87,7 +95,7 @@ export function ConversationPane({
           ) : null}
         </section>
       )}
-      <Composer value={composerValue} onChange={onComposerChange} onSubmit={onComposerSubmit} placeholder={placeholder} />
+      <Composer value={composerValue} onChange={onComposerChange} onSubmit={onComposerSubmit} onAddContent={onAddContent} onOpenTools={onOpenTools} onOpenModelSettings={onOpenModelSettings} placeholder={placeholder} modelName={modelName} />
     </main>
   );
 }
