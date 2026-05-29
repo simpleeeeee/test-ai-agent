@@ -6,18 +6,19 @@ import { SessionPanel } from "./SessionPanel";
 describe("SessionPanel", () => {
   it("exposes every SDK session operation", async () => {
     const user = userEvent.setup();
+    const onRefresh = vi.fn();
     const bridge = {
-      listSessions: vi.fn(),
+      listSessions: vi.fn().mockResolvedValue(undefined),
       getSession: vi.fn(),
       resumeSession: vi.fn(),
       forkSession: vi.fn(),
       continueRun: vi.fn(),
-      renameSession: vi.fn(),
-      tagSession: vi.fn(),
-      deleteSession: vi.fn(),
+      renameSession: vi.fn().mockResolvedValue(undefined),
+      tagSession: vi.fn().mockResolvedValue(undefined),
+      deleteSession: vi.fn().mockResolvedValue(undefined),
     };
 
-    render(<SessionPanel runId="run-1" sessions={[{ id: "session-1", title: "订单回归", tags: ["P1"] }]} bridge={bridge} />);
+    render(<SessionPanel runId="run-1" sessions={[{ id: "session-1", title: "订单回归", tags: ["P1"] }]} bridge={bridge} onRefresh={onRefresh} />);
 
     await user.click(screen.getByRole("button", { name: "刷新会话" }));
     await user.click(screen.getByRole("button", { name: "查看" }));
@@ -36,5 +37,6 @@ describe("SessionPanel", () => {
     expect(bridge.renameSession).toHaveBeenCalledWith("session-1", "订单回归 已更新");
     expect(bridge.tagSession).toHaveBeenCalledWith("session-1", "reviewed");
     expect(bridge.deleteSession).toHaveBeenCalledWith("session-1");
+    expect(onRefresh).toHaveBeenCalledTimes(4);
   });
 });
