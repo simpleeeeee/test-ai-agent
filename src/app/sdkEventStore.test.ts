@@ -94,7 +94,7 @@ describe("sdkEventStore", () => {
     });
   });
 
-  it("marks test execution from backend execution evidence while keeping runs isolated", () => {
+  it("stores backend execution evidence without switching workspace mode by itself", () => {
     let state = createInitialSdkUiState();
 
     // run-1: tool:approval-required
@@ -132,11 +132,7 @@ describe("sdkEventStore", () => {
       },
     });
 
-    // Both runs should have test execution marked
-    expect(state.workspaceModes).toEqual({
-      "run-1": { hasTestExecution: true },
-      "run-2": { hasTestExecution: true },
-    });
+    expect(state.workspaceModes).toEqual({});
 
     // Evidence should have 1 entry
     expect(state.evidence!).toHaveLength(1);
@@ -144,5 +140,55 @@ describe("sdkEventStore", () => {
 
     // Bug draft should be set
     expect(state.bugDraft?.title).toBe("登录按钮无响应");
+  });
+
+  it("resets the active conversation for a new chat while preserving session history", () => {
+    let state = createInitialSdkUiState();
+    state.sessions = [{ id: "run-old", title: "历史会话", tags: [] }];
+    state = reduceSdkUiEvent(state, {
+      channel: "assistant:text-delta",
+      payload: { runId: "run-1", messageId: "msg-1", delta: "已有内容" },
+    });
+
+    state = reduceSdkUiEvent(state, { channel: "ui:new-chat" });
+
+    expect(state.activeRunId).toBeUndefined();
+    expect(state.messages).toEqual([]);
+    expect(state.errors).toEqual([]);
+    expect(state.sessions).toEqual([{ id: "run-old", title: "历史会话", tags: [] }]);
+  });
+
+  it("replaces sessions on ui:sessions-loaded", () => {
+    let state = createInitialSdkUiState();
+    state.sessions = [{ id: "old", title: "旧的", tags: [] }];
+
+    state = reduceSdkUiEvent(state, {
+      channel: "ui:sessions-loaded",
+      payload: {
+        sessions: [
+          { id: "s1", title: "订单回归", tags: ["P1"], lastModified: 1000 },
+          { id: "s2", title: "登录测试", tags: [], lastModified: 2000 },
+        ],
+      },
+    });
+
+    expect(state.sessions).toHaveLength(2);
+    expect(state.sessions[0]).toEqual({ id: "s1", title: "订单回归", tags: ["P1"], lastModified: 1000 });
+    expect(state.sessions[1].title).toBe("登录测试");
+  });
+
+  it("preserves sessions across ui:new-chat", () => {
+    let state = createInitialSdkUiState();
+    state.sessions = [{ id: "s1", title: "历史", tags: [] }];
+    state = reduceSdkUiEvent(state, {
+      channel: "assistant:text-delta",
+      payload: { runId: "run-1", messageId: "msg-1", delta: "内容" },
+    });
+
+    state = reduceSdkUiEvent(state, { channel: "ui:new-chat" });
+
+    expect(state.activeRunId).toBeUndefined();
+    expect(state.messages).toEqual([]);
+    expect(state.sessions).toEqual([{ id: "s1", title: "历史", tags: [] }]);
   });
 });

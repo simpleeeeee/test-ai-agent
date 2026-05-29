@@ -9,17 +9,6 @@ function runIdFrom(payload: Record<string, unknown>) {
   return typeof payload.runId === "string" ? payload.runId : undefined;
 }
 
-const testExecutionChannels = new Set([
-  "tool:call-started",
-  "tool:approval-required",
-  "tool:call-completed",
-  "tool:call-failed",
-  "evidence:created",
-  "bug-draft:created",
-  "sdk:task-progress",
-  "sdk:mcp-status",
-]);
-
 function markHasTestExecution(state: SdkUiState, runId: string | undefined): SdkUiState {
   if (!runId) return state;
   if (state.workspaceModes[runId]?.hasTestExecution) return state;
@@ -51,6 +40,20 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
   const payload = payloadRecord(event.payload);
   const activeRunId = runIdFrom(payload) ?? state.activeRunId;
 
+  if (event.channel === "ui:new-chat") {
+    return {
+      ...createInitialSdkUiState(),
+      sessions: state.sessions,
+    };
+  }
+
+  if (event.channel === "ui:sessions-loaded") {
+    return {
+      ...state,
+      sessions: (event.payload as any).sessions as typeof state.sessions,
+    };
+  }
+
   if (event.channel === "ui:test-execution-confirmed") {
     return markHasTestExecution({ ...state, activeRunId }, activeRunId);
   }
@@ -78,7 +81,7 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
     const approvals = state.approvals.length >= 200
       ? state.approvals
       : [...state.approvals, payload as unknown as ApprovalRequest];
-    return markHasTestExecution({ ...state, activeRunId, approvals }, activeRunId);
+    return { ...state, activeRunId, approvals };
   }
 
   if (event.channel === "question:required") {
@@ -98,15 +101,15 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
     const evidence = current.length >= 200
       ? current
       : [...current, payload.evidence as Evidence];
-    return markHasTestExecution({ ...state, activeRunId, evidence }, activeRunId);
+    return { ...state, activeRunId, evidence };
   }
 
   if (event.channel === "bug-draft:created") {
-    return markHasTestExecution({ ...state, activeRunId, bugDraft: payload.bugDraft as BugDraft }, activeRunId);
+    return { ...state, activeRunId, bugDraft: payload.bugDraft as BugDraft };
   }
 
   if (event.channel === "sdk:mcp-status") {
-    return markHasTestExecution({ ...state, activeRunId, mcpServers: (payload.servers as McpServerUiStatus[]) ?? [] }, activeRunId);
+    return { ...state, activeRunId, mcpServers: (payload.servers as McpServerUiStatus[]) ?? [] };
   }
 
   if (event.channel === "sdk:raw-message") {
@@ -131,17 +134,13 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
   }
 
   if (event.channel === "sdk:task-progress") {
-    return markHasTestExecution({
+    return {
       ...state,
       activeRunId,
       tasks: state.tasks.length >= 200
         ? [...state.tasks.slice(-199), { taskId: String(payload.taskId), summary: typeof payload.summary === "string" ? payload.summary : undefined }]
         : [...state.tasks, { taskId: String(payload.taskId), summary: typeof payload.summary === "string" ? payload.summary : undefined }],
-    }, activeRunId);
-  }
-
-  if (testExecutionChannels.has(event.channel)) {
-    return markHasTestExecution({ ...state, activeRunId }, activeRunId);
+    };
   }
 
   return { ...state, activeRunId };

@@ -30,6 +30,11 @@ export type SessionSummary = {
   id: string;
   title: string;
   tags: string[];
+  lastModified?: number;
+  createdAt?: number;
+  summary?: string;
+  gitBranch?: string;
+  cwd?: string;
 };
 
 export type SdkTaskProgress = {
@@ -44,6 +49,12 @@ export type SessionWorkspaceMode = {
 export type LocalUiEvent = {
   channel: "ui:test-execution-confirmed";
   payload: { runId: string };
+} | {
+  channel: "ui:new-chat";
+  payload?: undefined;
+} | {
+  channel: "ui:sessions-loaded";
+  payload: { sessions: SessionSummary[] };
 };
 
 export type SdkUiState = {
