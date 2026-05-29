@@ -1,14 +1,14 @@
 import type { SessionSummary } from "../sdkUiTypes";
 
 type SessionBridge = {
-  listSessions: () => unknown;
-  getSession: (sessionId: string) => unknown;
-  resumeSession: (runId: string, sessionId: string) => unknown;
-  forkSession: (runId: string, sessionId: string) => unknown;
-  continueRun: (runId: string) => unknown;
-  renameSession: (sessionId: string, title: string) => unknown;
-  tagSession: (sessionId: string, tag: string) => unknown;
-  deleteSession: (sessionId: string) => unknown;
+  listSessions: () => Promise<unknown>;
+  getSession: (sessionId: string) => Promise<unknown>;
+  resumeSession: (runId: string, sessionId: string) => Promise<unknown>;
+  forkSession: (runId: string, sessionId: string) => Promise<unknown>;
+  continueRun: (runId: string) => Promise<unknown>;
+  renameSession: (sessionId: string, title: string) => Promise<unknown>;
+  tagSession: (sessionId: string, tag: string) => Promise<unknown>;
+  deleteSession: (sessionId: string) => Promise<unknown>;
 };
 
 export function SessionPanel({
