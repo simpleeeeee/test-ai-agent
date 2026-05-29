@@ -8,7 +8,7 @@ describe("Composer", () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
 
-    render(<Composer value="" onChange={vi.fn()} onSubmit={onSubmit} placeholder="向 AI 测试助手提问…" />);
+    render(<Composer value="" onChange={vi.fn()} onSubmit={onSubmit} onAddContent={vi.fn()} onOpenTools={vi.fn()} onOpenModelSettings={vi.fn()} placeholder="向 AI 测试助手提问…" />);
 
     await user.click(screen.getByRole("button", { name: "发送" }));
 
@@ -19,7 +19,7 @@ describe("Composer", () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
 
-    render(<Composer value="  测试订单模块  " onChange={vi.fn()} onSubmit={onSubmit} placeholder="补充测试指令或继续提问…" />);
+    render(<Composer value="  测试订单模块  " onChange={vi.fn()} onSubmit={onSubmit} onAddContent={vi.fn()} onOpenTools={vi.fn()} onOpenModelSettings={vi.fn()} placeholder="补充测试指令或继续提问…" />);
 
     expect(screen.getByLabelText("消息输入")).toHaveAttribute("placeholder", "补充测试指令或继续提问…");
     expect(screen.queryByPlaceholderText("回复 Claude…")).not.toBeInTheDocument();

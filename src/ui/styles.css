@@ -33,10 +33,16 @@ textarea,
 select,
 input {
   font: inherit;
+  -webkit-app-region: no-drag;
 }
 
 button {
   cursor: pointer;
+}
+
+.is-disabled {
+  cursor: default;
+  opacity: 0.55;
 }
 
 button:focus-visible,
@@ -148,14 +154,6 @@ input:focus-visible {
   padding: 8px 12px;
 }
 
-.claude-profile {
-  align-items: center;
-  border-top: 1px solid var(--line);
-  display: flex;
-  gap: 10px;
-  padding: 14px 18px;
-}
-
 .profile-avatar {
   align-items: center;
   background: #191715;
@@ -167,21 +165,6 @@ input:focus-visible {
   height: 30px;
   justify-content: center;
   width: 30px;
-}
-
-.profile-copy {
-  display: grid;
-  gap: 2px;
-  margin-right: auto;
-}
-
-.profile-copy strong {
-  font-size: 13px;
-}
-
-.profile-copy span {
-  color: #766e65;
-  font-size: 12px;
 }
 
 .conversation {
@@ -587,6 +570,62 @@ input:focus-visible {
   padding: 0 10px;
 }
 
+.composer-notice,
+.utility-panel,
+.sdk-control-drawer {
+  box-shadow: 0 16px 34px rgba(50, 38, 25, 0.14);
+}
+
+.composer-notice {
+  background: #fff9ef;
+  border: 1px solid #ead9c7;
+  border-radius: 10px;
+  bottom: 116px;
+  color: #70584d;
+  font-size: 13px;
+  left: 50%;
+  padding: 8px 12px;
+  position: fixed;
+  transform: translateX(-50%);
+  z-index: 18;
+}
+
+.utility-panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--text);
+  display: grid;
+  gap: 10px;
+  left: 268px;
+  padding: 16px;
+  position: fixed;
+  top: 72px;
+  width: 280px;
+  z-index: 19;
+}
+
+.utility-panel h2 {
+  font-size: 15px;
+  margin: 0;
+}
+
+.utility-panel p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.utility-panel button {
+  background: var(--card);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  color: #4f4a44;
+  min-height: 32px;
+  padding: 0 10px;
+}
+
 .plan-action-row {
   display: flex;
   justify-content: center;
@@ -754,6 +793,91 @@ input:focus-visible {
 .sdk-task {
   color: var(--muted);
   font-size: 12px;
+}
+
+.sdk-control-drawer {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  color: var(--text);
+  display: grid;
+  gap: 14px;
+  max-height: calc(100vh - 84px);
+  overflow: auto;
+  padding: 16px;
+  position: fixed;
+  right: 16px;
+  top: 62px;
+  width: 360px;
+  z-index: 20;
+}
+
+.sdk-control-header {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+}
+
+.sdk-control-header h2 {
+  font-size: 15px;
+  margin: 0;
+}
+
+.sdk-control-header p {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+
+.sdk-control-section {
+  display: grid;
+  gap: 8px;
+}
+
+.sdk-control-drawer label {
+  color: #4f4942;
+  display: grid;
+  font-size: 12px;
+  gap: 6px;
+}
+
+.sdk-control-drawer input,
+.sdk-control-drawer select,
+.sdk-control-drawer textarea {
+  background: #fffaf3;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  color: var(--text);
+  min-height: 34px;
+  padding: 6px 8px;
+}
+
+.sdk-control-drawer textarea {
+  min-height: 78px;
+  resize: vertical;
+}
+
+.sdk-control-drawer button {
+  background: var(--card);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  color: #4f4a44;
+  min-height: 34px;
+  padding: 0 10px;
+}
+
+.sdk-control-drawer button:hover:not(:disabled) {
+  background: #f6eee5;
+}
+
+.sdk-control-drawer button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.button-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 @media (max-width: 1120px) {
