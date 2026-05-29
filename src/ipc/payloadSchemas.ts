@@ -3,6 +3,11 @@ import type { MainToRendererChannel, RendererToMainChannel } from "./channels.js
 
 const nonEmptyString = z.string().trim().min(1);
 const jsonObject = z.record(z.string(), z.unknown());
+const settingsFormValues = z.object({
+  baseUrl: nonEmptyString,
+  apiKey: nonEmptyString,
+  model: nonEmptyString,
+});
 
 const noPayload = z.undefined().optional();
 
@@ -31,7 +36,7 @@ const rendererSchemas = {
   "run:list-sessions": noPayload,
   "run:get-session": z.object({ sessionId: nonEmptyString }),
   "run:rename-session": z.object({ sessionId: nonEmptyString, title: nonEmptyString }),
-  "run:tag-session": z.object({ sessionId: nonEmptyString, tag: nonEmptyString }),
+  "run:tag-session": z.object({ sessionId: nonEmptyString, tag: z.string().nullable() }),
   "run:delete-session": z.object({ sessionId: nonEmptyString }),
   "mcp:set-servers": z.object({ runId: nonEmptyString, servers: jsonObject }),
   "mcp:reconnect": z.object({ runId: nonEmptyString, serverName: nonEmptyString }),
@@ -44,6 +49,8 @@ const rendererSchemas = {
   "sdk:supported-agents": z.object({ runId: nonEmptyString }),
   "sdk:account-info": z.object({ runId: nonEmptyString }),
   "sdk:initialization-result": z.object({ runId: nonEmptyString }),
+  "settings:get": noPayload,
+  "settings:save": settingsFormValues,
   "window:minimize": noPayload,
   "window:toggle-maximize": noPayload,
   "window:close": noPayload,

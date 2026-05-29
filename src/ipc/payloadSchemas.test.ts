@@ -51,4 +51,22 @@ describe("IPC payload schemas", () => {
     expect(() => parseRendererToMainPayload("window:toggle-maximize", { value: true })).toThrow();
     expect(() => parseRendererToMainPayload("window:close", { value: true })).toThrow();
   });
+
+  it("accepts tag-session with null tag for clearing", () => {
+    const result = parseRendererToMainPayload("run:tag-session", {
+      sessionId: "session-1",
+      tag: null,
+    });
+    expect(result).toEqual({ sessionId: "session-1", tag: null });
+  });
+
+  it("accepts tag-session with string tag", () => {
+    expect(parseRendererToMainPayload("run:tag-session", {
+      sessionId: "session-1",
+      tag: "reviewed",
+    })).toEqual({
+      sessionId: "session-1",
+      tag: "reviewed",
+    });
+  });
 });
