@@ -6,27 +6,25 @@ import { SdkControlDrawer } from "./SdkControlDrawer";
 describe("SdkControlDrawer", () => {
   it("loads settings on mount and saves with updated values", async () => {
     const user = userEvent.setup();
-    const saveSettings = vi.fn().mockResolvedValue({});
     const onModelSaved = vi.fn();
-    const bridge = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const bridge: any = {
       loadSettings: vi.fn().mockResolvedValue({
         baseUrl: "https://gateway.example.com/anthropic",
         apiKey: "plain-text-key",
         model: "claude-sonnet-4",
       }),
-      saveSettings,
+      saveSettings: vi.fn().mockResolvedValue(undefined),
     };
 
     render(<SdkControlDrawer bridge={bridge} onModelSaved={onModelSaved} />);
 
-    // 挂载后加载设置
     await waitFor(() => {
       expect(screen.getByDisplayValue("https://gateway.example.com/anthropic")).toBeInTheDocument();
     });
     expect(screen.getByDisplayValue("plain-text-key")).toBeInTheDocument();
     expect(screen.getByDisplayValue("claude-sonnet-4")).toBeInTheDocument();
 
-    // 修改模型名称并保存
     await user.clear(screen.getByDisplayValue("claude-sonnet-4"));
     await user.type(screen.getByLabelText("模型名称"), "claude-opus-4");
     await user.click(screen.getByRole("button", { name: "保存设置" }));
@@ -43,9 +41,10 @@ describe("SdkControlDrawer", () => {
   });
 
   it("renders empty form when loadSettings is not yet resolved", () => {
-    const bridge = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const bridge: any = {
       loadSettings: vi.fn(() => new Promise(() => {})),
-      saveSettings: vi.fn(),
+      saveSettings: vi.fn().mockResolvedValue(undefined),
     };
 
     render(<SdkControlDrawer bridge={bridge} />);

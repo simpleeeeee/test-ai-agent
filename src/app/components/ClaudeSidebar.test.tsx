@@ -7,6 +7,8 @@ describe("ClaudeSidebar", () => {
   it("renders AI 测试助手 navigation and resumes recent sessions", async () => {
     const user = userEvent.setup();
     const onNewChat = vi.fn();
+    const onSelectConversation = vi.fn();
+    const onSelectProjects = vi.fn();
     const onResumeSession = vi.fn();
 
     render(
@@ -17,6 +19,8 @@ describe("ClaudeSidebar", () => {
           { id: "run-2", title: "订单模块回归", tags: ["测试"] },
         ]}
         onNewChat={onNewChat}
+        onSelectConversation={onSelectConversation}
+        onSelectProjects={onSelectProjects}
         onResumeSession={onResumeSession}
       />,
     );
@@ -43,6 +47,8 @@ describe("ClaudeSidebar", () => {
       <ClaudeSidebar
         sessions={[]}
         onNewChat={vi.fn()}
+        onSelectConversation={vi.fn()}
+        onSelectProjects={vi.fn()}
         onResumeSession={vi.fn()}
       />,
     );

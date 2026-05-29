@@ -54,6 +54,8 @@ describe("IPC channels", () => {
       "sdk:supported-agents",
       "sdk:account-info",
       "sdk:initialization-result",
+      "settings:get",
+      "settings:save",
       "window:minimize",
       "window:toggle-maximize",
       "window:close",
