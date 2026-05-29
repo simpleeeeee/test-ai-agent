@@ -80,4 +80,58 @@ describe("loadAgentRuntimeConfig", () => {
       cwd,
     })).toThrow("Official Anthropic endpoints are not allowed");
   });
+
+  it("passes CLAUDE_CONFIG_DIR in sdkOptions.env when claudeConfigDir is provided", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
+    fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
+    fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
+      env: {
+        ANTHROPIC_BASE_URL: "https://gateway.example.com/anthropic",
+        ANTHROPIC_AUTH_TOKEN: "third-party-token",
+        ANTHROPIC_MODEL: "claude-compatible-test-model",
+      },
+    }, null, 2));
+
+    const config = loadAgentRuntimeConfig({ cwd, claudeConfigDir: "D:/app/.claude" });
+
+    expect(config.sdkOptions).toEqual(expect.objectContaining({
+      cwd,
+      env: { CLAUDE_CONFIG_DIR: "D:/app/.claude" },
+      includePartialMessages: true,
+      permissionMode: "default",
+    }));
+    expect(config.sdkOptions).not.toHaveProperty("settings");
+  });
+
+  it("does not set CLAUDE_CONFIG_DIR when claudeConfigDir is null", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
+    fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
+    fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
+      env: {
+        ANTHROPIC_BASE_URL: "https://gateway.example.com/anthropic",
+        ANTHROPIC_AUTH_TOKEN: "third-party-token",
+        ANTHROPIC_MODEL: "claude-compatible-test-model",
+      },
+    }, null, 2));
+
+    const config = loadAgentRuntimeConfig({ cwd, claudeConfigDir: null });
+
+    expect(config.sdkOptions.env).toBeUndefined();
+  });
+
+  it("does not set CLAUDE_CONFIG_DIR when claudeConfigDir is undefined (backward compat)", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
+    fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
+    fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
+      env: {
+        ANTHROPIC_BASE_URL: "https://gateway.example.com/anthropic",
+        ANTHROPIC_AUTH_TOKEN: "third-party-token",
+        ANTHROPIC_MODEL: "claude-compatible-test-model",
+      },
+    }, null, 2));
+
+    const config = loadAgentRuntimeConfig({ cwd });
+
+    expect(config.sdkOptions.env).toBeUndefined();
+  });
 });

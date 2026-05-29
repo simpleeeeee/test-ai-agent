@@ -54,6 +54,7 @@ function assertThirdPartyBaseUrl(baseUrl: string) {
 
 export function loadAgentRuntimeConfig(input: {
   cwd: string;
+  claudeConfigDir?: string | null;
 }): AgentRuntimeConfig {
   const settings = loadClaudeCodeSettings({ cwd: input.cwd });
   const baseUrl = settings.baseUrl.trim();
@@ -86,6 +87,7 @@ export function loadAgentRuntimeConfig(input: {
       ...(pathToClaudeCodeExecutable ? { pathToClaudeCodeExecutable } : {}),
       includePartialMessages: true,
       permissionMode: "default",
+      ...(input.claudeConfigDir ? { env: { CLAUDE_CONFIG_DIR: input.claudeConfigDir } } : {}),
     },
   };
 }
