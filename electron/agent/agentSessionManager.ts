@@ -12,8 +12,8 @@ import {
   renameSession as sdkRenameSession,
   tagSession as sdkTagSession,
   deleteSession as sdkDeleteSession,
+  type SDKSessionInfo,
 } from "./claudeAgentSdkFacade.js";
-import type { SDKSessionInfo } from "./claudeAgentSdkFacade.js";
 
 type RuntimeSession = ReturnType<ClaudeAgentRuntimeAdapter["start"]>;
 
@@ -46,7 +46,7 @@ export class AgentSessionManager {
     prompt: string,
     runOptions?: { resume?: string; continue?: boolean },
   ) {
-    const config = this.loadConfig({ cwd: this.deps.cwd ?? process.cwd() });
+    const config = this.loadConfig({ cwd: this.deps.cwd ?? process.cwd(), claudeConfigDir: this.deps.configDir });
     const input = new AsyncMessageQueue<unknown>();
     input.push({ type: "user", message: { role: "user", content: prompt } });
 
@@ -191,7 +191,7 @@ export class AgentSessionManager {
   }
 
   private resolveDir(): string {
-    return this.deps.configDir ?? this.deps.cwd ?? process.cwd();
+    return this.deps.cwd ?? process.cwd();
   }
 
   private async drainMessages(runId: string, messages: AsyncIterable<unknown>) {

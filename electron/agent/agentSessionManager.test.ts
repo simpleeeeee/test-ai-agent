@@ -217,6 +217,14 @@ describe("AgentSessionManager SDK session methods", () => {
     expect(result).toEqual([{ sessionId: "s1", summary: "测试" }]);
   });
 
+  it("listSessions uses cwd as dir even when configDir is provided (configDir ≠ project dir)", async () => {
+    const mock = sdkListSessions as ReturnType<typeof vi.fn>;
+    mock.mockResolvedValue([]);
+    const manager = createManager({ configDir: "D:/app/.claude", cwd: "D:/project" });
+    await manager.listSessions();
+    expect(mock).toHaveBeenCalledWith({ dir: "D:/project" });
+  });
+
   it("getSession returns SDK info or null when not found", async () => {
     const mock = sdkGetSessionInfo as ReturnType<typeof vi.fn>;
     mock.mockResolvedValue(undefined);
