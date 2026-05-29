@@ -1,5 +1,26 @@
 import { describe, expect, it, vi } from "vitest";
 import { AgentSessionManager } from "./agentSessionManager.js";
+import {
+  listSessions as sdkListSessions,
+  getSessionInfo as sdkGetSessionInfo,
+  forkSession as sdkForkSession,
+  renameSession as sdkRenameSession,
+  tagSession as sdkTagSession,
+  deleteSession as sdkDeleteSession,
+} from "./claudeAgentSdkFacade.js";
+
+vi.mock("./claudeAgentSdkFacade.js", async () => {
+  const actual = await vi.importActual("./claudeAgentSdkFacade.js");
+  return {
+    ...actual,
+    listSessions: vi.fn(),
+    getSessionInfo: vi.fn(),
+    forkSession: vi.fn(),
+    renameSession: vi.fn(),
+    tagSession: vi.fn(),
+    deleteSession: vi.fn(),
+  };
+});
 
 describe("AgentSessionManager", () => {
   it("starts a run and emits mapped events from SDK messages", async () => {
@@ -173,5 +194,102 @@ describe("AgentSessionManager", () => {
     expect(session.setModel).toHaveBeenCalledWith("model-a");
     expect(session.stopTask).toHaveBeenCalledWith("task-1");
     expect(session.close).toHaveBeenCalledOnce();
+  });
+});
+
+describe("AgentSessionManager SDK session methods", () => {
+  function createManager(deps?: Record<string, unknown>) {
+    return new AgentSessionManager({
+      adapter: { start: vi.fn(() => ({ messages: (async function*() { yield { type: "result", subtype: "success" }; })(), close: vi.fn() })) } as any,
+      loadConfig: () => ({ sdkOptions: {} }),
+      emit: vi.fn(),
+      cwd: "D:/project",
+      ...deps,
+    } as any);
+  }
+
+  it("listSessions calls SDK listSessions with cwd as dir", async () => {
+    const mock = sdkListSessions as ReturnType<typeof vi.fn>;
+    mock.mockResolvedValue([{ sessionId: "s1", summary: "测试" }]);
+    const manager = createManager();
+    const result = await manager.listSessions();
+    expect(mock).toHaveBeenCalledWith({ dir: "D:/project" });
+    expect(result).toEqual([{ sessionId: "s1", summary: "测试" }]);
+  });
+
+  it("getSession returns SDK info or null when not found", async () => {
+    const mock = sdkGetSessionInfo as ReturnType<typeof vi.fn>;
+    mock.mockResolvedValue(undefined);
+    const manager = createManager();
+    expect(await manager.getSession("nonexistent")).toBeNull();
+    mock.mockResolvedValue({ sessionId: "s1", summary: "存在" });
+    expect(await manager.getSession("s1")).toEqual({ sessionId: "s1", summary: "存在" });
+  });
+
+  it("renameSession calls SDK renameSession", async () => {
+    const mock = sdkRenameSession as ReturnType<typeof vi.fn>;
+    mock.mockResolvedValue(undefined);
+    await createManager().renameSession("s1", "订单回归");
+    expect(mock).toHaveBeenCalledWith("s1", "订单回归", { dir: "D:/project" });
+  });
+
+  it("tagSession calls SDK with tag and null clearing", async () => {
+    const mock = sdkTagSession as ReturnType<typeof vi.fn>;
+    mock.mockResolvedValue(undefined);
+    const manager = createManager();
+    await manager.tagSession("s1", "reviewed");
+    expect(mock).toHaveBeenCalledWith("s1", "reviewed", { dir: "D:/project" });
+    await manager.tagSession("s1", null);
+    expect(mock).toHaveBeenCalledWith("s1", null, { dir: "D:/project" });
+  });
+
+  it("deleteSession calls SDK deleteSession", async () => {
+    const mock = sdkDeleteSession as ReturnType<typeof vi.fn>;
+    mock.mockResolvedValue(undefined);
+    await createManager().deleteSession("s1");
+    expect(mock).toHaveBeenCalledWith("s1", { dir: "D:/project" });
+  });
+
+  it("resumeSession stops current run and starts new one with resume option", async () => {
+    const close = vi.fn();
+    const adapter = {
+      start: vi.fn()
+        .mockReturnValueOnce({ messages: (async function*() { yield { type: "result", subtype: "success" }; })(), close })
+        .mockReturnValueOnce({ messages: (async function*() { yield { type: "result", subtype: "success" }; })(), close: vi.fn() }),
+    };
+    const manager = new AgentSessionManager({ adapter: adapter as any, loadConfig: () => ({ sdkOptions: {} }), emit: vi.fn(), cwd: "D:/project" });
+    await manager.startRun("run-1", "初始");
+    await manager.resumeSession("run-1", "session-target");
+    expect(close).toHaveBeenCalledOnce();
+    expect(adapter.start).toHaveBeenLastCalledWith(expect.objectContaining({ options: expect.objectContaining({ resume: "session-target" }) }));
+  });
+
+  it("forkSession calls SDK forkSession then starts new run", async () => {
+    const mock = sdkForkSession as ReturnType<typeof vi.fn>;
+    mock.mockResolvedValue({ sessionId: "forked-sid" });
+    const close = vi.fn();
+    const adapter = {
+      start: vi.fn()
+        .mockReturnValueOnce({ messages: (async function*() { yield { type: "result", subtype: "success" }; })(), close })
+        .mockReturnValueOnce({ messages: (async function*() { yield { type: "result", subtype: "success" }; })(), close: vi.fn() }),
+    };
+    const manager = new AgentSessionManager({ adapter: adapter as any, loadConfig: () => ({ sdkOptions: {} }), emit: vi.fn(), cwd: "D:/project" });
+    await manager.startRun("run-1", "初始");
+    await manager.forkSession("run-1", "session-source");
+    expect(mock).toHaveBeenCalledWith("session-source", { dir: "D:/project" });
+    expect(adapter.start).toHaveBeenLastCalledWith(expect.objectContaining({ options: expect.objectContaining({ resume: "forked-sid" }) }));
+  });
+
+  it("continueRun starts new run with continue: true", async () => {
+    const adapter = { start: vi.fn(() => ({ messages: (async function*() { yield { type: "result", subtype: "success" }; })(), close: vi.fn() })) };
+    const manager = new AgentSessionManager({ adapter: adapter as any, loadConfig: () => ({ sdkOptions: {} }), emit: vi.fn() });
+    await manager.continueRun("run-1");
+    expect(adapter.start).toHaveBeenCalledWith(expect.objectContaining({ options: expect.objectContaining({ continue: true }) }));
+  });
+
+  it("session methods propagate SDK errors", async () => {
+    const mock = sdkDeleteSession as ReturnType<typeof vi.fn>;
+    mock.mockRejectedValue(new Error("Session corrupted"));
+    await expect(createManager().deleteSession("bad")).rejects.toThrow("Session corrupted");
   });
 });

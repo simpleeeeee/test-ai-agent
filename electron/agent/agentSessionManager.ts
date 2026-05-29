@@ -5,12 +5,23 @@ import { ApprovalBridge } from "./approvalBridge.js";
 import { ClaudeAgentRuntimeAdapter } from "./claudeAgentRuntimeAdapter.js";
 import { loadAgentRuntimeConfig } from "./agentConfig.js";
 import { mapSdkMessageToRunEvents } from "./runEventMapper.js";
+import {
+  listSessions as sdkListSessions,
+  getSessionInfo as sdkGetSessionInfo,
+  forkSession as sdkForkSession,
+  renameSession as sdkRenameSession,
+  tagSession as sdkTagSession,
+  deleteSession as sdkDeleteSession,
+} from "./claudeAgentSdkFacade.js";
+import type { SDKSessionInfo } from "./claudeAgentSdkFacade.js";
 
 type RuntimeSession = ReturnType<ClaudeAgentRuntimeAdapter["start"]>;
 
 type ManagerDeps = {
   adapter?: ClaudeAgentRuntimeAdapter;
   loadConfig?: typeof loadAgentRuntimeConfig;
+  cwd?: string;
+  configDir?: string | null;
   emit: (channel: MainToRendererChannel, payload: unknown) => void;
 };
 
@@ -30,15 +41,23 @@ export class AgentSessionManager {
     this.loadConfig = deps.loadConfig ?? loadAgentRuntimeConfig;
   }
 
-  async startRun(runId: string, prompt: string) {
-    const config = this.loadConfig({ cwd: process.cwd() });
+  async startRun(
+    runId: string,
+    prompt: string,
+    runOptions?: { resume?: string; continue?: boolean },
+  ) {
+    const config = this.loadConfig({ cwd: this.deps.cwd ?? process.cwd() });
     const input = new AsyncMessageQueue<unknown>();
     input.push({ type: "user", message: { role: "user", content: prompt } });
 
     const approvalBridge = new ApprovalBridge(runId, (event) => this.emitRunEvent(runId, event));
     const session = this.adapter.start({
       prompt: input,
-      options: config.sdkOptions,
+      options: {
+        ...config.sdkOptions,
+        ...(runOptions?.resume ? { resume: runOptions.resume } : {}),
+        ...(runOptions?.continue ? { continue: true } : {}),
+      },
       canUseTool: approvalBridge.canUseTool,
     });
 
@@ -129,41 +148,59 @@ export class AgentSessionManager {
     return this.session(runId).stopTask(taskId);
   }
 
-  listSessions() {
-    return Promise.resolve([]);
+  async listSessions(): Promise<SDKSessionInfo[]> {
+    return sdkListSessions({ dir: this.resolveDir() });
   }
 
-  getSession(_sessionId: string) {
-    return Promise.resolve(null);
+  async getSession(sessionId: string): Promise<SDKSessionInfo | null> {
+    const info = await sdkGetSessionInfo(sessionId, { dir: this.resolveDir() });
+    return info ?? null;
   }
 
-  resumeSession(runId: string, _sessionId: string) {
-    return this.sendMessage(runId, "恢复之前的会话");
+  async resumeSession(runId: string, sessionId: string) {
+    if (this.runs.has(runId)) {
+      this.stopRun(runId);
+    }
+    return this.startRun(runId, "恢复之前的会话", { resume: sessionId });
   }
 
-  forkSession(runId: string, _sessionId: string) {
-    return this.sendMessage(runId, "从会话分支继续执行");
+  async forkSession(runId: string, sessionId: string) {
+    const { sessionId: newSessionId } = await sdkForkSession(sessionId, {
+      dir: this.resolveDir(),
+    });
+    if (this.runs.has(runId)) {
+      this.stopRun(runId);
+    }
+    return this.startRun(runId, "从会话分支继续执行", { resume: newSessionId });
   }
 
-  continueRun(runId: string) {
-    return this.sendMessage(runId, "继续执行");
+  async continueRun(runId: string) {
+    return this.startRun(runId, "继续执行", { continue: true });
   }
 
-  renameSession(_sessionId: string, _title: string) {
-    return Promise.resolve(undefined);
+  async renameSession(sessionId: string, title: string) {
+    await sdkRenameSession(sessionId, title, { dir: this.resolveDir() });
   }
 
-  tagSession(_sessionId: string, _tag: string) {
-    return Promise.resolve(undefined);
+  async tagSession(sessionId: string, tag: string | null) {
+    await sdkTagSession(sessionId, tag, { dir: this.resolveDir() });
   }
 
-  deleteSession(_sessionId: string) {
-    return Promise.resolve(undefined);
+  async deleteSession(sessionId: string) {
+    await sdkDeleteSession(sessionId, { dir: this.resolveDir() });
+  }
+
+  private resolveDir(): string {
+    return this.deps.cwd ?? process.cwd();
   }
 
   private async drainMessages(runId: string, messages: AsyncIterable<unknown>) {
+    let assistantMessageId: string | undefined;
     for await (const message of messages) {
-      for (const event of mapSdkMessageToRunEvents(runId, message)) {
+      if (isAssistantMessageStart(message)) {
+        assistantMessageId = (message as any).event.message.id as string;
+      }
+      for (const event of mapSdkMessageToRunEvents(runId, message, assistantMessageId)) {
         this.emitRunEvent(runId, event);
       }
     }
@@ -184,4 +221,13 @@ export class AgentSessionManager {
   private session(runId: string): RuntimeSession {
     return this.run(runId).session;
   }
+}
+
+function isAssistantMessageStart(message: unknown): boolean {
+  if (!message || typeof message !== "object") return false;
+  const m = message as Record<string, unknown>;
+  return m.type === "stream_event"
+    && m.event != null
+    && typeof m.event === "object"
+    && (m.event as Record<string, unknown>).type === "message_start";
 }
