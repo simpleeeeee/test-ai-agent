@@ -14,8 +14,6 @@ const callbacks = {
   onComposerChange: vi.fn(),
   onComposerSubmit: vi.fn(),
   onAddContent: vi.fn(),
-  onOpenTools: vi.fn(),
-  onOpenModelSettings: vi.fn(),
   onMinimizeWindow: vi.fn(),
   onToggleMaximizeWindow: vi.fn(),
   onCloseWindow: vi.fn(),
@@ -39,8 +37,6 @@ describe("ConversationPane", () => {
         onComposerChange={callbacks.onComposerChange}
         onComposerSubmit={callbacks.onComposerSubmit}
         onAddContent={callbacks.onAddContent}
-        onOpenTools={callbacks.onOpenTools}
-        onOpenModelSettings={callbacks.onOpenModelSettings}
         onMinimizeWindow={callbacks.onMinimizeWindow}
         onToggleMaximizeWindow={callbacks.onToggleMaximizeWindow}
         onCloseWindow={callbacks.onCloseWindow}
@@ -79,8 +75,6 @@ describe("ConversationPane", () => {
         onComposerChange={callbacks.onComposerChange}
         onComposerSubmit={callbacks.onComposerSubmit}
         onAddContent={callbacks.onAddContent}
-        onOpenTools={callbacks.onOpenTools}
-        onOpenModelSettings={callbacks.onOpenModelSettings}
         onMinimizeWindow={callbacks.onMinimizeWindow}
         onToggleMaximizeWindow={callbacks.onToggleMaximizeWindow}
         onCloseWindow={callbacks.onCloseWindow}
@@ -110,8 +104,6 @@ describe("ConversationPane", () => {
         onComposerChange={callbacks.onComposerChange}
         onComposerSubmit={callbacks.onComposerSubmit}
         onAddContent={callbacks.onAddContent}
-        onOpenTools={callbacks.onOpenTools}
-        onOpenModelSettings={callbacks.onOpenModelSettings}
         onMinimizeWindow={callbacks.onMinimizeWindow}
         onToggleMaximizeWindow={callbacks.onToggleMaximizeWindow}
         onCloseWindow={callbacks.onCloseWindow}
