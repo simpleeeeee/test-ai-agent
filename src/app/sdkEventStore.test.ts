@@ -42,7 +42,7 @@ describe("sdkEventStore", () => {
     });
     state = reduceSdkUiEvent(state, {
       channel: "sdk:usage",
-      payload: { runId: "run-1", raw: { input_tokens: 10, output_tokens: 20 } },
+      payload: { runId: "run-1", raw: { inputTokens: 10, outputTokens: 20 } },
     });
     state = reduceSdkUiEvent(state, {
       channel: "sdk:error",
@@ -57,7 +57,7 @@ describe("sdkEventStore", () => {
     expect(state.questions).toHaveLength(1);
     expect(state.mcpServers).toEqual([{ name: "browser", status: "connected" }]);
     expect(state.rawMessages).toHaveLength(1);
-    expect(state.usage).toEqual({ input_tokens: 10, output_tokens: 20 });
+    expect(state.usage).toEqual({ inputTokens: 10, outputTokens: 20 });
     expect(state.errors[0].message).toBe("网关认证失败");
     expect(state.tasks[0].summary).toBe("正在执行子任务");
   });
