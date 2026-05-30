@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapSdkMessageToRunEvents, mapPermissionRequestToRunEvent } from "./runEventMapper.js";
+import { mapSdkMessageToRunEvents, mapPermissionRequestToRunEvent, SdkRunEventMapperSession } from "./runEventMapper.js";
 
 describe("mapSdkMessageToRunEvents", () => {
   it("maps text delta stream events", () => {
@@ -60,6 +60,102 @@ describe("mapSdkMessageToRunEvents", () => {
       { type: "run:status-changed", status: "completed" },
       { type: "sdk:raw-message", runId: "run-1", message: expect.any(Object) },
     ]);
+  });
+
+  it("maps message_start metadata and keeps the stable assistant message id", () => {
+    const mapper = new SdkRunEventMapperSession("run-1");
+
+    const events = mapper.map({
+      type: "stream_event",
+      uuid: "uuid-1",
+      event: {
+        type: "message_start",
+        message: {
+          id: "msg-1",
+          model: "claude-sonnet-4-6",
+          usage: { input_tokens: 42 },
+        },
+      },
+    });
+
+    expect(events).toEqual([
+      {
+        type: "assistant:message-started",
+        messageId: "msg-1",
+        model: "claude-sonnet-4-6",
+        usage: { input_tokens: 42 },
+      },
+      { type: "sdk:usage", raw: { input_tokens: 42 }, model: "claude-sonnet-4-6" },
+      { type: "sdk:raw-message", runId: "run-1", message: expect.any(Object) },
+    ]);
+  });
+
+  it("maps thinking deltas and emits duration on message stop", () => {
+    const times = [1000, 2450];
+    const mapper = new SdkRunEventMapperSession("run-1", () => times.shift() ?? 2450);
+
+    mapper.map({
+      type: "stream_event",
+      uuid: "uuid-1",
+      event: { type: "message_start", message: { id: "msg-1" } },
+    });
+    mapper.map({
+      type: "stream_event",
+      uuid: "uuid-2",
+      event: { type: "content_block_start", index: 0, content_block: { type: "thinking" } },
+    });
+    const deltaEvents = mapper.map({
+      type: "stream_event",
+      uuid: "uuid-3",
+      event: { type: "content_block_delta", index: 0, delta: { type: "thinking_delta", thinking: "分析需求" } },
+    });
+    mapper.map({
+      type: "stream_event",
+      uuid: "uuid-4",
+      event: { type: "content_block_stop", index: 0 },
+    });
+    const stopEvents = mapper.map({
+      type: "stream_event",
+      uuid: "uuid-5",
+      event: { type: "message_stop" },
+    });
+
+    expect(deltaEvents[0]).toEqual({
+      type: "assistant:thinking-delta",
+      messageId: "msg-1",
+      delta: "分析需求",
+    });
+    expect(stopEvents[0]).toEqual({
+      type: "assistant:message-completed",
+      messageId: "msg-1",
+      thinkingDuration: "1.45s",
+    });
+  });
+
+  it("maps streamed tool input JSON deltas to the active tool call", () => {
+    const mapper = new SdkRunEventMapperSession("run-1");
+
+    mapper.map({
+      type: "stream_event",
+      uuid: "uuid-1",
+      event: {
+        type: "content_block_start",
+        index: 1,
+        content_block: { type: "tool_use", id: "toolu-1", name: "mcp__browser__navigate", input: {} },
+      },
+    });
+    const events = mapper.map({
+      type: "stream_event",
+      uuid: "uuid-2",
+      event: { type: "content_block_delta", index: 1, delta: { type: "input_json_delta", partial_json: "{\"url\":\"https://" } },
+    });
+
+    expect(events[0]).toEqual({
+      type: "tool:input-json-delta",
+      toolCallId: "toolu-1",
+      delta: "{\"url\":\"https://",
+      inputSummary: "{\"url\":\"https://",
+    });
   });
 
   it("maps task progress system messages", () => {
