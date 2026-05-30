@@ -34,4 +34,21 @@ describe("SettingsPanel", () => {
     await user.click(screen.getByRole("button", { name: "暗色" }));
     expect(onThemeChange).toHaveBeenCalledWith("dark");
   });
+
+  it("submits SDK permission mode and thinking settings", async () => {
+    const user = userEvent.setup();
+    const onApplySettings = vi.fn();
+
+    render(<SettingsPanel bridge={bridge} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" activeRunId="run-1" onApplySettings={onApplySettings} />);
+
+    await user.selectOptions(screen.getByLabelText("权限模式"), "plan");
+    await user.selectOptions(screen.getByLabelText("思考强度"), "high");
+    await user.selectOptions(screen.getByLabelText("Thinking 展示"), "summarized");
+    await user.click(screen.getByRole("button", { name: "应用设置" }));
+
+    expect(onApplySettings).toHaveBeenCalledWith("run-1", {
+      permissionMode: "plan",
+      thinking: { effort: "high", display: "summarized" },
+    });
+  });
 });

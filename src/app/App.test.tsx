@@ -252,6 +252,27 @@ describe("App backend integration", () => {
     expect(await screen.findByText("claude-opus-4-8")).toBeInTheDocument();
   });
 
+  it("sends SDK runtime settings through the backend bridge", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    // Establish an active run
+    emit("run:created", { runId: "run-1", prompt: "测试" });
+
+    await user.click(screen.getByRole("button", { name: "SDK 控制" }));
+    await user.selectOptions(screen.getByLabelText("权限模式"), "plan");
+    await user.selectOptions(screen.getByLabelText("思考强度"), "high");
+    await user.click(screen.getByRole("button", { name: "应用设置" }));
+
+    expect(invoke).toHaveBeenCalledWith("run:apply-settings", expect.objectContaining({
+      runId: "run-1",
+      settings: expect.objectContaining({
+        permissionMode: "plan",
+        thinking: expect.objectContaining({ effort: "high" }),
+      }),
+    }));
+  });
+
   it("shows a loading banner while a clicked history session is being restored", async () => {
     const user = userEvent.setup();
     let resolveMessages: ((value: unknown) => void) | undefined;

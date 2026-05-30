@@ -267,6 +267,10 @@ export function App() {
     setComposerNotice("添加内容功能即将开放");
   }
 
+  function handleApplySdkSettings(runId: string, settings: Record<string, unknown>) {
+    bridge.applySettings(runId, settings);
+  }
+
   return (
     <div className={shouldShowTestConsole ? "app-shell test-mode" : "app-shell chat-mode"}>
       <ClaudeSidebar
@@ -298,6 +302,7 @@ export function App() {
         onMinimizeWindow={bridge.minimizeWindow}
         onToggleMaximizeWindow={bridge.toggleMaximizeWindow}
         onCloseWindow={bridge.closeWindow}
+        onToggleSdkControl={() => setSettingsOpen((v) => !v)}
       />
       {utilityPanel === "projects" ? (
         <aside className="utility-panel" aria-label="项目面板">
@@ -312,6 +317,8 @@ export function App() {
           onClose={() => setSettingsOpen(false)}
           onThemeChange={(mode) => setTheme(mode)}
           theme={theme}
+          activeRunId={state.activeRunId}
+          onApplySettings={handleApplySdkSettings}
         />
       ) : null}
       {shouldShowTestConsole ? (
