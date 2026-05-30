@@ -1,4 +1,4 @@
-import { ChevronDown, Folder, MessageSquare, Plus, Sparkles } from "lucide-react";
+import { Folder, MessageSquare, Plus, Settings, Sparkles } from "lucide-react";
 import type { SessionSummary } from "../sdkUiTypes";
 
 type Props = {
@@ -8,13 +8,14 @@ type Props = {
   onSelectConversation: () => void;
   onSelectProjects: () => void;
   onResumeSession: (sessionId: string) => void;
+  onSettingsClick: () => void;
 };
 
-export function ClaudeSidebar({ activeRunId, sessions, onNewChat, onSelectConversation, onSelectProjects, onResumeSession }: Props) {
+export function ClaudeSidebar({ activeRunId, sessions, onNewChat, onSelectConversation, onSelectProjects, onResumeSession, onSettingsClick }: Props) {
   return (
     <aside className="claude-sidebar" aria-label="会话导航">
       <div className="claude-brand">
-        <Sparkles aria-hidden="true" className="claude-brand-icon" size={23} />
+        <Sparkles aria-hidden="true" className="claude-brand-icon" size={22} />
         <span>AI 测试助手</span>
       </div>
       <nav className="claude-nav" aria-label="主导航">
@@ -45,13 +46,11 @@ export function ClaudeSidebar({ activeRunId, sessions, onNewChat, onSelectConver
           </button>
         ))}
       </div>
-      <div className="claude-profile">
-        <span className="profile-avatar">测</span>
-        <span className="profile-copy">
-          <strong>测试人员</strong>
-          <span>专业版</span>
-        </span>
-        <ChevronDown aria-hidden="true" size={16} />
+      <div className="claude-sidebar-footer">
+        <button type="button" onClick={onSettingsClick}>
+          <Settings aria-hidden="true" size={16} />
+          设置
+        </button>
       </div>
     </aside>
   );
