@@ -1,14 +1,11 @@
-import { Plus, Wrench, Send } from "lucide-react";
+import { Plus, Send } from "lucide-react";
 
 type Props = {
   value: string;
   onChange: (value: string) => void;
   onSubmit: (value: string) => void;
   onAddContent: () => void;
-  onOpenTools: () => void;
-  onOpenModelSettings: () => void;
   placeholder: string;
-  modelName?: string;
 };
 
 export function Composer({
@@ -16,10 +13,7 @@ export function Composer({
   onChange,
   onSubmit,
   onAddContent,
-  onOpenTools,
-  onOpenModelSettings,
   placeholder,
-  modelName = "Claude Sonnet 4",
 }: Props) {
   function handleSubmit() {
     const trimmed = value.trim();
@@ -54,10 +48,6 @@ export function Composer({
           <button className="icon-button" type="button" aria-label="添加内容" title="添加内容" onClick={onAddContent}>
             <Plus aria-hidden="true" size={16} />
           </button>
-          <button className="icon-button" type="button" aria-label="工具" title="工具" onClick={onOpenTools}>
-            <Wrench aria-hidden="true" size={16} />
-          </button>
-          <button className="model-pill" type="button" onClick={onOpenModelSettings}>{modelName}</button>
         </div>
         <button className="composer-send" type="submit" aria-label="发送">
           <Send aria-hidden="true" size={16} />
