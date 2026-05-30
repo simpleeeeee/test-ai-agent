@@ -1057,6 +1057,44 @@ input:focus-visible {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+/* ============================================================
+   ACTIVITY INDICATOR — 通用状态指示器
+   ============================================================ */
+.activity-indicator {
+  --indicator-size: 8px;
+  width: var(--indicator-size);
+  height: var(--indicator-size);
+  border-radius: var(--radius-full);
+  background: var(--text-tertiary);
+  flex: none;
+  transition: background var(--transition-base), transform var(--transition-base);
+}
+
+.activity-indicator.idle {
+  background: #c5c1b9;
+  animation: none;
+}
+
+.activity-indicator.active {
+  background: var(--accent);
+  animation: indicator-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes indicator-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.35); opacity: 1; }
+}
+
+.activity-indicator.done {
+  background: var(--green);
+  animation: none;
+}
+
+.activity-indicator.error {
+  background: var(--red);
+  animation: none;
+}
+
 @media (max-width: 1120px) {
   body {
     min-width: 0;
