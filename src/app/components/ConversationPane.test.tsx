@@ -113,4 +113,72 @@ describe("ConversationPane", () => {
     expect(screen.getByRole("status", { name: "正在加载历史会话" })).toBeInTheDocument();
     expect(screen.getByText("正在加载历史会话…")).toBeInTheDocument();
   });
+
+  it("passes modelName and usage from state to Composer info bar", () => {
+    const state = createInitialSdkUiState();
+    state.usage = {
+      inputTokens: 1132,
+      outputTokens: 423,
+      cacheReadInputTokens: 580,
+      contextTokens: 2100,
+      maxContextTokens: 25000,
+    };
+
+    render(
+      <ConversationPane
+        state={state}
+        title="token 测试"
+        composerValue=""
+        hasTestExecution={false}
+        activeRunId="run-1"
+        modelName="Claude Opus 4.8"
+        onApprove={callbacks.onApprove}
+        onDeny={callbacks.onDeny}
+        onAnswer={callbacks.onAnswer}
+        onCopyMessage={callbacks.onCopyMessage}
+        onRetryMessage={callbacks.onRetryMessage}
+        onApprovePlan={callbacks.onApprovePlan}
+        onComposerChange={callbacks.onComposerChange}
+        onComposerSubmit={callbacks.onComposerSubmit}
+        onAddContent={callbacks.onAddContent}
+        onMinimizeWindow={callbacks.onMinimizeWindow}
+        onToggleMaximizeWindow={callbacks.onToggleMaximizeWindow}
+        onCloseWindow={callbacks.onCloseWindow}
+      />,
+    );
+
+    expect(screen.getByText("Claude Opus 4.8")).toBeInTheDocument();
+    expect(screen.getByText("1.1k")).toBeInTheDocument();  // 1132 → 1.1k
+    expect(screen.getByText("context")).toBeInTheDocument();
+    expect(screen.getByText("2.1k")).toBeInTheDocument();  // 2100 → 2.1k
+  });
+
+  it("does not display token info bar when state has no usage or modelName", () => {
+    const state = createInitialSdkUiState();
+
+    render(
+      <ConversationPane
+        state={state}
+        title="无 token"
+        composerValue=""
+        hasTestExecution={false}
+        activeRunId={undefined}
+        modelName=""
+        onApprove={callbacks.onApprove}
+        onDeny={callbacks.onDeny}
+        onAnswer={callbacks.onAnswer}
+        onCopyMessage={callbacks.onCopyMessage}
+        onRetryMessage={callbacks.onRetryMessage}
+        onApprovePlan={callbacks.onApprovePlan}
+        onComposerChange={callbacks.onComposerChange}
+        onComposerSubmit={callbacks.onComposerSubmit}
+        onAddContent={callbacks.onAddContent}
+        onMinimizeWindow={callbacks.onMinimizeWindow}
+        onToggleMaximizeWindow={callbacks.onToggleMaximizeWindow}
+        onCloseWindow={callbacks.onCloseWindow}
+      />,
+    );
+
+    expect(document.querySelector(".composer-info-bar")).not.toBeInTheDocument();
+  });
 });

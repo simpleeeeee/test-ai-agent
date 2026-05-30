@@ -1,8 +1,35 @@
 import type { BugDraft, Evidence } from "../domain/testRun";
-import type { ApprovalRequest, McpServerUiStatus, QuestionRequest, SdkUiEvent, SdkUiState } from "./sdkUiTypes";
+import type { ApprovalRequest, McpServerUiStatus, QuestionRequest, SdkUiEvent, SdkUiState, TokenUsage } from "./sdkUiTypes";
 
 function payloadRecord(payload: unknown): Record<string, unknown> {
   return payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
+}
+
+function normalizeUsage(raw: unknown): TokenUsage {
+  if (!raw || typeof raw !== "object") {
+    return { inputTokens: 0, outputTokens: 0 };
+  }
+  const r = raw as Record<string, unknown>;
+  const num = (key: string): number | undefined => {
+    const v = r[key];
+    return typeof v === "number" ? v : undefined;
+  };
+  return {
+    inputTokens: num("input_tokens") ?? num("inputTokens") ?? 0,
+    outputTokens: num("output_tokens") ?? num("outputTokens") ?? 0,
+    ...(num("cache_creation_input_tokens") !== undefined || num("cacheCreationInputTokens") !== undefined
+      ? { cacheCreationInputTokens: (num("cache_creation_input_tokens") ?? num("cacheCreationInputTokens")) as number }
+      : {}),
+    ...(num("cache_read_input_tokens") !== undefined || num("cacheReadInputTokens") !== undefined
+      ? { cacheReadInputTokens: (num("cache_read_input_tokens") ?? num("cacheReadInputTokens")) as number }
+      : {}),
+    ...(num("context_tokens") !== undefined || num("contextTokens") !== undefined
+      ? { contextTokens: (num("context_tokens") ?? num("contextTokens")) as number }
+      : {}),
+    ...(num("max_context_tokens") !== undefined || num("maxContextTokens") !== undefined
+      ? { maxContextTokens: (num("max_context_tokens") ?? num("maxContextTokens")) as number }
+      : {}),
+  };
 }
 
 function runIdFrom(payload: Record<string, unknown>) {
@@ -129,7 +156,7 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
   }
 
   if (event.channel === "sdk:usage") {
-    return { ...state, activeRunId, usage: payload.raw };
+    return { ...state, activeRunId, usage: normalizeUsage(payload.raw) };
   }
 
   if (event.channel === "sdk:error") {

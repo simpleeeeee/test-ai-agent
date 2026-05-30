@@ -60,15 +60,27 @@ export type LocalUiEvent = {
   payload: { sessionId: string; messages: SdkMessage[] };
 };
 
+export type TokenUsage = {
+  inputTokens: number;
+  outputTokens: number;
+  cacheCreationInputTokens?: number;
+  cacheReadInputTokens?: number;
+  /** 当前会话已使用的上下文 tokens 总量 */
+  contextTokens?: number;
+  /** LLM 支持的单会话最大上下文 tokens */
+  maxContextTokens?: number;
+};
+
 export type SdkUiState = {
   activeRunId?: string;
+  modelName?: string;
   messages: SdkMessage[];
   approvals: ApprovalRequest[];
   questions: QuestionRequest[];
   mcpServers: McpServerUiStatus[];
   evidence?: Evidence[];
   rawMessages: unknown[];
-  usage?: unknown;
+  usage?: TokenUsage;
   errors: Array<{ message: string; retryable: boolean }>;
   tasks: SdkTaskProgress[];
   sessions: SessionSummary[];

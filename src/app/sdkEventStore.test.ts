@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createInitialSdkUiState, reduceSdkUiEvent } from "./sdkEventStore";
+import type { SdkUiEvent } from "./sdkUiTypes";
 
 describe("sdkEventStore", () => {
   it("appends streamed assistant text into one message per message id", () => {
@@ -42,7 +43,7 @@ describe("sdkEventStore", () => {
     });
     state = reduceSdkUiEvent(state, {
       channel: "sdk:usage",
-      payload: { runId: "run-1", raw: { input_tokens: 10, output_tokens: 20 } },
+      payload: { runId: "run-1", raw: { inputTokens: 10, outputTokens: 20 } },
     });
     state = reduceSdkUiEvent(state, {
       channel: "sdk:error",
@@ -57,9 +58,28 @@ describe("sdkEventStore", () => {
     expect(state.questions).toHaveLength(1);
     expect(state.mcpServers).toEqual([{ name: "browser", status: "connected" }]);
     expect(state.rawMessages).toHaveLength(1);
-    expect(state.usage).toEqual({ input_tokens: 10, output_tokens: 20 });
+    expect(state.usage).toEqual({ inputTokens: 10, outputTokens: 20 });
     expect(state.errors[0].message).toBe("网关认证失败");
     expect(state.tasks[0].summary).toBe("正在执行子任务");
+  });
+
+  it("normalizes snake_case usage payload to camelCase TokenUsage", () => {
+    const initialState = createInitialSdkUiState();
+    const event: SdkUiEvent = {
+      channel: "sdk:usage",
+      payload: {
+        runId: "run-1",
+        raw: { input_tokens: 100, output_tokens: 50, cache_read_input_tokens: 30, context_tokens: 500, max_context_tokens: 10000 },
+      },
+    };
+    const state = reduceSdkUiEvent(initialState, event);
+    expect(state.usage).toEqual({
+      inputTokens: 100,
+      outputTokens: 50,
+      cacheReadInputTokens: 30,
+      contextTokens: 500,
+      maxContextTokens: 10000,
+    });
   });
 
   it("keeps ordinary chat and plan events out of test execution mode", () => {

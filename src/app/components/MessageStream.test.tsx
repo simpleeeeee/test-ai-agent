@@ -27,7 +27,7 @@ describe("MessageStream", () => {
       mcpServers: [{ name: "browser", status: "connected" }],
       evidence: [],
       rawMessages: [{ type: "system", subtype: "compact_boundary" }],
-      usage: { input_tokens: 10 },
+      usage: { inputTokens: 10, outputTokens: 20 },
       errors: [{ message: "网关认证失败", retryable: true }],
       tasks: [{ taskId: "task-1", summary: "正在执行子任务" }],
       sessions: [],
