@@ -134,4 +134,67 @@ describe("loadAgentRuntimeConfig", () => {
 
     expect(config.sdkOptions.env).toBeUndefined();
   });
+
+  it("merges supported SDK options while preserving required safety options", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
+    fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
+    fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
+      env: {
+        ANTHROPIC_BASE_URL: "https://gateway.example.com/anthropic",
+        ANTHROPIC_AUTH_TOKEN: "third-party-token",
+        ANTHROPIC_MODEL: "claude-compatible-test-model",
+      },
+    }, null, 2));
+
+    const config = loadAgentRuntimeConfig({
+      cwd,
+      userSdkOptions: {
+        permissionMode: "plan",
+        maxTurns: 5,
+        additionalDirectories: ["D:/workspace/shared"],
+        allowedTools: ["Read", "Grep"],
+        disallowedTools: ["Bash"],
+        systemPrompt: "你是测试助手",
+        thinking: { effort: "high", display: "summarized" },
+        toolChoice: { type: "auto" },
+        outputConfig: { format: { type: "json_schema", schema: { type: "object" } } },
+        cwd: "D:/malicious",
+        includePartialMessages: false,
+      },
+    } as any);
+
+    expect(config.sdkOptions).toEqual(expect.objectContaining({
+      cwd,
+      includePartialMessages: true,
+      permissionMode: "plan",
+      maxTurns: 5,
+      additionalDirectories: ["D:/workspace/shared"],
+      allowedTools: ["Read", "Grep"],
+      disallowedTools: ["Bash"],
+      systemPrompt: "你是测试助手",
+      thinking: { effort: "high", display: "summarized" },
+      toolChoice: { type: "auto" },
+      outputConfig: { format: { type: "json_schema", schema: { type: "object" } } },
+    }));
+
+    expect(config.sdkOptions).not.toHaveProperty("cwd", "D:/malicious");
+  });
+
+  it("defaults thinking display to summarized", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
+    fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
+    fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
+      env: {
+        ANTHROPIC_BASE_URL: "https://gateway.example.com/anthropic",
+        ANTHROPIC_AUTH_TOKEN: "third-party-token",
+        ANTHROPIC_MODEL: "claude-compatible-test-model",
+      },
+    }, null, 2));
+
+    const config = loadAgentRuntimeConfig({ cwd });
+
+    expect(config.sdkOptions).toEqual(expect.objectContaining({
+      thinking: { display: "summarized" },
+    }));
+  });
 });
