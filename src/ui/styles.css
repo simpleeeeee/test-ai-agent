@@ -701,19 +701,22 @@ input:focus-visible {
 }
 
 .composer-shell {
-  background: var(--bg-card);
-  border: 1px solid #dfd9d0;
-  border-radius: 12px;
-  bottom: 18px;
-  box-shadow: 0 8px 24px rgba(50, 38, 25, 0.085);
+  margin: 0 auto 18px;
+  width: min(var(--composer-max-width), calc(100% - 92px));
+  min-height: 86px;
+  padding: 14px 14px 12px;
+  background: var(--bg-composer);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
   display: grid;
   grid-template-rows: 1fr auto;
-  height: 86px;
-  left: 50%;
-  padding: 14px 14px 12px;
-  position: absolute;
-  transform: translateX(-50%);
-  width: min(670px, calc(100% - 92px));
+  flex: none;
+}
+
+.composer-shell:focus-within {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-lg), 0 0 0 1px var(--accent);
 }
 
 .test-mode .composer-shell {

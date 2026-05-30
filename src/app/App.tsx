@@ -5,6 +5,7 @@ import { ClaudeSidebar } from "./components/ClaudeSidebar";
 import { ConversationPane } from "./components/ConversationPane";
 import { SdkControlDrawer } from "./components/SdkControlDrawer";
 import { TestConsole } from "./components/TestConsole";
+import { SettingsPanel } from "./components/SettingsPanel";
 import type { Evidence } from "../domain/testRun";
 import type { SdkMessage, SessionSummary } from "./sdkUiTypes";
 import { isExplicitTestExecutionRequest } from "./testIntent";
@@ -122,6 +123,12 @@ export function App() {
   const [pendingTestExecutionIntent, setPendingTestExecutionIntent] = useState(false);
   const [historyLoadingSessionId, setHistoryLoadingSessionId] = useState<string | undefined>();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
+
   const [state, dispatch] = useReducer(reduceSdkUiEvent, undefined, createInitialSdkUiState);
   const historyRestoreToken = useRef(0);
   const bridge = useMemo(() => {
@@ -317,6 +324,14 @@ export function App() {
         </aside>
       ) : null}
       {composerNotice ? <div className="composer-notice" role="status">{composerNotice}</div> : null}
+      {settingsOpen ? (
+        <SettingsPanel
+          bridge={bridge}
+          onClose={() => setSettingsOpen(false)}
+          onThemeChange={(mode) => setTheme(mode)}
+          theme={theme}
+        />
+      ) : null}
       {shouldShowTestConsole ? (
         <TestConsole
           activeTaskId={activeTaskId}
