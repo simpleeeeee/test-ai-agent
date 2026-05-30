@@ -211,12 +211,46 @@ function mapNonStreamSdkMessage(runId: string, message: any): RunEvent[] {
   const events: RunEvent[] = [];
 
   if (message.type === "result") {
+    const resultMessageId = typeof message.session_id === "string"
+      ? `result-${message.session_id}`
+      : `result-${runId}`;
+
     if (typeof message.session_id === "string") {
       events.push({ type: "sdk:session-changed", sessionId: message.session_id });
     }
-    if (message.usage) {
-      events.push({ type: "sdk:usage", raw: message.usage });
+
+    // Enriched usage metadata
+    if (message.usage || message.modelUsage || message.cost || typeof message.duration_ms === "number" || typeof message.num_turns === "number") {
+      events.push({
+        type: "sdk:usage",
+        raw: message.usage ?? {},
+        ...(message.modelUsage ? { modelUsage: message.modelUsage } : {}),
+        ...(message.cost ? { cost: message.cost } : {}),
+        ...(typeof message.duration_ms === "number" ? { durationMs: message.duration_ms } : {}),
+        ...(typeof message.num_turns === "number" ? { numTurns: message.num_turns } : {}),
+        ...(typeof message.model === "string" ? { model: message.model } : {}),
+      });
     }
+
+    // Permission denials
+    if (Array.isArray(message.permission_denials)) {
+      for (const denial of message.permission_denials) {
+        const toolName = typeof denial?.tool_name === "string"
+          ? denial.tool_name
+          : typeof denial?.toolName === "string"
+            ? denial.toolName
+            : "unknown";
+        events.push({ type: "sdk:permission-denied", toolName, raw: denial });
+      }
+    }
+
+    // Result text as final assistant message
+    if (typeof message.result === "string" && message.result.length > 0) {
+      events.push({ type: "assistant:text-delta", messageId: resultMessageId, delta: message.result });
+      events.push({ type: "assistant:message-completed", messageId: resultMessageId, result: message.result });
+    }
+
+    // Status
     if (message.subtype === "error") {
       events.push({
         type: "sdk:error",
@@ -247,6 +281,16 @@ function mapNonStreamSdkMessage(runId: string, message: any): RunEvent[] {
       type: "sdk:mcp-status",
       servers: Array.isArray(message.mcp_servers) ? message.mcp_servers : [],
     });
+  }
+
+  if (message.type === "system" && typeof message.subtype === "string") {
+    if (message.subtype !== "task_progress" && message.subtype !== "mcp_server_status") {
+      events.push({
+        type: "sdk:system-event",
+        subtype: message.subtype,
+        raw: message,
+      });
+    }
   }
 
   return events;

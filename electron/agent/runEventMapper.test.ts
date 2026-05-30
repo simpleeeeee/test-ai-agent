@@ -57,6 +57,8 @@ describe("mapSdkMessageToRunEvents", () => {
     expect(events).toEqual([
       { type: "sdk:session-changed", sessionId: "session-1" },
       { type: "sdk:usage", raw: { input_tokens: 10 } },
+      { type: "assistant:text-delta", messageId: "result-session-1", delta: "完成" },
+      { type: "assistant:message-completed", messageId: "result-session-1", result: "完成" },
       { type: "run:status-changed", status: "completed" },
       { type: "sdk:raw-message", runId: "run-1", message: expect.any(Object) },
     ]);
@@ -174,6 +176,54 @@ describe("mapSdkMessageToRunEvents", () => {
     });
   });
 });
+
+  it("maps result metadata, result fallback text, and permission denials", () => {
+    const mapper = new SdkRunEventMapperSession("run-1");
+    const events = mapper.map({
+      type: "result",
+      subtype: "success",
+      session_id: "session-1",
+      usage: { input_tokens: 10, output_tokens: 5 },
+      modelUsage: { claude: { input_tokens: 10 } },
+      cost: { total_cost_usd: 0.02 },
+      duration_ms: 2300,
+      permission_denials: [{ tool_name: "Write", reason: "blocked" }],
+      result: "最终回复",
+      num_turns: 3,
+    });
+
+    expect(events).toContainEqual({ type: "sdk:session-changed", sessionId: "session-1" });
+    expect(events).toContainEqual({
+      type: "sdk:usage",
+      raw: { input_tokens: 10, output_tokens: 5 },
+      modelUsage: { claude: { input_tokens: 10 } },
+      cost: { total_cost_usd: 0.02 },
+      durationMs: 2300,
+      numTurns: 3,
+    });
+    expect(events).toContainEqual({ type: "sdk:permission-denied", toolName: "Write", raw: { tool_name: "Write", reason: "blocked" } });
+    expect(events).toContainEqual({ type: "assistant:text-delta", messageId: "result-session-1", delta: "最终回复" });
+    expect(events).toContainEqual({ type: "assistant:message-completed", messageId: "result-session-1", result: "最终回复" });
+    expect(events).toContainEqual({ type: "run:status-changed", status: "completed" });
+  });
+
+  it("maps SDK system init and compact events", () => {
+    const mapper = new SdkRunEventMapperSession("run-1");
+
+    const initEvents = mapper.map({ type: "system", subtype: "init", cwd: "D:/project" });
+    expect(initEvents).toContainEqual({
+      type: "sdk:system-event",
+      subtype: "init",
+      raw: { type: "system", subtype: "init", cwd: "D:/project" },
+    });
+
+    const compactEvents = mapper.map({ type: "system", subtype: "compact", summary: "已压缩上下文" });
+    expect(compactEvents).toContainEqual({
+      type: "sdk:system-event",
+      subtype: "compact",
+      raw: { type: "system", subtype: "compact", summary: "已压缩上下文" },
+    });
+  });
 
 describe("mapPermissionRequestToRunEvent", () => {
   it("maps permission requests to approval-required tool calls", () => {
