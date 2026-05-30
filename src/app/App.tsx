@@ -3,7 +3,6 @@ import { createBackendBridge } from "./backendBridge";
 import { createInitialSdkUiState, reduceSdkUiEvent } from "./sdkEventStore";
 import { ClaudeSidebar } from "./components/ClaudeSidebar";
 import { ConversationPane } from "./components/ConversationPane";
-import { SdkControlDrawer } from "./components/SdkControlDrawer";
 import { TestConsole } from "./components/TestConsole";
 import { SettingsPanel } from "./components/SettingsPanel";
 import type { Evidence } from "../domain/testRun";
@@ -116,7 +115,6 @@ function mapSessionMessages(raw: unknown): SdkMessage[] {
 
 export function App() {
   const [composerValue, setComposerValue] = useState("");
-  const [controlOpen, setControlOpen] = useState(false);
   const [utilityPanel, setUtilityPanel] = useState<"projects" | null>(null);
   const [composerNotice, setComposerNotice] = useState("");
   const [selectedModel, setSelectedModel] = useState("Claude Sonnet 4");
@@ -166,9 +164,6 @@ export function App() {
     setPendingTestExecutionIntent(false);
   }, [pendingTestExecutionIntent, state.activeRunId]);
 
-  function handleModelSaved(model: string) {
-    if (model) setSelectedModel(model);
-  }
 
   function handleComposerSubmit(value: string) {
     const isTestExecutionRequest = isExplicitTestExecutionRequest(value);
@@ -199,7 +194,6 @@ export function App() {
     dispatch({ channel: "ui:new-chat" });
     setComposerValue("");
     setComposerNotice("");
-    setControlOpen(false);
     setPendingTestExecutionIntent(false);
     setSettingsOpen(false);
     closeUtilityPanels();
@@ -207,7 +201,6 @@ export function App() {
 
   function handleSelectConversation() {
     closeUtilityPanels();
-    setControlOpen(false);
     setSettingsOpen(false);
   }
 
@@ -221,7 +214,6 @@ export function App() {
     });
     setComposerValue("");
     setComposerNotice("");
-    setControlOpen(false);
     setPendingTestExecutionIntent(false);
     closeUtilityPanels();
 
@@ -256,26 +248,12 @@ export function App() {
 
   function handleSelectProjects() {
     setUtilityPanel("projects");
-    setControlOpen(false);
     setComposerNotice("");
   }
 
   function handleAddContent() {
     closeUtilityPanels();
-    setControlOpen(false);
     setComposerNotice("添加内容功能即将开放");
-  }
-
-  function handleOpenTools() {
-    closeUtilityPanels();
-    setControlOpen(false);
-    setComposerNotice("工具面板即将开放");
-  }
-
-  function handleOpenModelSettings() {
-    closeUtilityPanels();
-    setComposerNotice("");
-    setControlOpen(true);
   }
 
   return (
@@ -305,8 +283,6 @@ export function App() {
         onComposerChange={setComposerValue}
         onComposerSubmit={handleComposerSubmit}
         onAddContent={handleAddContent}
-        onOpenTools={handleOpenTools}
-        onOpenModelSettings={handleOpenModelSettings}
         onMinimizeWindow={bridge.minimizeWindow}
         onToggleMaximizeWindow={bridge.toggleMaximizeWindow}
         onCloseWindow={bridge.closeWindow}
@@ -337,7 +313,7 @@ export function App() {
           onStopTask={(taskId: string) => { bridge.stopTask(requestRunId, taskId); }}
         />
       ) : null}
-      {controlOpen ? <SdkControlDrawer bridge={bridge} onModelSaved={handleModelSaved} /> : null}
+
     </div>
   );
 }
