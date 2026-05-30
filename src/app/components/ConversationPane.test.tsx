@@ -14,8 +14,6 @@ const callbacks = {
   onComposerChange: vi.fn(),
   onComposerSubmit: vi.fn(),
   onAddContent: vi.fn(),
-  onOpenTools: vi.fn(),
-  onOpenModelSettings: vi.fn(),
   onMinimizeWindow: vi.fn(),
   onToggleMaximizeWindow: vi.fn(),
   onCloseWindow: vi.fn(),
@@ -39,8 +37,6 @@ describe("ConversationPane", () => {
         onComposerChange={callbacks.onComposerChange}
         onComposerSubmit={callbacks.onComposerSubmit}
         onAddContent={callbacks.onAddContent}
-        onOpenTools={callbacks.onOpenTools}
-        onOpenModelSettings={callbacks.onOpenModelSettings}
         onMinimizeWindow={callbacks.onMinimizeWindow}
         onToggleMaximizeWindow={callbacks.onToggleMaximizeWindow}
         onCloseWindow={callbacks.onCloseWindow}
@@ -79,8 +75,6 @@ describe("ConversationPane", () => {
         onComposerChange={callbacks.onComposerChange}
         onComposerSubmit={callbacks.onComposerSubmit}
         onAddContent={callbacks.onAddContent}
-        onOpenTools={callbacks.onOpenTools}
-        onOpenModelSettings={callbacks.onOpenModelSettings}
         onMinimizeWindow={callbacks.onMinimizeWindow}
         onToggleMaximizeWindow={callbacks.onToggleMaximizeWindow}
         onCloseWindow={callbacks.onCloseWindow}
@@ -110,8 +104,6 @@ describe("ConversationPane", () => {
         onComposerChange={callbacks.onComposerChange}
         onComposerSubmit={callbacks.onComposerSubmit}
         onAddContent={callbacks.onAddContent}
-        onOpenTools={callbacks.onOpenTools}
-        onOpenModelSettings={callbacks.onOpenModelSettings}
         onMinimizeWindow={callbacks.onMinimizeWindow}
         onToggleMaximizeWindow={callbacks.onToggleMaximizeWindow}
         onCloseWindow={callbacks.onCloseWindow}
@@ -124,7 +116,6 @@ describe("ConversationPane", () => {
 
   it("passes modelName and usage from state to Composer info bar", () => {
     const state = createInitialSdkUiState();
-    state.modelName = "Claude Opus 4.8";
     state.usage = {
       inputTokens: 1132,
       outputTokens: 423,
@@ -140,6 +131,7 @@ describe("ConversationPane", () => {
         composerValue=""
         hasTestExecution={false}
         activeRunId="run-1"
+        modelName="Claude Opus 4.8"
         onApprove={callbacks.onApprove}
         onDeny={callbacks.onDeny}
         onAnswer={callbacks.onAnswer}
@@ -149,8 +141,6 @@ describe("ConversationPane", () => {
         onComposerChange={callbacks.onComposerChange}
         onComposerSubmit={callbacks.onComposerSubmit}
         onAddContent={callbacks.onAddContent}
-        onOpenTools={callbacks.onOpenTools}
-        onOpenModelSettings={callbacks.onOpenModelSettings}
         onMinimizeWindow={callbacks.onMinimizeWindow}
         onToggleMaximizeWindow={callbacks.onToggleMaximizeWindow}
         onCloseWindow={callbacks.onCloseWindow}
@@ -173,6 +163,7 @@ describe("ConversationPane", () => {
         composerValue=""
         hasTestExecution={false}
         activeRunId={undefined}
+        modelName=""
         onApprove={callbacks.onApprove}
         onDeny={callbacks.onDeny}
         onAnswer={callbacks.onAnswer}
@@ -182,8 +173,6 @@ describe("ConversationPane", () => {
         onComposerChange={callbacks.onComposerChange}
         onComposerSubmit={callbacks.onComposerSubmit}
         onAddContent={callbacks.onAddContent}
-        onOpenTools={callbacks.onOpenTools}
-        onOpenModelSettings={callbacks.onOpenModelSettings}
         onMinimizeWindow={callbacks.onMinimizeWindow}
         onToggleMaximizeWindow={callbacks.onToggleMaximizeWindow}
         onCloseWindow={callbacks.onCloseWindow}

@@ -53,7 +53,7 @@ export function Composer({
     }
   }
 
-  const showInfoBar = modelName !== undefined || hasTokenStats(usage);
+  const showInfoBar = (modelName != null && modelName !== "") || hasTokenStats(usage);
   const cacheTokens = usage ? getCacheTokens(usage) : 0;
   const showCache = cacheTokens > 0;
   const contextPct =
