@@ -35,6 +35,14 @@ describe("createSafeIpcApi", () => {
     expect(sender.off).toHaveBeenCalledWith("assistant:text-delta", wrapped);
     expect(() => api.on("shell:openExternal", listener)).toThrow("Unsupported IPC channel");
   });
+
+  it("allows thinking delta stream subscriptions", () => {
+    const sender = { send: vi.fn(), invoke: vi.fn(), on: vi.fn(), off: vi.fn() };
+    const api = createSafeIpcApi(sender);
+
+    expect(() => api.on("assistant:thinking-delta", vi.fn())).not.toThrow();
+    expect(sender.on).toHaveBeenCalledWith("assistant:thinking-delta", expect.any(Function));
+  });
 });
 
 describe("preload api contract", () => {

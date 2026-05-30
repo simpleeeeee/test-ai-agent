@@ -42,6 +42,18 @@ describe("IPC payload schemas", () => {
     });
   });
 
+  it("accepts streamed thinking delta payloads", () => {
+    expect(parseMainToRendererPayload("assistant:thinking-delta", {
+      runId: "run-1",
+      messageId: "message-1",
+      delta: "分析用户需求",
+    })).toEqual({
+      runId: "run-1",
+      messageId: "message-1",
+      delta: "分析用户需求",
+    });
+  });
+
   it("accepts only empty payloads for window controls", () => {
     expect(() => parseRendererToMainPayload("window:minimize", undefined)).not.toThrow();
     expect(() => parseRendererToMainPayload("window:toggle-maximize", undefined)).not.toThrow();

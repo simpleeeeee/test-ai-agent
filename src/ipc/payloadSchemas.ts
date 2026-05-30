@@ -59,6 +59,7 @@ const rendererSchemas = {
 
 const mainSchemas = {
   "assistant:text-delta": z.object({ runId: nonEmptyString, messageId: nonEmptyString, delta: z.string() }),
+  "assistant:thinking-delta": z.object({ runId: nonEmptyString, messageId: nonEmptyString, delta: z.string() }),
   "assistant:message-completed": z.object({ runId: nonEmptyString, messageId: nonEmptyString }),
   "sdk:raw-message": z.object({ runId: nonEmptyString, message: z.unknown() }),
   "sdk:session-changed": z.object({ runId: nonEmptyString, sessionId: nonEmptyString }),

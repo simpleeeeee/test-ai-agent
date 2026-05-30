@@ -22,7 +22,7 @@ const mainToRendererChannels = [
   "run:created", "run:planning", "run:plan-ready", "run:status-changed",
   "tool:call-started", "tool:approval-required", "tool:call-completed",
   "tool:call-failed", "evidence:created", "bug-draft:created",
-  "assistant:text-delta", "assistant:message-completed",
+  "assistant:text-delta", "assistant:thinking-delta", "assistant:message-completed",
   "sdk:raw-message", "sdk:session-changed", "sdk:status", "sdk:usage",
   "sdk:error", "sdk:permission-denied", "sdk:mcp-status",
   "sdk:task-progress", "sdk:hook-event",
