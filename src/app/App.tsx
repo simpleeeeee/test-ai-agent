@@ -296,7 +296,6 @@ export function App() {
         hasTestExecution={shouldShowTestConsole}
         activeRunId={state.activeRunId}
         loadingHistorySession={historyLoadingSessionId !== undefined && historyLoadingSessionId === state.activeRunId}
-        modelName={selectedModel}
         onApprove={bridge.approveTool}
         onDeny={bridge.denyTool}
         onAnswer={bridge.answerQuestion}
@@ -311,11 +310,6 @@ export function App() {
         onMinimizeWindow={bridge.minimizeWindow}
         onToggleMaximizeWindow={bridge.toggleMaximizeWindow}
         onCloseWindow={bridge.closeWindow}
-        onToggleSdkControl={() => {
-          closeUtilityPanels();
-          setComposerNotice("");
-          setControlOpen((v) => !v);
-        }}
       />
       {utilityPanel === "projects" ? (
         <aside className="utility-panel" aria-label="项目面板">

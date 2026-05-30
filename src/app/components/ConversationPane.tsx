@@ -1,4 +1,3 @@
-import { Settings } from "lucide-react";
 import type { SdkUiState } from "../sdkUiTypes";
 import { Composer } from "./Composer";
 import { EmptyConversationState } from "./EmptyConversationState";
@@ -12,7 +11,6 @@ type Props = {
   hasTestExecution: boolean;
   activeRunId?: string;
   loadingHistorySession?: boolean;
-  modelName?: string;
   onApprove: (runId: string, requestId: string, options: { updatedInput?: Record<string, unknown>; applyPermissionSuggestions?: boolean }) => void;
   onDeny: (runId: string, requestId: string, message: string) => void;
   onAnswer: (runId: string, requestId: string, answers: Record<string, unknown>) => void;
@@ -27,7 +25,6 @@ type Props = {
   onMinimizeWindow: () => void;
   onToggleMaximizeWindow: () => void;
   onCloseWindow: () => void;
-  onToggleSdkControl?: () => void;
 };
 
 export function ConversationPane({
@@ -37,7 +34,6 @@ export function ConversationPane({
   hasTestExecution,
   activeRunId,
   loadingHistorySession,
-  modelName = "Claude Sonnet 4",
   onApprove,
   onDeny,
   onAnswer,
@@ -52,7 +48,6 @@ export function ConversationPane({
   onMinimizeWindow,
   onToggleMaximizeWindow,
   onCloseWindow,
-  onToggleSdkControl,
 }: Props) {
   const isEmpty = state.messages.length === 0 && state.approvals.length === 0 && state.questions.length === 0 && state.errors.length === 0;
   const placeholder = hasTestExecution ? "补充测试指令或继续提问…" : "向 AI 测试助手提问…";
@@ -62,11 +57,6 @@ export function ConversationPane({
       <header className="conversation-header">
         <span className="conversation-title">{title}</span>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {onToggleSdkControl ? (
-            <button className="window-control" type="button" aria-label="SDK 控制" title="SDK 控制" onClick={onToggleSdkControl}>
-              <Settings aria-hidden="true" size={16} />
-            </button>
-          ) : null}
           <WindowControls
             onMinimize={onMinimizeWindow}
             onToggleMaximize={onToggleMaximizeWindow}
@@ -106,7 +96,7 @@ export function ConversationPane({
           </>
         )}
       </section>
-      <Composer value={composerValue} onChange={onComposerChange} onSubmit={onComposerSubmit} onAddContent={onAddContent} onOpenTools={onOpenTools} onOpenModelSettings={onOpenModelSettings} placeholder={placeholder} modelName={modelName} />
+      <Composer value={composerValue} onChange={onComposerChange} onSubmit={onComposerSubmit} onAddContent={onAddContent} onOpenTools={onOpenTools} onOpenModelSettings={onOpenModelSettings} placeholder={placeholder} />
     </main>
   );
 }
