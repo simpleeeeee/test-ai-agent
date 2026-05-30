@@ -1214,6 +1214,60 @@ input:focus-visible {
   font-weight: 600;
 }
 
+/* ============================================================
+   THINKING BLOCK — LLM 思考过程可折叠区块
+   ============================================================ */
+.thinking-block {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.thinking-block:hover { border-color: var(--border-strong); }
+
+.thinking-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.thinking-header:hover { background: var(--bg-sidebar); }
+
+.thinking-header .thinking-label {
+  font-weight: 520;
+  color: var(--text-primary);
+}
+
+.thinking-header .thinking-time {
+  color: var(--text-tertiary);
+  font-size: var(--font-xs);
+  margin-left: auto;
+}
+
+.thinking-header svg {
+  flex: none;
+  transition: transform var(--transition-fast);
+}
+
+.thinking-header.expanded svg { transform: rotate(180deg); }
+
+.thinking-body {
+  display: none;
+  padding: 10px 12px 12px;
+  font-size: var(--font-sm);
+  line-height: 1.55;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-sidebar);
+}
+
+.thinking-body.open { display: block; }
+
 @media (max-width: 1120px) {
   body {
     min-width: 0;
