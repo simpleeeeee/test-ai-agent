@@ -60,7 +60,6 @@ describe("SDK capability coverage", () => {
       "src/app/components/ToolApprovalCard.tsx",
       "src/app/components/AskUserQuestionCard.tsx",
       "src/app/components/SdkControlDrawer.tsx",
-      "src/app/components/SessionPanel.tsx",
       "src/app/components/McpStatusPanel.tsx",
       "src/app/components/MessageStream.tsx",
       "src/app/App.tsx",

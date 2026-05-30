@@ -111,6 +111,9 @@ export function createBackendBridge(api: AiTestAssistantApi) {
     getSession(sessionId: string) {
       return api.invoke("run:get-session", { sessionId });
     },
+    getSessionMessages(sessionId: string) {
+      return api.invoke("run:get-session-messages", { sessionId });
+    },
     resumeSession(runId: string, sessionId: string) {
       return api.invoke("run:resume", { runId, sessionId });
     },

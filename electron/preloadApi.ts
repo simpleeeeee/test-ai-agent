@@ -3,6 +3,7 @@ const rendererToMainChannels = [
   "run:stop", "run:resume", "run:fork", "run:continue",
   "run:send-message", "run:set-model", "run:set-permission-mode",
   "run:apply-settings", "run:list-sessions", "run:get-session",
+  "run:get-session-messages",
   "run:rename-session", "run:tag-session", "run:delete-session",
   "mcp:set-servers", "mcp:reconnect", "mcp:toggle", "mcp:status",
   "question:answer", "task:stop",

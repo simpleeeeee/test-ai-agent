@@ -54,6 +54,15 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
     };
   }
 
+  if (event.channel === "ui:session-loaded") {
+    return {
+      ...createInitialSdkUiState(),
+      sessions: state.sessions,
+      activeRunId: event.payload.sessionId,
+      messages: event.payload.messages,
+    };
+  }
+
   if (event.channel === "ui:test-execution-confirmed") {
     return markHasTestExecution({ ...state, activeRunId }, activeRunId);
   }

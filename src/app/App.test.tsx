@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
@@ -19,6 +19,27 @@ beforeEach(() => {
           customTitle: "订单模块回归测试",
           tag: "P1",
           lastModified: 1717000000000,
+        },
+      ]);
+    }
+    if (channel === "run:get-session-messages") {
+      return Promise.resolve([
+        {
+          type: "user",
+          uuid: "user-1",
+          session_id: "run-old",
+          message: { role: "user", content: "历史问题" },
+          parent_tool_use_id: null,
+        },
+        {
+          type: "assistant",
+          uuid: "assistant-1",
+          session_id: "run-old",
+          message: {
+            role: "assistant",
+            content: [{ type: "text", text: "历史回复" }],
+          },
+          parent_tool_use_id: null,
         },
       ]);
     }
@@ -198,5 +219,66 @@ describe("App backend integration", () => {
   it("loads sessions on mount and renders them in the sidebar", async () => {
     render(<App />);
     expect(await screen.findByText("订单模块回归测试")).toBeInTheDocument();
+  });
+
+  it("loads a clicked history session into the conversation area", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: "订单模块回归测试" }));
+
+    expect(await screen.findByText("历史问题")).toBeInTheDocument();
+    expect(await screen.findByText("历史回复")).toBeInTheDocument();
+    expect(screen.getByRole("main", { name: "对话" })).toHaveTextContent("订单模块回归测试");
+  });
+
+  it("shows a loading banner while a clicked history session is being restored", async () => {
+    const user = userEvent.setup();
+    let resolveMessages: ((value: unknown) => void) | undefined;
+
+    invoke.mockImplementation((channel: string) => {
+      if (channel === "run:list-sessions") {
+        return Promise.resolve([
+          {
+            sessionId: "run-old",
+            summary: "自动化生成的摘要",
+            customTitle: "订单模块回归测试",
+            tag: "P1",
+            lastModified: 1717000000000,
+          },
+        ]);
+      }
+      if (channel === "run:get-session-messages") {
+        return new Promise((resolve) => {
+          resolveMessages = resolve;
+        });
+      }
+      if (channel === "settings:get") {
+        return Promise.resolve({ baseUrl: "", apiKey: "", model: "" });
+      }
+      return Promise.resolve(undefined);
+    });
+
+    render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: "订单模块回归测试" }));
+
+    expect(screen.getByRole("status", { name: "正在加载历史会话" })).toBeInTheDocument();
+    expect(screen.getByText("正在加载历史会话…")).toBeInTheDocument();
+
+    await act(async () => {
+      resolveMessages?.([
+        {
+          type: "user",
+          uuid: "user-1",
+          session_id: "run-old",
+          message: { role: "user", content: "历史问题" },
+          parent_tool_use_id: null,
+        },
+      ]);
+    });
+
+    expect(await screen.findByText("历史问题")).toBeInTheDocument();
+    expect(screen.queryByRole("status", { name: "正在加载历史会话" })).not.toBeInTheDocument();
   });
 });

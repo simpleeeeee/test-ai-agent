@@ -40,6 +40,7 @@ describe("IPC channels", () => {
       "run:apply-settings",
       "run:list-sessions",
       "run:get-session",
+      "run:get-session-messages",
       "run:rename-session",
       "run:tag-session",
       "run:delete-session",

@@ -56,6 +56,7 @@ describe("backendBridge", () => {
     await bridge.stopTask("run-1", "task-1");
     await bridge.listSessions();
     await bridge.getSession("session-1");
+    await bridge.getSessionMessages("session-1");
     await bridge.resumeSession("run-1", "session-1");
     await bridge.forkSession("run-1", "session-1");
     await bridge.continueRun("run-1");
@@ -68,6 +69,7 @@ describe("backendBridge", () => {
     expect(api.invoke).toHaveBeenCalledWith("mcp:reconnect", { runId: "run-1", serverName: "browser" });
     expect(api.invoke).toHaveBeenCalledWith("task:stop", { runId: "run-1", taskId: "task-1" });
     expect(api.invoke).toHaveBeenCalledWith("run:list-sessions", undefined);
+    expect(api.invoke).toHaveBeenCalledWith("run:get-session-messages", { sessionId: "session-1" });
     expect(api.invoke).toHaveBeenCalledWith("run:resume", { runId: "run-1", sessionId: "session-1" });
   });
 

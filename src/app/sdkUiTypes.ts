@@ -55,6 +55,9 @@ export type LocalUiEvent = {
 } | {
   channel: "ui:sessions-loaded";
   payload: { sessions: SessionSummary[] };
+} | {
+  channel: "ui:session-loaded";
+  payload: { sessionId: string; messages: SdkMessage[] };
 };
 
 export type SdkUiState = {

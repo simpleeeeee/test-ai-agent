@@ -8,11 +8,13 @@ import { mapSdkMessageToRunEvents } from "./runEventMapper.js";
 import {
   listSessions as sdkListSessions,
   getSessionInfo as sdkGetSessionInfo,
+  getSessionMessages as sdkGetSessionMessages,
   forkSession as sdkForkSession,
   renameSession as sdkRenameSession,
   tagSession as sdkTagSession,
   deleteSession as sdkDeleteSession,
   type SDKSessionInfo,
+  type SessionMessage,
 } from "./claudeAgentSdkFacade.js";
 
 type RuntimeSession = ReturnType<ClaudeAgentRuntimeAdapter["start"]>;
@@ -155,6 +157,10 @@ export class AgentSessionManager {
   async getSession(sessionId: string): Promise<SDKSessionInfo | null> {
     const info = await sdkGetSessionInfo(sessionId, { dir: this.resolveDir() });
     return info ?? null;
+  }
+
+  async getSessionMessages(sessionId: string): Promise<SessionMessage[]> {
+    return sdkGetSessionMessages(sessionId, { dir: this.resolveDir() });
   }
 
   async resumeSession(runId: string, sessionId: string) {

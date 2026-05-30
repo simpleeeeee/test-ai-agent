@@ -11,6 +11,7 @@ type Props = {
   composerValue: string;
   hasTestExecution: boolean;
   activeRunId?: string;
+  loadingHistorySession?: boolean;
   modelName?: string;
   onApprove: (runId: string, requestId: string, options: { updatedInput?: Record<string, unknown>; applyPermissionSuggestions?: boolean }) => void;
   onDeny: (runId: string, requestId: string, message: string) => void;
@@ -35,6 +36,7 @@ export function ConversationPane({
   composerValue,
   hasTestExecution,
   activeRunId,
+  loadingHistorySession,
   modelName = "Claude Sonnet 4",
   onApprove,
   onDeny,
@@ -72,29 +74,38 @@ export function ConversationPane({
           />
         </div>
       </header>
-      {isEmpty ? (
-        <section className="message-stream" aria-label="消息流">
+      <section className="message-stream" aria-label="消息流">
+        {loadingHistorySession ? (
+          <div className="history-loading-banner" role="status" aria-live="polite" aria-label="正在加载历史会话">
+            <span className="history-loading-dots" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+            <span className="history-loading-copy">正在加载历史会话…</span>
+          </div>
+        ) : isEmpty ? (
           <EmptyConversationState onSuggestionClick={onComposerChange} />
-        </section>
-      ) : (
-        <section className="message-stream" aria-label="消息流">
-          <MessageStream
-            state={state}
-            onApprove={onApprove}
-            onDeny={onDeny}
-            onAnswer={onAnswer}
-            onCopyMessage={onCopyMessage}
-            onRetryMessage={onRetryMessage}
-          />
-          {activeRunId ? (
-            <div className="plan-action-row">
-              <button className="primary-action" type="button" onClick={onApprovePlan}>
-                确认计划并执行
-              </button>
-            </div>
-          ) : null}
-        </section>
-      )}
+        ) : (
+          <>
+            <MessageStream
+              state={state}
+              onApprove={onApprove}
+              onDeny={onDeny}
+              onAnswer={onAnswer}
+              onCopyMessage={onCopyMessage}
+              onRetryMessage={onRetryMessage}
+            />
+            {activeRunId ? (
+              <div className="plan-action-row">
+                <button className="primary-action" type="button" onClick={onApprovePlan}>
+                  确认计划并执行
+                </button>
+              </div>
+            ) : null}
+          </>
+        )}
+      </section>
       <Composer value={composerValue} onChange={onComposerChange} onSubmit={onComposerSubmit} onAddContent={onAddContent} onOpenTools={onOpenTools} onOpenModelSettings={onOpenModelSettings} placeholder={placeholder} modelName={modelName} />
     </main>
   );

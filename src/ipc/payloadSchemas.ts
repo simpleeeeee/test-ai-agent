@@ -35,6 +35,7 @@ const rendererSchemas = {
   "run:apply-settings": z.object({ runId: nonEmptyString, settings: jsonObject }),
   "run:list-sessions": noPayload,
   "run:get-session": z.object({ sessionId: nonEmptyString }),
+  "run:get-session-messages": z.object({ sessionId: nonEmptyString }),
   "run:rename-session": z.object({ sessionId: nonEmptyString, title: nonEmptyString }),
   "run:tag-session": z.object({ sessionId: nonEmptyString, tag: z.string().nullable() }),
   "run:delete-session": z.object({ sessionId: nonEmptyString }),

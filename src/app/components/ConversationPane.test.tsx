@@ -91,4 +91,34 @@ describe("ConversationPane", () => {
     await user.click(screen.getByRole("button", { name: "确认计划并执行" }));
     expect(callbacks.onApprovePlan).toHaveBeenCalledTimes(1);
   });
+
+  it("shows a loading banner while a history session is being restored", () => {
+    render(
+      <ConversationPane
+        state={createInitialSdkUiState()}
+        title="订单模块回归"
+        composerValue=""
+        hasTestExecution={false}
+        activeRunId="run-1"
+        loadingHistorySession
+        onApprove={callbacks.onApprove}
+        onDeny={callbacks.onDeny}
+        onAnswer={callbacks.onAnswer}
+        onCopyMessage={callbacks.onCopyMessage}
+        onRetryMessage={callbacks.onRetryMessage}
+        onApprovePlan={callbacks.onApprovePlan}
+        onComposerChange={callbacks.onComposerChange}
+        onComposerSubmit={callbacks.onComposerSubmit}
+        onAddContent={callbacks.onAddContent}
+        onOpenTools={callbacks.onOpenTools}
+        onOpenModelSettings={callbacks.onOpenModelSettings}
+        onMinimizeWindow={callbacks.onMinimizeWindow}
+        onToggleMaximizeWindow={callbacks.onToggleMaximizeWindow}
+        onCloseWindow={callbacks.onCloseWindow}
+      />,
+    );
+
+    expect(screen.getByRole("status", { name: "正在加载历史会话" })).toBeInTheDocument();
+    expect(screen.getByText("正在加载历史会话…")).toBeInTheDocument();
+  });
 });

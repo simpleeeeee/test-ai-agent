@@ -120,6 +120,12 @@ function registerBackendIpc(window: BrowserWindow, cwd: string, configDir: strin
       return null;
     })
   );
+  handleRequest("run:get-session-messages", ({ sessionId }) =>
+    manager.getSessionMessages(sessionId).catch((e) => {
+      console.error("getSessionMessages failed:", e);
+      return [];
+    })
+  );
   handleRequest("run:resume", ({ runId, sessionId }) =>
     manager.resumeSession(runId, sessionId).catch((e) => ({ error: errorMessage(e), code: "SDK_ERROR" }))
   );

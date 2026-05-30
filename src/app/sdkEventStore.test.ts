@@ -177,6 +177,33 @@ describe("sdkEventStore", () => {
     expect(state.sessions[1].title).toBe("登录测试");
   });
 
+  it("loads a selected session transcript into the active conversation", () => {
+    let state = createInitialSdkUiState();
+    state.sessions = [{ id: "s1", title: "订单回归", tags: [] }];
+    state = reduceSdkUiEvent(state, {
+      channel: "assistant:text-delta",
+      payload: { runId: "run-old", messageId: "msg-old", delta: "旧内容" },
+    });
+    state = reduceSdkUiEvent(state, {
+      channel: "ui:session-loaded",
+      payload: {
+        sessionId: "s1",
+        messages: [
+          { id: "user-1", role: "user", content: "历史提问", complete: true },
+          { id: "assistant-1", role: "assistant", content: "历史回复", complete: true },
+        ],
+      },
+    });
+
+    expect(state.activeRunId).toBe("s1");
+    expect(state.messages).toEqual([
+      { id: "user-1", role: "user", content: "历史提问", complete: true },
+      { id: "assistant-1", role: "assistant", content: "历史回复", complete: true },
+    ]);
+    expect(state.sessions).toEqual([{ id: "s1", title: "订单回归", tags: [] }]);
+    expect(state.errors).toEqual([]);
+  });
+
   it("preserves sessions across ui:new-chat", () => {
     let state = createInitialSdkUiState();
     state.sessions = [{ id: "s1", title: "历史", tags: [] }];

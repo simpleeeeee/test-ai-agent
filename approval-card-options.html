@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>审批卡片方案对比 — Claude Desktop 终端风格</title>
+<style>
+:root {
+  --bg: #faf9f5;
+  --bg2: #e8e6dc;
+  --border: rgba(0,0,0,0.08);
+  --text: #141413;
+  --muted: #6b6960;
+  --tertiary: #b0aea5;
+  --accent: #d97757;
+  --green: #788c5d;
+  --red: #c4554d;
+  --font: Inter, -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font);
+  padding:32px 24px;
+  line-height:1.5;
+}
+h1{font-size:22px;font-weight:650;margin-bottom:6px}
+h1 span{font-weight:400;color:var(--muted);font-size:16px}
+.sub{color:var(--muted);font-size:14px;margin-bottom:32px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:24px}
+.option{
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:14px;
+  overflow:hidden;
+}
+.option-label{
+  padding:10px 16px;
+  font-size:13px;
+  font-weight:650;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+  background:#fcfaf7;
+}
+.option-label .num{
+  width:22px;height:22px;
+  border-radius:99px;
+  background:var(--accent);
+  color:#fff;
+  font-size:11px;
+  font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center;
+  flex:none;
+}
+.option-body{padding:16px;display:grid;gap:16px}
+
+/* ============================================================
+   Shared: buttons & indicator
+   ============================================================ */
+.dot{width:8px;height:8px;border-radius:99px;flex:none;display:inline-block}
+.dot.active{background:var(--accent);animation:pulse 1.2s ease-in-out infinite}
+.dot.done{background:var(--green);animation:none}
+.dot.error{background:var(--red);animation:none}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.35);opacity:1}}
+
+.btn-row{display:flex;gap:8px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:0 14px;min-height:34px;
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  background:transparent;
+  color:var(--text);
+  font-family:var(--mono);
+  font-size:12px;font-weight:500;
+  cursor:pointer;
+  transition:all .15s;
+  white-space:nowrap;
+}
+.btn:hover{border-color:var(--tertiary)}
+.btn:active{transform:scale(.97)}
+
+/* ============================================================
+   Option A: 极简终端 — 仅 > 提示符 + 灰色代码块
+   ============================================================ */
+.opt-a{
+  border:1px solid var(--border);
+  border-radius:var(--radius-xl);
+  padding:16px;
+  background:var(--bg);
+  display:grid;gap:12px;
+  font-family:var(--mono);
+  font-size:13px;
+}
+.opt-a .line{display:flex;gap:8px;align-items:flex-start}
+.opt-a .prompt{color:var(--tertiary);flex:none}
+.opt-a .cmd{color:var(--text)}
+.opt-a pre{
+  margin:0;padding:10px 14px;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  font-family:var(--mono);font-size:12px;
+  color:var(--muted);
+  white-space:pre-wrap;
+}
+
+/* ============================================================
+   Option B: 深色迷你终端 — 深底 + 红绿灯 + 提示符
+   ============================================================ */
+.opt-b{
+  border-radius:var(--radius-xl);
+  overflow:hidden;
+  background:#1e1d1a;
+  color:#d4d1c8;
+  font-family:var(--mono);
+  font-size:12px;
+  box-shadow:0 4px 16px rgba(0,0,0,.12);
+}
+.opt-b .bar{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;
+  background:rgba(255,255,255,.025);
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.opt-b .traf{display:flex;gap:6px}
+.opt-b .traf span{width:9px;height:9px;border-radius:99px;background:rgba(255,255,255,.2)}
+.opt-b .body{padding:14px;display:grid;gap:10px}
+.opt-b .body .l{display:flex;gap:8px}
+.opt-b .body .l .p{color:#788c5d;flex:none}
+.opt-b pre{
+  margin:0;padding:10px 12px;
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:var(--radius-sm);
+  color:rgba(255,255,255,.6);
+  white-space:pre-wrap;
+}
+.opt-b .btn{border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.7)}
+.opt-b .btn:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.3);color:#fff}
+
+/* ============================================================
+   Option C: 浅色系统终端 — 浅底标题栏 + cmd路径
+   ============================================================ */
+.opt-c{
+  border:1px solid var(--border);
+  border-radius:var(--radius-xl);
+  overflow:hidden;
+  background:var(--bg);
+}
+.opt-c .bar{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 16px;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+}
+.opt-c .bar .traf{display:flex;gap:6px}
+.opt-c .bar .traf span{width:9px;height:9px;border-radius:99px;background:rgba(0,0,0,.15)}
+.opt-c .bar .traf span:nth-child(1){background:#c4554d}
+.opt-c .bar .traf span:nth-child(2){background:#d4a853}
+.opt-c .bar .traf span:nth-child(3){background:#788c5d}
+.opt-c .bar .path{font-family:var(--mono);font-size:11px;color:var(--tertiary)}
+.opt-c .body{padding:16px;display:grid;gap:12px;font-family:var(--mono);font-size:13px}
+.opt-c .body .row{display:flex;gap:8px}
+.opt-c .body .p{color:var(--tertiary);flex:none}
+.opt-c pre{
+  margin:0;padding:10px 14px;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  font-family:var(--mono);font-size:12px;
+  color:var(--muted);
+  white-space:pre-wrap;
+}
+
+/* ============================================================
+   Option D: 行内代码风格 — 无边框卡片，对话流内代码块
+   ============================================================ */
+.opt-d{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  padding:14px 16px;
+  display:grid;gap:10px;
+  font-family:var(--mono);
+  font-size:12px;
+  color:var(--muted);
+}
+.opt-d .tag{display:flex;gap:8px;align-items:center}
+.opt-d .tag .kw{color:var(--accent);font-weight:600}
+.opt-d .tag .name{color:var(--text);font-weight:600}
+.opt-d pre{
+  margin:0;padding:0;
+  font-family:var(--mono);font-size:12px;
+  color:var(--muted);
+  white-space:pre-wrap;
+}
+
+/* ============================================================
+   Option E: 分栏终端 — 左侧信息 + 右侧操作的命令行面板
+   ============================================================ */
+.opt-e{
+  border:1px solid var(--border);
+  border-radius:var(--radius-xl);
+  overflow:hidden;
+  background:var(--bg);
+  display:grid;
+  font-family:var(--mono);
+  font-size:12px;
+}
+.opt-e .top{
+  padding:14px 16px;
+  display:grid;gap:8px;
+  border-bottom:1px solid var(--border);
+}
+.opt-e .top .l{display:flex;gap:8px}
+.opt-e .top .l .p{color:var(--tertiary);flex:none}
+.opt-e pre{
+  margin:0;padding:0;
+  font-family:var(--mono);font-size:12px;
+  color:var(--muted);
+  white-space:pre-wrap;
+}
+.opt-e .bot{
+  padding:10px 16px;
+  background:var(--bg2);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.opt-e .bot .status{font-size:11px;color:var(--tertiary)}
+.opt-e input{
+  flex:1;margin-right:8px;min-width:0;
+  padding:5px 8px;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  background:var(--bg);
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--text);
+}
+
+/* Status line at bottom */
+.approval-status-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 16px;
+  background:var(--bg2);
+  border-top:1px solid var(--border);
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--tertiary);
+}
+.approval-status-bar input{
+  flex:1;min-width:0;
+  padding:4px 8px;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  background:var(--bg);
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--text);
+}
+</style>
+</head>
+<body>
+
+<h1>审批卡片方案对比 <span>— 简约终端风格</span></h1>
+<p class="sub">5 种不同方向的终端风格设计，选择一个最接近你预期的，我再精调。所有按钮均可点击交互。</p>
+
+<div class="grid">
+
+<!-- ===== Option A: 极简终端 ===== -->
+<div class="option">
+  <div class="option-label"><span class="num">A</span> 极简终端 — 纯文字 + 提示符，无边框 chrome</div>
+  <div class="option-body">
+    <div class="opt-a">
+      <div class="line"><span class="dot active"></span><span class="prompt">&gt;</span><span class="cmd">approval/request · tool:browser.navigate</span></div>
+      <pre>打开订单列表页，检查"待支付"状态筛选是否正确。
+此操作读取页面 DOM 结构，不修改业务数据。</pre>
+      <div class="btn-row"><button class="btn">允许一次</button><button class="btn">本会话允许</button><button class="btn">拒绝</button></div>
+    </div>
+    <p style="font-size:11px;color:var(--tertiary);">特点：最干净，只有 &gt; 符号和代码块。适合和对话流无缝融合。</p>
+  </div>
+</div>
+
+<!-- ===== Option B: 深色迷你终端 ===== -->
+<div class="option">
+  <div class="option-label"><span class="num">B</span> 深色迷你终端 — 红绿灯 + 命令行，紧凑深底</div>
+  <div class="option-body">
+    <div class="opt-b">
+      <div class="body">
+        <div class="l"><span class="dot active"></span><span class="p">$</span><span>ai-assistant request browser.navigate</span></div>
+        <div class="l"><span class="p">&gt;</span><span>打开订单列表页，检查"待支付"状态筛选是否正确。读取页面 DOM 结构，验证筛选控件状态。</span></div>
+        <pre>工具：browser.navigate
+参数：{"url":"/orders?status=pending_payment","waitUntil":"networkidle"}
+影响：read-only · 不修改业务数据 · 结果写入会话证据</pre>
+        <div class="btn-row"><button class="btn">允许一次</button><button class="btn">本会话允许</button><button class="btn">拒绝</button></div>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--tertiary);">特点：独立深色面板，和对话区形成视觉对比，终端感最强。</p>
+  </div>
+</div>
+
+<!-- ===== Option C: 浅色系统终端 ===== -->
+<div class="option">
+  <div class="option-label"><span class="num">C</span> 浅色系统终端 — 红绿灯标题栏 + 等宽正文，保留暖色调</div>
+  <div class="option-body">
+    <div class="opt-c">
+      <div class="bar"><div class="traf"><span></span><span></span><span></span></div><span class="path">~/.approval/browser.navigate</span></div>
+      <div class="body">
+        <div class="row"><span class="dot active"></span><span class="p">$</span><span>tool:browser.navigate — 需要你审核后才能继续执行</span></div>
+        <div class="row"><span class="p">&gt;</span><span>打开订单列表页，检查"待支付"状态筛选是否正确。读取页面 DOM 结构，验证筛选控件状态。</span></div>
+        <pre>参数：{"url":"/orders?status=pending_payment","waitUntil":"networkidle"}
+影响：read-only · 不修改业务数据 · 结果写入会话证据</pre>
+        <div class="btn-row"><button class="btn">允许一次</button><button class="btn">本会话允许</button><button class="btn">拒绝</button></div>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--tertiary);">特点：暖色系终端，和 Claude Desktop 整体风格统一，有标题栏但不黑暗。</p>
+  </div>
+</div>
+
+<!-- ===== Option D: 行内代码风格 ===== -->
+<div class="option">
+  <div class="option-label"><span class="num">D</span> 行内代码风格 — 无 chrome，对话流内嵌代码块 + 操作</div>
+  <div class="option-body">
+    <div class="opt-d">
+      <div class="tag"><span class="dot active"></span><span class="kw">await</span><span class="name">browser.navigate</span><span style="color:var(--tertiary)">// needs approval</span></div>
+      <pre>({
+  url: "/orders?status=pending_payment",
+  waitUntil: "networkidle",
+  impact: "read-only"
+})</pre>
+      <div class="btn-row"><button class="btn">允许一次</button><button class="btn">本会话允许</button><button class="btn">拒绝</button></div>
+    </div>
+    <p style="font-size:11px;color:var(--tertiary);">特点：最像代码，无任何终端 chrome。适合开发者视角。</p>
+  </div>
+</div>
+
+<!-- ===== Option E: 分栏终端 ===== -->
+<div class="option">
+  <div class="option-label"><span class="num">E</span> 分栏终端 — 上部工具信息 + 底部状态栏 + 按钮</div>
+  <div class="option-body">
+    <div class="opt-e">
+      <div class="top">
+        <div class="l"><span class="dot active"></span><span class="p">$</span><span>tool/approval/browser.navigate</span></div>
+        <div class="l"><span class="p">&gt;</span><span>打开订单列表页，检查"待支付"状态筛选是否正确。读取页面 DOM 结构并验证筛选控件状态。</span></div>
+        <pre>参数：{"url":"/orders?status=pending_payment","waitUntil":"networkidle"}
+影响：read-only · 不修改业务数据 · 结果写入会话证据</pre>
+        <div class="btn-row"><button class="btn">允许一次</button><button class="btn">本会话允许</button><button class="btn">拒绝</button></div>
+      </div>
+      <div class="bot"><span class="status">waiting_approval</span><span style="margin-left:auto"></span></div>
+    </div>
+    <p style="font-size:11px;color:var(--tertiary);">特点：顶部信息 + 底部状态栏，结构清晰分层。</p>
+  </div>
+</div>
+
+</div>
+
+<script>
+// make all buttons clickable for demo
+document.querySelectorAll('.btn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var card=this.closest('.option-body');
+    var dot=card.querySelector('.dot.active');
+    if(dot){
+      dot.classList.remove('active');
+      dot.classList.add(this.textContent==='拒绝'?'error':'done');
+    }
+    card.querySelectorAll('.btn').forEach(function(b){b.disabled=true;b.style.opacity='0.4'});
+  });
+});
+</script>
+</body>
+</html>
