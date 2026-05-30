@@ -293,4 +293,78 @@ describe("sdkEventStore", () => {
     expect(state.messages).toEqual([]);
     expect(state.sessions).toEqual([{ id: "s1", title: "历史", tags: [] }]);
   });
+
+  it("stores assistant message metadata from message_start", () => {
+    const state = reduceSdkUiEvent(createInitialSdkUiState(), {
+      channel: "assistant:message-started" as any,
+      payload: { runId: "run-1", messageId: "msg-1", model: "claude-sonnet-4-6", usage: { input_tokens: 12 } },
+    });
+
+    expect(state.activeRunId).toBe("run-1");
+    expect(state.modelName).toBe("claude-sonnet-4-6");
+    expect(state.usage).toEqual({ inputTokens: 12, outputTokens: 0 });
+    expect(state.messages).toEqual([
+      { id: "msg-1", role: "assistant", content: "", complete: false, model: "claude-sonnet-4-6" },
+    ]);
+  });
+
+  it("stores completion metadata on assistant messages and run stats", () => {
+    let state = createInitialSdkUiState();
+    state = reduceSdkUiEvent(state, {
+      channel: "assistant:thinking-delta",
+      payload: { runId: "run-1", messageId: "msg-1", delta: "分析" },
+    });
+    state = reduceSdkUiEvent(state, {
+      channel: "assistant:message-completed",
+      payload: { runId: "run-1", messageId: "msg-1", thinkingDuration: "1.45s", stopReason: "end_turn", result: "完成" },
+    });
+
+    expect(state.messages[0]).toMatchObject({
+      id: "msg-1",
+      role: "assistant",
+      complete: true,
+      thinkingDuration: "1.45s",
+      stopReason: "end_turn",
+    });
+    expect(state.runStats?.stopReason).toBe("end_turn");
+  });
+
+  it("stores streamed tool input, enriched usage, permission denials, and system events", () => {
+    let state = createInitialSdkUiState();
+    state = reduceSdkUiEvent(state, {
+      channel: "tool:approval-required",
+      payload: {
+        runId: "run-1",
+        requestId: "req-1",
+        toolCall: { id: "toolu-1", toolName: "mcp__browser__navigate", label: "导航", status: "waiting_approval" },
+      },
+    });
+    state = reduceSdkUiEvent(state, {
+      channel: "tool:input-json-delta" as any,
+      payload: { runId: "run-1", toolCallId: "toolu-1", delta: "{\"url\"", inputSummary: "{\"url\"" },
+    });
+    state = reduceSdkUiEvent(state, {
+      channel: "sdk:usage",
+      payload: { runId: "run-1", raw: { input_tokens: 1 }, cost: { total_cost_usd: 0.01 }, durationMs: 100, numTurns: 2, model: "claude" },
+    });
+    state = reduceSdkUiEvent(state, {
+      channel: "sdk:permission-denied" as any,
+      payload: { runId: "run-1", toolName: "Write", raw: { reason: "blocked" } },
+    });
+    state = reduceSdkUiEvent(state, {
+      channel: "sdk:system-event" as any,
+      payload: { runId: "run-1", subtype: "compact", raw: { type: "system", subtype: "compact" } },
+    });
+
+    expect(state.approvals[0].toolCall.inputSummary).toBe("{\"url\"");
+    expect(state.approvals[0].toolCall.streamedInput).toBe("{\"url\"");
+    expect(state.runStats).toEqual({
+      model: "claude",
+      durationMs: 100,
+      numTurns: 2,
+      cost: { total_cost_usd: 0.01 },
+    });
+    expect(state.permissionDenials).toEqual([{ toolName: "Write", raw: { reason: "blocked" } }]);
+    expect(state.systemEvents).toEqual([{ subtype: "compact", raw: { type: "system", subtype: "compact" } }]);
+  });
 });

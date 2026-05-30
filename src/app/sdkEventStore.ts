@@ -129,15 +129,33 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
     return { ...state, activeRunId, messages };
   }
 
-  if (event.channel === "assistant:message-completed") {
+  if (event.channel === "assistant:message-started") {
     const messageId = String(payload.messageId);
-    const thinkingDuration = typeof payload.thinkingDuration === "string" ? payload.thinkingDuration : undefined;
+    const model = typeof payload.model === "string" ? payload.model : undefined;
+    const existing = state.messages.find((m) => m.id === messageId);
+    const messages = existing
+      ? state.messages.map((m) => m.id === messageId ? { ...m, ...(model ? { model } : {}) } : m)
+      : [...state.messages, { id: messageId, role: "assistant" as const, content: "", complete: false, ...(model ? { model } : {}) }];
     return {
       ...state,
       activeRunId,
+      messages,
+      ...(model ? { modelName: model, runStats: { ...state.runStats, model } } : {}),
+      ...(payload.usage ? { usage: normalizeUsage(payload.usage) } : {}),
+    };
+  }
+
+  if (event.channel === "assistant:message-completed") {
+    const messageId = String(payload.messageId);
+    const thinkingDuration = typeof payload.thinkingDuration === "string" ? payload.thinkingDuration : undefined;
+    const stopReason = typeof payload.stopReason === "string" ? payload.stopReason : undefined;
+    return {
+      ...state,
+      activeRunId,
+      runStats: { ...state.runStats, ...(stopReason ? { stopReason } : {}) },
       messages: state.messages.map((message) =>
         message.id === messageId
-          ? { ...message, complete: true, ...(thinkingDuration !== undefined ? { thinkingDuration } : {}) }
+          ? { ...message, complete: true, ...(thinkingDuration !== undefined ? { thinkingDuration } : {}), ...(stopReason !== undefined ? { stopReason } : {}) }
           : message,
       ),
     };
@@ -147,6 +165,17 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
     const approvals = state.approvals.length >= 200
       ? state.approvals
       : [...state.approvals, payload as unknown as ApprovalRequest];
+    return { ...state, activeRunId, approvals };
+  }
+
+  if (event.channel === "tool:input-json-delta") {
+    const toolCallId = String(payload.toolCallId);
+    const inputSummary = typeof payload.inputSummary === "string" ? payload.inputSummary : "";
+    const approvals = state.approvals.map((a) =>
+      a.toolCall.id === toolCallId
+        ? { ...a, toolCall: { ...a.toolCall, inputSummary, streamedInput: inputSummary } }
+        : a,
+    );
     return { ...state, activeRunId, approvals };
   }
 
@@ -186,7 +215,20 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
   }
 
   if (event.channel === "sdk:usage") {
-    return { ...state, activeRunId, usage: normalizeUsage(payload.raw) };
+    return {
+      ...state,
+      activeRunId,
+      usage: normalizeUsage(payload.raw),
+      runStats: {
+        ...state.runStats,
+        ...(typeof payload.model === "string" ? { model: payload.model } : {}),
+        ...(typeof payload.durationMs === "number" ? { durationMs: payload.durationMs } : {}),
+        ...(typeof payload.numTurns === "number" ? { numTurns: payload.numTurns } : {}),
+        ...(payload.cost !== undefined ? { cost: payload.cost } : {}),
+        ...(payload.modelUsage !== undefined ? { modelUsage: payload.modelUsage } : {}),
+      },
+      ...(typeof payload.model === "string" ? { modelName: payload.model } : {}),
+    };
   }
 
   if (event.channel === "sdk:error") {
@@ -206,6 +248,31 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
       tasks: state.tasks.length >= 200
         ? [...state.tasks.slice(-199), { taskId: String(payload.taskId), summary: typeof payload.summary === "string" ? payload.summary : undefined }]
         : [...state.tasks, { taskId: String(payload.taskId), summary: typeof payload.summary === "string" ? payload.summary : undefined }],
+    };
+  }
+
+  if (event.channel === "sdk:permission-denied") {
+    const denial = { toolName: String(payload.toolName), raw: payload.raw };
+    return {
+      ...state,
+      activeRunId,
+      permissionDenials: state.permissionDenials.length >= 200
+        ? [...state.permissionDenials.slice(-199), denial]
+        : [...state.permissionDenials, denial],
+      errors: state.errors.length >= 200
+        ? [...state.errors.slice(-199), { message: `权限被拒绝：${denial.toolName}`, retryable: false }]
+        : [...state.errors, { message: `权限被拒绝：${denial.toolName}`, retryable: false }],
+    };
+  }
+
+  if (event.channel === "sdk:system-event") {
+    const systemEvent = { subtype: String(payload.subtype), raw: payload.raw };
+    return {
+      ...state,
+      activeRunId,
+      systemEvents: state.systemEvents.length >= 200
+        ? [...state.systemEvents.slice(-199), systemEvent]
+        : [...state.systemEvents, systemEvent],
     };
   }
 
