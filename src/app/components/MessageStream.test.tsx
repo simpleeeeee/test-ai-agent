@@ -74,4 +74,26 @@ describe("MessageStream", () => {
     expect(screen.getByText("2s")).toBeInTheDocument();
     expect(screen.getByText("分析用户需求…检查测试范围…")).toBeInTheDocument();
   });
+
+  it("renders a thinking block when only thinking duration is present", () => {
+    render(<MessageStream state={{
+      activeRunId: "run-1",
+      workspaceModes: {},
+      messages: [
+        { id: "msg-1", role: "assistant", content: "完成", complete: true, thinkingDuration: "1.45s" },
+      ],
+      approvals: [],
+      questions: [],
+      mcpServers: [],
+      evidence: [],
+      rawMessages: [],
+      usage: { inputTokens: 10, outputTokens: 20 },
+      errors: [],
+      tasks: [],
+      sessions: [],
+    }} onApprove={vi.fn()} onDeny={vi.fn()} onAnswer={vi.fn()} onCopyMessage={vi.fn()} onRetryMessage={vi.fn()} />);
+
+    expect(screen.getByText("思考已完成")).toBeInTheDocument();
+    expect(screen.getByText("完成")).toBeInTheDocument();
+  });
 });

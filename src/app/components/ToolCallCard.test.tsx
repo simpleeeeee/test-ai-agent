@@ -27,4 +27,17 @@ describe("ToolCallCard", () => {
     render(<ToolCallCard toolName="Read" summary="test.ts" status="active" statusText="执行中…" />);
     expect(screen.queryByText("查看输出")).not.toBeInTheDocument();
   });
+
+  it("shows streamed tool input when available", () => {
+    render(
+      <ToolCallCard
+        toolName="mcp__browser__navigate"
+        summary="导航"
+        status="active"
+        statusText="执行中…"
+        streamedInput={'{"url":"https://example.com"}'}
+      />,
+    );
+    expect(screen.getByText(/https:\/\/example\.com/)).toBeInTheDocument();
+  });
 });

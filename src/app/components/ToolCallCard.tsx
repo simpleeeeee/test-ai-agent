@@ -8,10 +8,12 @@ type Props = {
   statusText: string;
   output?: string;
   outputLabel?: string;
+  streamedInput?: string;
 };
 
-export function ToolCallCard({ toolName, summary, status, statusText, output, outputLabel = "查看输出" }: Props) {
+export function ToolCallCard({ toolName, summary, status, statusText, output, outputLabel = "查看输出", streamedInput }: Props) {
   const [open, setOpen] = useState(false);
+  const inputPreview = streamedInput ?? summary;
 
   return (
     <div className="tool-call-card">
@@ -19,7 +21,7 @@ export function ToolCallCard({ toolName, summary, status, statusText, output, ou
         <div className="tool-call-header">
           <ActivityIndicator status={status} />
           <span className="tool-call-tool-name">{toolName}</span>
-          <span className="tool-call-summary">{summary}</span>
+          <span className="tool-call-summary">{inputPreview}</span>
           <span className="tool-call-status">{statusText}</span>
         </div>
         {output ? (

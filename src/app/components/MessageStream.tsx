@@ -22,9 +22,9 @@ export function MessageStream({ state, onApprove, onDeny, onAnswer, onCopyMessag
             <>
               <Sparkles aria-hidden="true" className="assistant-mark" size={22} />
               <div>
-                {message.thinkingContent ? (
+                {message.thinkingContent || message.thinkingDuration ? (
                   <ThinkingBlock duration={message.thinkingDuration ?? ""}>
-                    {message.thinkingContent}
+                    {message.thinkingContent ?? ""}
                   </ThinkingBlock>
                 ) : null}
                 <p>{message.content}</p>

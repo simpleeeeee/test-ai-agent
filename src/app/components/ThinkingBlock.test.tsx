@@ -18,6 +18,12 @@ describe("ThinkingBlock", () => {
     expect(screen.getByText("选择 B 方案")).toBeVisible();
   });
 
+  it("shows completed thinking copy when duration exists without content", () => {
+    render(<ThinkingBlock duration="1.45s"> </ThinkingBlock>);
+    expect(screen.getByText("思考已完成")).toBeInTheDocument();
+    expect(screen.getByText("1.45s")).toBeInTheDocument();
+  });
+
   it("collapses on second click", async () => {
     const user = userEvent.setup();
     render(<ThinkingBlock duration="1s"><p>test</p></ThinkingBlock>);

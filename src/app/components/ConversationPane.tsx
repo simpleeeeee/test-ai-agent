@@ -35,7 +35,7 @@ export function ConversationPane({
   hasTestExecution,
   activeRunId,
   loadingHistorySession,
-  modelName = "Claude Sonnet 4",
+  modelName = "Claude Sonnet 4.6",
   onApprove,
   onDeny,
   onAnswer,

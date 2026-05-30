@@ -153,6 +153,31 @@ describe("ConversationPane", () => {
     expect(screen.getByText("2.1k")).toBeInTheDocument();  // 2100 → 2.1k
   });
 
+  it("uses Claude Sonnet 4.6 as the default composer model label", () => {
+    render(
+      <ConversationPane
+        state={createInitialSdkUiState()}
+        title="测试"
+        composerValue=""
+        hasTestExecution={false}
+        onApprove={callbacks.onApprove}
+        onDeny={callbacks.onDeny}
+        onAnswer={callbacks.onAnswer}
+        onCopyMessage={callbacks.onCopyMessage}
+        onRetryMessage={callbacks.onRetryMessage}
+        onApprovePlan={callbacks.onApprovePlan}
+        onComposerChange={callbacks.onComposerChange}
+        onComposerSubmit={callbacks.onComposerSubmit}
+        onAddContent={callbacks.onAddContent}
+        onMinimizeWindow={callbacks.onMinimizeWindow}
+        onToggleMaximizeWindow={callbacks.onToggleMaximizeWindow}
+        onCloseWindow={callbacks.onCloseWindow}
+      />,
+    );
+
+    expect(screen.getByText(/Claude Sonnet 4\.6/)).toBeInTheDocument();
+  });
+
   it("does not display token info bar when state has no usage or modelName", () => {
     const state = createInitialSdkUiState();
 
