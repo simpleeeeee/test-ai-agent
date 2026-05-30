@@ -1,4 +1,5 @@
 import { Plus, Wrench, Send } from "lucide-react";
+import type { TokenUsage } from "../sdkUiTypes";
 
 type Props = {
   value: string;
@@ -9,6 +10,7 @@ type Props = {
   onOpenModelSettings: () => void;
   placeholder: string;
   modelName?: string;
+  usage?: TokenUsage;
 };
 
 export function Composer({
