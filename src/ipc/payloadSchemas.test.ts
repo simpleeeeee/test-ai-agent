@@ -81,4 +81,80 @@ describe("IPC payload schemas", () => {
       tag: "reviewed",
     });
   });
+
+  it("accepts assistant message started payloads", () => {
+    expect(parseMainToRendererPayload("assistant:message-started" as any, {
+      runId: "run-1",
+      messageId: "msg-1",
+      model: "claude-sonnet-4-6",
+      usage: { input_tokens: 12 },
+    })).toEqual({
+      runId: "run-1",
+      messageId: "msg-1",
+      model: "claude-sonnet-4-6",
+      usage: { input_tokens: 12 },
+    });
+  });
+
+  it("accepts thinking duration and stop reason on assistant completion", () => {
+    expect(parseMainToRendererPayload("assistant:message-completed", {
+      runId: "run-1",
+      messageId: "msg-1",
+      thinkingDuration: "1.45s",
+      stopReason: "end_turn",
+      result: "完成",
+    })).toEqual({
+      runId: "run-1",
+      messageId: "msg-1",
+      thinkingDuration: "1.45s",
+      stopReason: "end_turn",
+      result: "完成",
+    });
+  });
+
+  it("accepts streamed tool input payloads", () => {
+    expect(parseMainToRendererPayload("tool:input-json-delta" as any, {
+      runId: "run-1",
+      toolCallId: "toolu-1",
+      delta: "{\"url\"",
+      inputSummary: "{\"url\"",
+    })).toEqual({
+      runId: "run-1",
+      toolCallId: "toolu-1",
+      delta: "{\"url\"",
+      inputSummary: "{\"url\"",
+    });
+  });
+
+  it("accepts enriched usage payloads", () => {
+    expect(parseMainToRendererPayload("sdk:usage", {
+      runId: "run-1",
+      raw: { input_tokens: 10 },
+      modelUsage: { claude: { input_tokens: 10 } },
+      cost: { total_cost_usd: 0.01 },
+      durationMs: 1500,
+      numTurns: 2,
+      model: "claude-sonnet-4-6",
+    })).toEqual({
+      runId: "run-1",
+      raw: { input_tokens: 10 },
+      modelUsage: { claude: { input_tokens: 10 } },
+      cost: { total_cost_usd: 0.01 },
+      durationMs: 1500,
+      numTurns: 2,
+      model: "claude-sonnet-4-6",
+    });
+  });
+
+  it("accepts SDK system events", () => {
+    expect(parseMainToRendererPayload("sdk:system-event" as any, {
+      runId: "run-1",
+      subtype: "compact",
+      raw: { type: "system", subtype: "compact" },
+    })).toEqual({
+      runId: "run-1",
+      subtype: "compact",
+      raw: { type: "system", subtype: "compact" },
+    });
+  });
 });

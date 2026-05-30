@@ -31,6 +31,8 @@ export type ToolCall = {
   inputSummary?: string;
   outputSummary?: string;
   approvalReason?: string;
+  streamedInput?: string;
+  inputJsonDelta?: string;
 };
 
 export type Evidence = {
@@ -82,16 +84,20 @@ export type RunEvent =
   | { type: "evidence:created"; evidence: Evidence }
   | { type: "bug-draft:created"; bugDraft: BugDraft }
   | { type: "assistant:text-delta"; messageId: string; delta: string }
-  | { type: "assistant:message-completed"; messageId: string }
+  | { type: "assistant:message-completed"; messageId: string; thinkingDuration?: string; stopReason?: string; result?: string }
+  | { type: "assistant:message-started"; messageId: string; model?: string; usage?: unknown }
+  | { type: "assistant:thinking-delta"; messageId: string; delta: string }
   | { type: "sdk:raw-message"; runId: string; message: unknown }
   | { type: "sdk:session-changed"; sessionId: string }
   | { type: "sdk:status"; status: string; raw?: unknown }
-  | { type: "sdk:usage"; raw: unknown }
+  | { type: "sdk:usage"; raw: unknown; modelUsage?: unknown; cost?: unknown; durationMs?: number; numTurns?: number; model?: string }
   | { type: "sdk:error"; message: string; retryable: boolean; raw?: unknown }
   | { type: "sdk:permission-denied"; toolName: string; raw?: unknown }
+  | { type: "tool:input-json-delta"; toolCallId: string; delta: string; inputSummary: string }
   | { type: "sdk:mcp-status"; servers: unknown[] }
   | { type: "sdk:task-progress"; taskId: string; summary?: string; raw?: unknown }
   | { type: "sdk:hook-event"; hookName: string; raw: unknown }
+  | { type: "sdk:system-event"; subtype: string; raw: unknown }
   | { type: "question:required"; requestId: string; questions: unknown[] }
   | { type: "question:answered"; requestId: string };
 
@@ -140,6 +146,9 @@ export function applyRunEvent(run: TestRun, event: RunEvent): TestRun {
       return { ...run, bugDraft: event.bugDraft };
     case "assistant:text-delta":
     case "assistant:message-completed":
+    case "assistant:message-started":
+    case "assistant:thinking-delta":
+    case "tool:input-json-delta":
     case "sdk:raw-message":
     case "sdk:session-changed":
     case "sdk:status":
@@ -149,6 +158,7 @@ export function applyRunEvent(run: TestRun, event: RunEvent): TestRun {
     case "sdk:mcp-status":
     case "sdk:task-progress":
     case "sdk:hook-event":
+    case "sdk:system-event":
     case "question:required":
     case "question:answered":
       return run;

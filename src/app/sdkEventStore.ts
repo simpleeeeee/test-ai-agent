@@ -60,6 +60,8 @@ export function createInitialSdkUiState(): SdkUiState {
     errors: [],
     tasks: [],
     sessions: [],
+    permissionDenials: [],
+    systemEvents: [],
   };
 }
 

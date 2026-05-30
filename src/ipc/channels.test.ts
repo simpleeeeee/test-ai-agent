@@ -17,6 +17,9 @@ describe("IPC channels", () => {
     expect(isMainToRendererChannel("run:planning")).toBe(true);
     expect(isMainToRendererChannel("evidence:created")).toBe(true);
     expect(isMainToRendererChannel("shell:openExternal")).toBe(false);
+    expect(isMainToRendererChannel("assistant:message-started")).toBe(true);
+    expect(isMainToRendererChannel("tool:input-json-delta")).toBe(true);
+    expect(isMainToRendererChannel("sdk:system-event")).toBe(true);
   });
 
   it("rejects malformed or empty channel names", () => {
@@ -84,6 +87,8 @@ describe("IPC channels", () => {
       "assistant:text-delta",
       "assistant:thinking-delta",
       "assistant:message-completed",
+      "assistant:message-started",
+      "tool:input-json-delta",
       "sdk:raw-message",
       "sdk:session-changed",
       "sdk:status",
@@ -93,6 +98,7 @@ describe("IPC channels", () => {
       "sdk:mcp-status",
       "sdk:task-progress",
       "sdk:hook-event",
+      "sdk:system-event",
       "question:required",
       "question:answered",
     ]);

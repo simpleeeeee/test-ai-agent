@@ -8,6 +8,27 @@ export type SdkMessage = {
   complete: boolean;
   thinkingContent?: string;
   thinkingDuration?: string;
+  model?: string;
+  stopReason?: string;
+};
+
+export type RunStats = {
+  model?: string;
+  durationMs?: number;
+  numTurns?: number;
+  cost?: unknown;
+  modelUsage?: unknown;
+  stopReason?: string;
+};
+
+export type PermissionDenial = {
+  toolName: string;
+  raw?: unknown;
+};
+
+export type SdkSystemEvent = {
+  subtype: string;
+  raw: unknown;
 };
 
 export type ApprovalRequest = {
@@ -91,6 +112,9 @@ export type SdkUiState = {
   sessions: SessionSummary[];
   workspaceModes: Record<string, SessionWorkspaceMode>;
   bugDraft?: BugDraft;
+  runStats?: RunStats;
+  permissionDenials: PermissionDenial[];
+  systemEvents: SdkSystemEvent[];
 };
 
 export type SdkUiEvent =

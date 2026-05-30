@@ -49,6 +49,8 @@ export const mainToRendererChannels = [
   "assistant:text-delta",
   "assistant:thinking-delta",
   "assistant:message-completed",
+  "assistant:message-started",
+  "tool:input-json-delta",
   "sdk:raw-message",
   "sdk:session-changed",
   "sdk:status",
@@ -58,6 +60,7 @@ export const mainToRendererChannels = [
   "sdk:mcp-status",
   "sdk:task-progress",
   "sdk:hook-event",
+  "sdk:system-event",
   "question:required",
   "question:answered",
 ] as const;
