@@ -12,7 +12,7 @@ function getCacheTokens(usage: TokenUsage): number {
   return (usage.cacheCreationInputTokens ?? 0) + (usage.cacheReadInputTokens ?? 0);
 }
 
-function hasTokenStats(usage?: TokenUsage): boolean {
+function hasTokenStats(usage?: TokenUsage): usage is TokenUsage {
   if (!usage) return false;
   return (
     usage.inputTokens !== undefined ||
@@ -26,8 +26,6 @@ type Props = {
   onChange: (value: string) => void;
   onSubmit: (value: string) => void;
   onAddContent: () => void;
-  onOpenTools: () => void;
-  onOpenModelSettings: () => void;
   placeholder: string;
   modelName?: string;
   usage?: TokenUsage;
@@ -95,16 +93,16 @@ export function Composer({
           <span className="composer-info-model">{modelName ?? ""}</span>
           {hasTokenStats(usage) ? (
             <div className="composer-info-tokens">
-              {usage!.inputTokens !== undefined ? (
+              {usage.inputTokens !== undefined ? (
                 <span className="composer-token-item">
                   <span aria-hidden="true">↘</span>{" "}
-                  <strong>{formatTokens(usage!.inputTokens)}</strong>
+                  <strong>{formatTokens(usage.inputTokens)}</strong>
                 </span>
               ) : null}
-              {usage!.outputTokens !== undefined ? (
+              {usage.outputTokens !== undefined ? (
                 <span className="composer-token-item">
                   <span aria-hidden="true">↗</span>{" "}
-                  <strong>{formatTokens(usage!.outputTokens)}</strong>
+                  <strong>{formatTokens(usage.outputTokens)}</strong>
                 </span>
               ) : null}
               {showCache ? (
@@ -113,10 +111,10 @@ export function Composer({
                   <strong>{formatTokens(cacheTokens)}</strong>
                 </span>
               ) : null}
-              {usage!.contextTokens !== undefined ? (
+              {usage.contextTokens !== undefined ? (
                 <span className="composer-token-item context-zone">
                   <span>context</span>{" "}
-                  <strong>{formatTokens(usage!.contextTokens)}</strong>
+                  <strong>{formatTokens(usage.contextTokens)}</strong>
                   {contextPct !== undefined ? (
                     <span className="composer-context-bar" aria-hidden="true">
                       <span
@@ -129,9 +127,9 @@ export function Composer({
                     <div className="tooltip-heading">当前会话 tokens 总量</div>
                     <div>
                       已用{" "}
-                      {usage!.contextTokens!.toLocaleString()}
+                      {usage.contextTokens!.toLocaleString()}
                       {" / "}
-                      {usage!.maxContextTokens?.toLocaleString() ?? "--"}{" "}
+                      {usage.maxContextTokens?.toLocaleString() ?? "--"}{" "}
                       tokens
                     </div>
                     {contextPct !== undefined ? (
@@ -142,9 +140,9 @@ export function Composer({
                         />
                       </div>
                     ) : null}
-                    {usage!.maxContextTokens !== undefined ? (
+                    {usage.maxContextTokens !== undefined ? (
                       <div className="tooltip-capacity">
-                        LLM 单会话最大容量：{(usage!.maxContextTokens / 1000).toFixed(0)}k tokens
+                        LLM 单会话最大容量：{(usage.maxContextTokens / 1000).toFixed(0)}k tokens
                       </div>
                     ) : null}
                   </span>
