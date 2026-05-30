@@ -175,7 +175,6 @@ describe("mapSdkMessageToRunEvents", () => {
       raw: expect.any(Object),
     });
   });
-});
 
   it("maps result metadata, result fallback text, and permission denials", () => {
     const mapper = new SdkRunEventMapperSession("run-1");
@@ -224,6 +223,68 @@ describe("mapSdkMessageToRunEvents", () => {
       raw: { type: "system", subtype: "compact", summary: "已压缩上下文" },
     });
   });
+
+  it("maps error result with sdk:error and failed status", () => {
+    const mapper = new SdkRunEventMapperSession("run-1");
+    const events = mapper.map({
+      type: "result",
+      subtype: "error",
+      error: "Tool execution timeout",
+      session_id: "session-err",
+    });
+
+    expect(events).toContainEqual({
+      type: "sdk:error",
+      message: "Tool execution timeout",
+      retryable: false,
+      raw: expect.any(Object),
+    });
+    expect(events).toContainEqual({ type: "run:status-changed", status: "failed" });
+  });
+
+  it("maps message_delta with stop_reason and usage", () => {
+    const mapper = new SdkRunEventMapperSession("run-1");
+    mapper.map({
+      type: "stream_event",
+      uuid: "uuid-1",
+      event: { type: "message_start", message: { id: "msg-1" } },
+    });
+
+    const events = mapper.map({
+      type: "stream_event",
+      uuid: "uuid-2",
+      event: { type: "message_delta", delta: { stop_reason: "end_turn" }, usage: { output_tokens: 50 } },
+    });
+
+    expect(events).toContainEqual({ type: "sdk:usage", raw: { output_tokens: 50 } });
+
+    // Verify stop_reason is captured by checking message_stop
+    const stopEvents = mapper.map({
+      type: "stream_event",
+      uuid: "uuid-3",
+      event: { type: "message_stop" },
+    });
+    expect(stopEvents).toContainEqual({
+      type: "assistant:message-completed",
+      messageId: "msg-1",
+      stopReason: "end_turn",
+    });
+  });
+
+  it("maps mcp_server_status system messages", () => {
+    const mapper = new SdkRunEventMapperSession("run-1");
+    const events = mapper.map({
+      type: "system",
+      subtype: "mcp_server_status",
+      mcp_servers: [{ name: "browser", status: "connected" }],
+    });
+
+    expect(events).toContainEqual({
+      type: "sdk:mcp-status",
+      servers: [{ name: "browser", status: "connected" }],
+    });
+  });
+});
 
 describe("mapPermissionRequestToRunEvent", () => {
   it("maps permission requests to approval-required tool calls", () => {
