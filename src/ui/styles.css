@@ -90,6 +90,28 @@
   color-scheme: dark;
 }
 
+/* Dark theme tooltip */
+:root.dark .composer-context-tooltip {
+  background: #faf9f5;
+  color: #141413;
+}
+
+:root.dark .composer-context-tooltip .tooltip-heading {
+  color: #141413;
+}
+
+:root.dark .composer-context-tooltip .tooltip-progress {
+  background: #ece3d7;
+}
+
+:root.dark .composer-context-tooltip .tooltip-capacity {
+  color: #6b6960;
+}
+
+:root.dark .composer-context-tooltip::after {
+  border-top-color: #faf9f5;
+}
+
 html, body, #root {
   width: 100%; height: 100%;
   overflow: hidden;
@@ -570,12 +592,37 @@ input:focus-visible {
   flex: none;
 }
 
+/* When info bar is shown, remove bottom border-radius and border-bottom */
+.composer-shell.has-info-bar {
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+
 .composer-shell:focus-within {
   border-color: var(--accent);
   box-shadow: var(--shadow-lg), 0 0 0 1px var(--accent);
 }
 
+/* Composer wrapper — positions form and info bar as one visual unit */
+.composer-wrapper {
+  flex: none;
+}
+
+.composer-wrapper .composer-shell {
+  margin: 0 auto 18px;
+}
+
+.composer-wrapper .composer-shell.has-info-bar {
+  margin-bottom: 0;
+}
+
 .test-mode .composer-shell {
+  width: min(610px, calc(100% - 52px));
+}
+
+.test-mode .composer-wrapper .composer-shell,
+.test-mode .composer-info-bar {
   width: min(610px, calc(100% - 52px));
 }
 
@@ -641,6 +688,158 @@ input:focus-visible {
   gap: 6px;
   height: 31px;
   padding: 0 10px;
+}
+
+/* ============================================================
+   COMPOSER INFO BAR — bottom token stats row
+   ============================================================ */
+.composer-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 auto 18px;
+  width: min(var(--composer-max-width), calc(100% - 92px));
+  padding: 5px 16px;
+  border: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--border-strong);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  background: var(--bg-composer);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+}
+
+.composer-info-model {
+  font-size: var(--font-xs);
+  font-weight: 520;
+  color: var(--text-primary);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composer-info-tokens {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.composer-token-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.composer-token-item strong {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-weight: 520;
+}
+
+.composer-token-item.cache-hit {
+  color: var(--green);
+}
+
+.composer-token-item.cache-hit strong {
+  color: var(--green);
+}
+
+.composer-token-item.context-zone {
+  position: relative;
+  cursor: help;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  transition: background var(--transition-fast);
+}
+
+.composer-token-item.context-zone:hover {
+  background: var(--border-subtle);
+}
+
+.composer-context-bar {
+  display: inline-block;
+  width: 28px;
+  height: 2px;
+  background: var(--border-strong);
+  border-radius: 1px;
+  vertical-align: middle;
+}
+
+.composer-context-fill {
+  display: block;
+  height: 100%;
+  background: var(--green);
+  border-radius: 1px;
+}
+
+/* ============================================================
+   CONTEXT TOOLTIP — hover popup for context usage details
+   ============================================================ */
+.composer-context-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 0;
+  background: #1e1d1a;
+  color: #d4d1c8;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.composer-context-tooltip .tooltip-heading {
+  margin-bottom: 4px;
+  color: #faf9f5;
+  font-weight: 520;
+}
+
+.composer-context-tooltip .tooltip-progress {
+  margin-top: 4px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.composer-context-tooltip .tooltip-progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--green);
+  border-radius: 2px;
+}
+
+.composer-context-tooltip .tooltip-capacity {
+  margin-top: 4px;
+  font-size: 10px;
+  color: #6b6960;
+}
+
+/* Arrow pointing down */
+.composer-context-tooltip::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  right: 16px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #1e1d1a;
+}
+
+/* Show tooltip on hover of context zone */
+.composer-token-item.context-zone:hover .composer-context-tooltip {
+  display: block;
 }
 
 .composer-notice,
