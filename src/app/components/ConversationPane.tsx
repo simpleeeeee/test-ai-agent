@@ -106,7 +106,7 @@ export function ConversationPane({
           </>
         )}
       </section>
-      <Composer value={composerValue} onChange={onComposerChange} onSubmit={onComposerSubmit} onAddContent={onAddContent} onOpenTools={onOpenTools} onOpenModelSettings={onOpenModelSettings} placeholder={placeholder} modelName={modelName} />
+      <Composer value={composerValue} onChange={onComposerChange} onSubmit={onComposerSubmit} onAddContent={onAddContent} onOpenTools={onOpenTools} onOpenModelSettings={onOpenModelSettings} placeholder={placeholder} modelName={state.modelName} usage={state.usage} />
     </main>
   );
 }
