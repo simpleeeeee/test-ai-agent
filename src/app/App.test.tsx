@@ -90,11 +90,8 @@ describe("App backend integration", () => {
     await user.click(screen.getByRole("button", { name: "添加内容" }));
     expect(await screen.findByText("添加内容功能即将开放")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "工具" }));
-    expect(await screen.findByText("工具面板即将开放")).toBeInTheDocument();
-
     invoke.mockResolvedValueOnce({ baseUrl: "", apiKey: "", model: "" });
-    await user.click(screen.getByRole("button", { name: "Claude Sonnet 4" }));
+    await user.click(screen.getByRole("button", { name: "SDK 控制" }));
     expect(screen.getByRole("complementary", { name: "SDK 控制" })).toBeInTheDocument();
   });
 

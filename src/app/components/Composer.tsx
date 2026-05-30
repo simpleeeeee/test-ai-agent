@@ -1,5 +1,25 @@
-import { Plus, Wrench, Send } from "lucide-react";
+import { Plus, Send } from "lucide-react";
 import type { TokenUsage } from "../sdkUiTypes";
+
+function formatTokens(n: number): string {
+  if (n >= 1000) {
+    return (Math.floor(n / 100) / 10).toFixed(1) + "k";
+  }
+  return String(n);
+}
+
+function getCacheTokens(usage: TokenUsage): number {
+  return (usage.cacheCreationInputTokens ?? 0) + (usage.cacheReadInputTokens ?? 0);
+}
+
+function hasTokenStats(usage?: TokenUsage): boolean {
+  if (!usage) return false;
+  return (
+    usage.inputTokens !== undefined ||
+    usage.outputTokens !== undefined ||
+    usage.contextTokens !== undefined
+  );
+}
 
 type Props = {
   value: string;
@@ -18,10 +38,9 @@ export function Composer({
   onChange,
   onSubmit,
   onAddContent,
-  onOpenTools,
-  onOpenModelSettings,
   placeholder,
-  modelName = "Claude Sonnet 4",
+  modelName,
+  usage,
 }: Props) {
   function handleSubmit() {
     const trimmed = value.trim();
@@ -36,35 +55,105 @@ export function Composer({
     }
   }
 
+  const showInfoBar = modelName !== undefined || hasTokenStats(usage);
+  const cacheTokens = usage ? getCacheTokens(usage) : 0;
+  const showCache = cacheTokens > 0;
+  const contextPct =
+    usage?.contextTokens !== undefined && usage?.maxContextTokens !== undefined && usage.maxContextTokens > 0
+      ? Math.min(usage.contextTokens / usage.maxContextTokens, 1)
+      : undefined;
+
   return (
-    <form
-      className="composer-shell"
-      onSubmit={(event) => {
-        event.preventDefault();
-        handleSubmit();
-      }}
-    >
-      <textarea
-        aria-label="消息输入"
-        onChange={(event) => onChange(event.currentTarget.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        value={value}
-      />
-      <div className="composer-toolbar">
-        <div className="composer-tools">
-          <button className="icon-button" type="button" aria-label="添加内容" title="添加内容" onClick={onAddContent}>
-            <Plus aria-hidden="true" size={16} />
+    <div className="composer-wrapper">
+      <form
+        className={showInfoBar ? "composer-shell has-info-bar" : "composer-shell"}
+        onSubmit={(event) => {
+          event.preventDefault();
+          handleSubmit();
+        }}
+      >
+        <textarea
+          aria-label="消息输入"
+          onChange={(event) => onChange(event.currentTarget.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          value={value}
+        />
+        <div className="composer-toolbar">
+          <div className="composer-tools">
+            <button className="icon-button" type="button" aria-label="添加内容" title="添加内容" onClick={onAddContent}>
+              <Plus aria-hidden="true" size={16} />
+            </button>
+          </div>
+          <button className="composer-send" type="submit" aria-label="发送">
+            <Send aria-hidden="true" size={16} />
           </button>
-          <button className="icon-button" type="button" aria-label="工具" title="工具" onClick={onOpenTools}>
-            <Wrench aria-hidden="true" size={16} />
-          </button>
-          <button className="model-pill" type="button" onClick={onOpenModelSettings}>{modelName}</button>
         </div>
-        <button className="composer-send" type="submit" aria-label="发送">
-          <Send aria-hidden="true" size={16} />
-        </button>
-      </div>
-    </form>
+      </form>
+      {showInfoBar ? (
+        <div className="composer-info-bar">
+          <span className="composer-info-model">{modelName ?? ""}</span>
+          {hasTokenStats(usage) ? (
+            <div className="composer-info-tokens">
+              {usage!.inputTokens !== undefined ? (
+                <span className="composer-token-item">
+                  <span aria-hidden="true">↘</span>{" "}
+                  <strong>{formatTokens(usage!.inputTokens)}</strong>
+                </span>
+              ) : null}
+              {usage!.outputTokens !== undefined ? (
+                <span className="composer-token-item">
+                  <span aria-hidden="true">↗</span>{" "}
+                  <strong>{formatTokens(usage!.outputTokens)}</strong>
+                </span>
+              ) : null}
+              {showCache ? (
+                <span className="composer-token-item cache-hit">
+                  <span aria-hidden="true">⚡</span>{" "}
+                  <strong>{formatTokens(cacheTokens)}</strong>
+                </span>
+              ) : null}
+              {usage!.contextTokens !== undefined ? (
+                <span className="composer-token-item context-zone">
+                  <span>context</span>{" "}
+                  <strong>{formatTokens(usage!.contextTokens)}</strong>
+                  {contextPct !== undefined ? (
+                    <span className="composer-context-bar" aria-hidden="true">
+                      <span
+                        className="composer-context-fill"
+                        style={{ width: `${(contextPct * 100).toFixed(0)}%` }}
+                      />
+                    </span>
+                  ) : null}
+                  <span className="composer-context-tooltip">
+                    <div className="tooltip-heading">当前会话 tokens 总量</div>
+                    <div>
+                      已用{" "}
+                      {usage!.contextTokens!.toLocaleString()}
+                      {" / "}
+                      {usage!.maxContextTokens?.toLocaleString() ?? "--"}{" "}
+                      tokens
+                    </div>
+                    {contextPct !== undefined ? (
+                      <div className="tooltip-progress">
+                        <span
+                          className="tooltip-progress-fill"
+                          style={{ width: `${(contextPct * 100).toFixed(0)}%` }}
+                        />
+                      </div>
+                    ) : null}
+                    {usage!.maxContextTokens !== undefined ? (
+                      <div className="tooltip-capacity">
+                        LLM 单会话最大容量：{(usage!.maxContextTokens / 1000).toFixed(0)}k tokens
+                      </div>
+                    ) : null}
+                  </span>
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
 }

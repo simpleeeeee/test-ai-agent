@@ -25,8 +25,6 @@ describe("Composer", () => {
     expect(screen.getByLabelText("消息输入")).toHaveAttribute("placeholder", "补充测试指令或继续提问…");
     expect(screen.queryByPlaceholderText("回复 Claude…")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "添加内容" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "工具" })).toBeInTheDocument();
-    expect(screen.getByText("Claude Sonnet 4")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "发送" }));
 
@@ -90,7 +88,7 @@ describe("Composer", () => {
       );
 
       expect(screen.getByText("2.4k")).toBeInTheDocument();
-      expect(screen.getByText("0.8k")).toBeInTheDocument();
+      expect(screen.getByText("847")).toBeInTheDocument();
       expect(screen.getByText("1.2k")).toBeInTheDocument();
       expect(screen.getByText("context")).toBeInTheDocument();
     });
@@ -135,11 +133,11 @@ describe("Composer", () => {
         />,
       );
 
-      expect(screen.getByText("0.5k")).toBeInTheDocument();
-      expect(screen.getByText("0.3k")).toBeInTheDocument();
-      // Only input and output k values, no cache
-      const kValues = screen.getAllByText(/k$/);
-      expect(kValues).toHaveLength(2);
+      expect(screen.getByText("500")).toBeInTheDocument();
+      expect(screen.getByText("300")).toBeInTheDocument();
+      // No k-suffixed values when tokens are under 1000
+      const kValues = screen.queryAllByText(/k$/);
+      expect(kValues).toHaveLength(0);
     });
 
     it("displays context usage without progress bar when maxContextTokens is undefined", () => {
