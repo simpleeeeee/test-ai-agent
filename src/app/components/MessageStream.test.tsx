@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { MessageStream } from "./MessageStream";
 
@@ -38,7 +38,6 @@ describe("MessageStream", () => {
 
     const userMessage = screen.getByText("帮我分析订单风险").closest(".user-bubble");
     expect(userMessage).toBeInTheDocument();
-    expect(within(userMessage as HTMLElement).getByText("测")).toBeInTheDocument();
 
     expect(screen.getByText("正在生成计划")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "复制回复" })).toHaveLength(1);

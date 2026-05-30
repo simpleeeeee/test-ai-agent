@@ -29,10 +29,7 @@ export function MessageStream({ state, onApprove, onDeny, onAnswer, onCopyMessag
               </div>
             </>
           ) : (
-            <div className="user-bubble">
-              <span className="profile-avatar">测</span>
-              <span>{message.content}</span>
-            </div>
+            <div className="user-bubble">{message.content}</div>
           )}
         </article>
       ))}
