@@ -1,5 +1,5 @@
 import type { BugDraft, Evidence } from "../domain/testRun";
-import type { ApprovalRequest, McpServerUiStatus, QuestionRequest, SdkUiEvent, SdkUiState } from "./sdkUiTypes";
+import type { ApprovalRequest, McpServerUiStatus, QuestionRequest, SdkUiEvent, SdkUiState, TokenUsage } from "./sdkUiTypes";
 
 function payloadRecord(payload: unknown): Record<string, unknown> {
   return payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
@@ -129,7 +129,7 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
   }
 
   if (event.channel === "sdk:usage") {
-    return { ...state, activeRunId, usage: payload.raw };
+    return { ...state, activeRunId, usage: payload.raw as TokenUsage };
   }
 
   if (event.channel === "sdk:error") {
