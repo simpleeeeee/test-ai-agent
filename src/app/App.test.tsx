@@ -89,10 +89,6 @@ describe("App backend integration", () => {
 
     await user.click(screen.getByRole("button", { name: "添加内容" }));
     expect(await screen.findByText("添加内容功能即将开放")).toBeInTheDocument();
-
-    invoke.mockResolvedValueOnce({ baseUrl: "", apiKey: "", model: "" });
-    await user.click(screen.getByRole("button", { name: "SDK 控制" }));
-    expect(screen.getByRole("complementary", { name: "SDK 控制" })).toBeInTheDocument();
   });
 
   it("creates a run through IPC and renders streamed SDK events", async () => {
@@ -149,7 +145,7 @@ describe("App backend integration", () => {
     expect(await screen.findByRole("complementary", { name: "测试监控台" })).toBeInTheDocument();
   });
 
-  it("uses IPC for plan revision, tool decisions, questions, and SDK controls", async () => {
+  it("uses IPC for plan revision, tool decisions, and questions", async () => {
     const user = userEvent.setup();
     render(<App />);
 
@@ -170,21 +166,10 @@ describe("App backend integration", () => {
     await user.click(screen.getByRole("button", { name: "允许一次" }));
     await user.selectOptions(screen.getByLabelText("测试范围"), "回归");
     await user.click(screen.getByRole("button", { name: "提交回答" }));
-    invoke.mockResolvedValueOnce({ baseUrl: "", apiKey: "", model: "" });
-    await user.click(screen.getByRole("button", { name: "SDK 控制" }));
-    await user.type(await screen.findByLabelText("Base URL"), "https://gateway.example.com/anthropic");
-    await user.type(screen.getByLabelText("API Key"), "plain-text-key");
-    await user.type(screen.getByLabelText("模型名称"), "gateway-model");
-    await user.click(screen.getByRole("button", { name: "保存设置" }));
 
     expect(send).toHaveBeenCalledWith("run:send-message", { runId: "run-1", message: "增加支付异常场景" });
     expect(send).toHaveBeenCalledWith("tool:approve", expect.objectContaining({ runId: "run-1", requestId: "approval-1" }));
     expect(send).toHaveBeenCalledWith("question:answer", { runId: "run-1", requestId: "question-1", answers: { scope: "回归" } });
-    expect(invoke).toHaveBeenCalledWith("settings:save", {
-      baseUrl: "https://gateway.example.com/anthropic",
-      apiKey: "plain-text-key",
-      model: "gateway-model",
-    });
   });
 
   it("does not keep the old alert-based plan revision path", async () => {
