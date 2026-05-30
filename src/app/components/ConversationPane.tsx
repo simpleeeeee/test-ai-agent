@@ -20,8 +20,6 @@ type Props = {
   onComposerChange: (value: string) => void;
   onComposerSubmit: (value: string) => void;
   onAddContent: () => void;
-  onOpenTools: () => void;
-  onOpenModelSettings: () => void;
   onMinimizeWindow: () => void;
   onToggleMaximizeWindow: () => void;
   onCloseWindow: () => void;
@@ -43,8 +41,6 @@ export function ConversationPane({
   onComposerChange,
   onComposerSubmit,
   onAddContent,
-  onOpenTools,
-  onOpenModelSettings,
   onMinimizeWindow,
   onToggleMaximizeWindow,
   onCloseWindow,
@@ -96,7 +92,7 @@ export function ConversationPane({
           </>
         )}
       </section>
-      <Composer value={composerValue} onChange={onComposerChange} onSubmit={onComposerSubmit} onAddContent={onAddContent} onOpenTools={onOpenTools} onOpenModelSettings={onOpenModelSettings} placeholder={placeholder} />
+      <Composer value={composerValue} onChange={onComposerChange} onSubmit={onComposerSubmit} onAddContent={onAddContent} placeholder={placeholder} />
     </main>
   );
 }

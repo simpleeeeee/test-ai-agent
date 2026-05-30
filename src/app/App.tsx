@@ -117,7 +117,6 @@ export function App() {
   const [composerValue, setComposerValue] = useState("");
   const [utilityPanel, setUtilityPanel] = useState<"projects" | null>(null);
   const [composerNotice, setComposerNotice] = useState("");
-  const [selectedModel, setSelectedModel] = useState("Claude Sonnet 4");
   const [pendingTestExecutionIntent, setPendingTestExecutionIntent] = useState(false);
   const [historyLoadingSessionId, setHistoryLoadingSessionId] = useState<string | undefined>();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -151,12 +150,6 @@ export function App() {
   const title = state.sessions.find((session) => session.id === state.activeRunId)?.title ?? state.activeRunId ?? "新对话";
 
   useEffect(() => bridge.subscribe(dispatch), [bridge]);
-
-  useEffect(() => {
-    Promise.resolve(bridge.loadSettings()).then((settings) => {
-      if (settings?.model) setSelectedModel(settings.model);
-    }).catch(() => {});
-  }, [bridge]);
 
   useEffect(() => {
     if (!pendingTestExecutionIntent || !state.activeRunId) return;

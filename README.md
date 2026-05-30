@@ -157,8 +157,7 @@ src/
 │       ├── Composer.tsx     # 输入区
 │       ├── MessageStream.tsx # 消息流
 │       ├── TestConsole.tsx   # 测试监控台
-│       ├── SessionPanel.tsx  # SDK 会话面板
-│       └── SdkControlDrawer.tsx # SDK 控制面板
+│       └── SettingsPanel.tsx  # 设置面板
 ├── domain/
 │   └── testRun.ts            # 事件溯源测试运行领域模型
 ├── ipc/
