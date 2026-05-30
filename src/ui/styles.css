@@ -1268,6 +1268,84 @@ input:focus-visible {
 
 .thinking-body.open { display: block; }
 
+/* ============================================================
+   TOOL CALL CARD — 工具调用内联卡片
+   ============================================================ */
+.tool-call-card { padding: 7px 0; }
+
+.tool-call-body {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.tool-call-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-sm);
+  font-family: var(--font-mono);
+  line-height: 1.25;
+}
+
+.tool-call-tool-name {
+  font-weight: 620;
+  color: var(--text-primary);
+}
+
+.tool-call-summary {
+  color: var(--text-secondary);
+  font-weight: 420;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-call-status {
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  flex: none;
+}
+
+.tool-call-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: var(--font-xs);
+  cursor: pointer;
+  width: fit-content;
+}
+
+.tool-call-toggle:hover { color: var(--text-secondary); }
+
+.tool-call-toggle svg { transition: transform var(--transition-fast); }
+.tool-call-toggle.expanded svg { transform: rotate(180deg); }
+
+.tool-call-detail {
+  display: none;
+  margin-top: 2px;
+  padding: 10px 14px;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: var(--font-xs);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow: auto;
+  max-height: 160px;
+}
+
+.tool-call-detail.open { display: block; }
+.tool-call-detail.is-output { color: var(--text-primary); }
+
 @media (max-width: 1120px) {
   body {
     min-width: 0;
