@@ -28,6 +28,7 @@ export const rendererToMainChannels = [
   "sdk:supported-agents",
   "sdk:account-info",
   "sdk:initialization-result",
+  "sdk:count-tokens",
   "settings:get",
   "settings:save",
   "window:minimize",
@@ -61,6 +62,7 @@ export const mainToRendererChannels = [
   "sdk:task-progress",
   "sdk:hook-event",
   "sdk:system-event",
+  "sdk:token-counted",
   "question:required",
   "question:answered",
 ] as const;

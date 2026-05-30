@@ -50,6 +50,7 @@ const rendererSchemas = {
   "sdk:supported-agents": z.object({ runId: nonEmptyString }),
   "sdk:account-info": z.object({ runId: nonEmptyString }),
   "sdk:initialization-result": z.object({ runId: nonEmptyString }),
+  "sdk:count-tokens": z.object({ runId: nonEmptyString, prompt: z.string() }),
   "settings:get": noPayload,
   "settings:save": settingsFormValues,
   "window:minimize": noPayload,
@@ -101,6 +102,7 @@ const mainSchemas = {
   "sdk:mcp-status": z.object({ runId: nonEmptyString, servers: z.array(z.unknown()) }),
   "sdk:task-progress": z.object({ runId: nonEmptyString, taskId: nonEmptyString, summary: z.string().optional(), raw: z.unknown().optional() }),
   "sdk:hook-event": z.object({ runId: nonEmptyString, hookName: nonEmptyString, raw: z.unknown() }),
+  "sdk:token-counted": z.object({ runId: nonEmptyString, inputTokens: z.number().int().nonnegative() }),
   "question:required": z.object({ runId: nonEmptyString, requestId: nonEmptyString, questions: z.array(z.unknown()) }),
   "question:answered": z.object({ runId: nonEmptyString, requestId: nonEmptyString }),
 } satisfies Partial<Record<MainToRendererChannel, z.ZodTypeAny>>;

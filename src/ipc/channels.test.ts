@@ -10,6 +10,7 @@ describe("IPC channels", () => {
   it("allows only explicit renderer-to-main channels", () => {
     expect(isRendererToMainChannel("run:create")).toBe(true);
     expect(isRendererToMainChannel("tool:approve")).toBe(true);
+    expect(isRendererToMainChannel("sdk:count-tokens" as any)).toBe(true);
     expect(isRendererToMainChannel("shell:openExternal")).toBe(false);
   });
 
@@ -20,6 +21,7 @@ describe("IPC channels", () => {
     expect(isMainToRendererChannel("assistant:message-started")).toBe(true);
     expect(isMainToRendererChannel("tool:input-json-delta")).toBe(true);
     expect(isMainToRendererChannel("sdk:system-event")).toBe(true);
+    expect(isMainToRendererChannel("sdk:token-counted" as any)).toBe(true);
   });
 
   it("rejects malformed or empty channel names", () => {
@@ -58,6 +60,7 @@ describe("IPC channels", () => {
       "sdk:supported-agents",
       "sdk:account-info",
       "sdk:initialization-result",
+      "sdk:count-tokens",
       "settings:get",
       "settings:save",
       "window:minimize",
@@ -99,6 +102,7 @@ describe("IPC channels", () => {
       "sdk:task-progress",
       "sdk:hook-event",
       "sdk:system-event",
+      "sdk:token-counted",
       "question:required",
       "question:answered",
     ]);

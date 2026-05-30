@@ -220,5 +220,10 @@ describe("Composer", () => {
       expect(screen.getByText(/25,000/)).toBeInTheDocument();
       expect(screen.getByText(/LLM 单会话最大容量：25k tokens/)).toBeInTheDocument();
     });
+
+    it("shows counted input tokens when provided", () => {
+      render(<Composer value="测试" onChange={vi.fn()} onSubmit={vi.fn()} onAddContent={vi.fn()} modelName="Claude Sonnet 4.6" usage={{ inputTokens: 128, outputTokens: 0 }} />);
+      expect(screen.getByText(/128/)).toBeInTheDocument();
+    });
   });
 });
