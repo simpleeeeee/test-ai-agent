@@ -95,6 +95,13 @@ describe("ClaudeAgentRuntimeAdapter", () => {
     session.close();
 
     expect(queryResult.close).toHaveBeenCalledOnce();
-    expect(queryResult.streamInput).toHaveBeenCalledWith({ type: "user", message: { role: "user", content: "继续" } });
+    // streamInput should receive an AsyncIterable wrapping the message
+    const streamInputArg = queryResult.streamInput.mock.calls[0][0] as AsyncIterable<unknown>;
+    expect(streamInputArg).toBeDefined();
+    const collected: unknown[] = [];
+    for await (const item of streamInputArg) {
+      collected.push(item);
+    }
+    expect(collected).toEqual([{ type: "user", message: { role: "user", content: "继续" } }]);
   });
 });

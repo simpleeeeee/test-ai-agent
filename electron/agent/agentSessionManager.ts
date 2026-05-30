@@ -50,7 +50,10 @@ export class AgentSessionManager {
   ) {
     const config = this.loadConfig({ cwd: this.deps.cwd ?? process.cwd(), claudeConfigDir: this.deps.configDir });
     const input = new AsyncMessageQueue<unknown>();
-    input.push({ type: "user", message: { role: "user", content: prompt } });
+    const isResuming = !!(runOptions?.resume || runOptions?.continue);
+    if (!isResuming) {
+      input.push({ type: "user", message: { role: "user", content: prompt } });
+    }
 
     const approvalBridge = new ApprovalBridge(runId, (event) => this.emitRunEvent(runId, event));
     const session = this.adapter.start({
@@ -68,14 +71,14 @@ export class AgentSessionManager {
   }
 
   approvePlan(runId: string) {
-    this.session(runId).streamInput({
+    this.run(runId).input.push({
       type: "user",
       message: { role: "user", content: "用户已确认计划，开始执行。" },
     });
   }
 
   sendMessage(runId: string, message: string) {
-    this.session(runId).streamInput({
+    this.run(runId).input.push({
       type: "user",
       message: { role: "user", content: message },
     });

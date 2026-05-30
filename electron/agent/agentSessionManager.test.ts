@@ -75,12 +75,17 @@ describe("AgentSessionManager", () => {
     expect(loadConfig).toHaveBeenCalledWith({ cwd: "D:/app" });
   });
 
-  it("streams approved plan continuation into the active SDK session", async () => {
+  it("pushes approved plan continuation into the run's input queue", async () => {
     async function* messages() {
       yield { type: "result", subtype: "success", session_id: "session-1" };
     }
-    const streamInput = vi.fn();
-    const adapter = { start: vi.fn(() => ({ messages: messages(), streamInput, close: vi.fn() })) };
+    let capturedPrompt: AsyncIterable<any> | undefined;
+    const adapter = {
+      start: vi.fn((params: any) => {
+        capturedPrompt = params.prompt;
+        return { messages: messages(), close: vi.fn() };
+      }),
+    };
     const manager = new AgentSessionManager({
       adapter: adapter as any,
       loadConfig: () => ({ sdkOptions: {} }),
@@ -90,10 +95,129 @@ describe("AgentSessionManager", () => {
     await manager.startRun("run-1", "测试订单模块功能");
     manager.approvePlan("run-1");
 
-    expect(streamInput).toHaveBeenCalledWith({
+    // Read messages directly from the captured input queue
+    const iterator = capturedPrompt![Symbol.asyncIterator]();
+
+    // First message: the initial prompt
+    const first = await iterator.next();
+    expect(first.done).toBe(false);
+    expect(first.value).toEqual({
+      type: "user",
+      message: { role: "user", content: "测试订单模块功能" },
+    });
+
+    // Second message: the approvePlan continuation
+    const second = await iterator.next();
+    expect(second.done).toBe(false);
+    expect(second.value).toEqual({
       type: "user",
       message: { role: "user", content: "用户已确认计划，开始执行。" },
     });
+
+    manager.stopRun("run-1");
+  });
+
+  it("pushes sendMessage into the run's input queue", async () => {
+    async function* messages() {
+      yield { type: "result", subtype: "success", session_id: "session-1" };
+    }
+    let capturedPrompt: AsyncIterable<any> | undefined;
+    const adapter = {
+      start: vi.fn((params: any) => {
+        capturedPrompt = params.prompt;
+        return { messages: messages(), close: vi.fn() };
+      }),
+    };
+    const manager = new AgentSessionManager({
+      adapter: adapter as any,
+      loadConfig: () => ({ sdkOptions: {} }),
+      emit: vi.fn(),
+    });
+
+    await manager.startRun("run-1", "测试订单模块功能");
+    manager.sendMessage("run-1", "请继续执行");
+
+    const iterator = capturedPrompt![Symbol.asyncIterator]();
+
+    // First message: the initial prompt
+    const first = await iterator.next();
+    expect(first.value).toEqual({
+      type: "user",
+      message: { role: "user", content: "测试订单模块功能" },
+    });
+
+    // Second message: the sendMessage content
+    const second = await iterator.next();
+    expect(second.value).toEqual({
+      type: "user",
+      message: { role: "user", content: "请继续执行" },
+    });
+
+    manager.stopRun("run-1");
+  });
+
+  it("does not push an initial user message when resuming a session", async () => {
+    async function* messages() {
+      yield { type: "result", subtype: "success", session_id: "session-1" };
+    }
+    let capturedPrompt: AsyncIterable<any> | undefined;
+    const adapter = {
+      start: vi.fn((params: any) => {
+        capturedPrompt = params.prompt;
+        return { messages: messages(), close: vi.fn() };
+      }),
+    };
+    const manager = new AgentSessionManager({
+      adapter: adapter as any,
+      loadConfig: () => ({ sdkOptions: {} }),
+      emit: vi.fn(),
+    });
+
+    await manager.resumeSession("run-1", "session-target");
+
+    // The input queue should be empty — no initial prompt pushed when resuming
+    const iterator = capturedPrompt![Symbol.asyncIterator]();
+    const first = await Promise.race([
+      iterator.next(),
+      new Promise<{ done: boolean; value?: unknown }>((resolve) =>
+        setTimeout(() => resolve({ done: false, value: "__timeout__" }), 50)
+      ),
+    ]);
+
+    expect(first.value).toBe("__timeout__");
+    manager.stopRun("run-1");
+  });
+
+  it("does not push an initial user message when continuing a session", async () => {
+    async function* messages() {
+      yield { type: "result", subtype: "success", session_id: "session-1" };
+    }
+    let capturedPrompt: AsyncIterable<any> | undefined;
+    const adapter = {
+      start: vi.fn((params: any) => {
+        capturedPrompt = params.prompt;
+        return { messages: messages(), close: vi.fn() };
+      }),
+    };
+    const manager = new AgentSessionManager({
+      adapter: adapter as any,
+      loadConfig: () => ({ sdkOptions: {} }),
+      emit: vi.fn(),
+    });
+
+    await manager.continueRun("run-1");
+
+    // The input queue should be empty — no initial prompt pushed when continuing
+    const iterator = capturedPrompt![Symbol.asyncIterator]();
+    const first = await Promise.race([
+      iterator.next(),
+      new Promise<{ done: boolean; value?: unknown }>((resolve) =>
+        setTimeout(() => resolve({ done: false, value: "__timeout__" }), 50)
+      ),
+    ]);
+
+    expect(first.value).toBe("__timeout__");
+    manager.stopRun("run-1");
   });
 
   it("uses stable message.id from message_start for all deltas in the same turn", async () => {

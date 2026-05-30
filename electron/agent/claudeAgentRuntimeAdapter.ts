@@ -39,7 +39,12 @@ export class ClaudeAgentRuntimeAdapter {
       supportedAgents: () => queryResult.supportedAgents(),
       accountInfo: () => queryResult.accountInfo(),
       initializationResult: () => queryResult.initializationResult(),
-      streamInput: (message: unknown) => queryResult.streamInput(message),
+      streamInput: (message: unknown) => {
+        async function* once() {
+          yield message;
+        }
+        return queryResult.streamInput(once() as any);
+      },
       stopTask: (taskId: string) => queryResult.stopTask(taskId),
     };
   }
