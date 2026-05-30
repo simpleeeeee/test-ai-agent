@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { createBackendBridge } from "./backendBridge";
 import { createInitialSdkUiState, reduceSdkUiEvent } from "./sdkEventStore";
 import { ClaudeSidebar } from "./components/ClaudeSidebar";
@@ -6,7 +6,7 @@ import { ConversationPane } from "./components/ConversationPane";
 import { SdkControlDrawer } from "./components/SdkControlDrawer";
 import { TestConsole } from "./components/TestConsole";
 import type { Evidence } from "../domain/testRun";
-import type { SessionSummary } from "./sdkUiTypes";
+import type { SdkMessage, SessionSummary } from "./sdkUiTypes";
 import { isExplicitTestExecutionRequest } from "./testIntent";
 import "../ui/styles.css";
 
@@ -78,6 +78,41 @@ function mapSdkSessions(raw: unknown): SessionSummary[] {
   }));
 }
 
+function extractSessionText(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (!value || typeof value !== "object") return "";
+
+  const record = value as Record<string, unknown>;
+  if (typeof record.text === "string") return record.text.trim();
+  if (typeof record.content === "string") return record.content.trim();
+  if (Array.isArray(record.content)) {
+    return record.content.map((block) => extractSessionText(block)).join("").trim();
+  }
+  if (Array.isArray(record.message)) {
+    return record.message.map((block) => extractSessionText(block)).join("").trim();
+  }
+  if (record.message) return extractSessionText(record.message);
+  return "";
+}
+
+function mapSessionMessages(raw: unknown): SdkMessage[] {
+  if (!Array.isArray(raw)) return [];
+
+  const messages: SdkMessage[] = [];
+  for (const item of raw as Array<Record<string, unknown>>) {
+    if (item.type !== "user" && item.type !== "assistant") continue;
+    const content = extractSessionText(item.message);
+    if (!content) continue;
+    messages.push({
+      id: typeof item.uuid === "string" ? item.uuid : `${item.type}-${messages.length}`,
+      role: item.type,
+      content,
+      complete: true,
+    });
+  }
+  return messages;
+}
+
 export function App() {
   const [composerValue, setComposerValue] = useState("");
   const [controlOpen, setControlOpen] = useState(false);
@@ -85,7 +120,10 @@ export function App() {
   const [composerNotice, setComposerNotice] = useState("");
   const [selectedModel, setSelectedModel] = useState("Claude Sonnet 4");
   const [pendingTestExecutionIntent, setPendingTestExecutionIntent] = useState(false);
+  const [historyLoadingSessionId, setHistoryLoadingSessionId] = useState<string | undefined>();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [state, dispatch] = useReducer(reduceSdkUiEvent, undefined, createInitialSdkUiState);
+  const historyRestoreToken = useRef(0);
   const bridge = useMemo(() => {
     const api = window.aiTestAssistant ?? fallbackApi;
     return createBackendBridge(api);
@@ -105,7 +143,7 @@ export function App() {
   const activeTaskId = state.tasks.at(-1)?.taskId;
   const hasActiveConversation = !!state.activeRunId;
   const shouldShowTestConsole = !!state.activeRunId && !!state.workspaceModes[state.activeRunId]?.hasTestExecution;
-  const title = state.activeRunId ?? "新对话";
+  const title = state.sessions.find((session) => session.id === state.activeRunId)?.title ?? state.activeRunId ?? "新对话";
 
   useEffect(() => bridge.subscribe(dispatch), [bridge]);
 
@@ -149,17 +187,64 @@ export function App() {
   }
 
   function handleNewChat() {
+    historyRestoreToken.current += 1;
+    setHistoryLoadingSessionId(undefined);
     dispatch({ channel: "ui:new-chat" });
     setComposerValue("");
     setComposerNotice("");
     setControlOpen(false);
     setPendingTestExecutionIntent(false);
+    setSettingsOpen(false);
     closeUtilityPanels();
   }
 
   function handleSelectConversation() {
     closeUtilityPanels();
     setControlOpen(false);
+    setSettingsOpen(false);
+  }
+
+  function handleResumeSession(sessionId: string) {
+    const restoreToken = ++historyRestoreToken.current;
+    const previousRunId = state.activeRunId;
+    setHistoryLoadingSessionId(sessionId);
+    dispatch({
+      channel: "ui:session-loaded",
+      payload: { sessionId, messages: [] },
+    });
+    setComposerValue("");
+    setComposerNotice("");
+    setControlOpen(false);
+    setPendingTestExecutionIntent(false);
+    closeUtilityPanels();
+
+    if (previousRunId && previousRunId !== sessionId) {
+      bridge.stopRun(previousRunId);
+    }
+
+    void bridge.getSessionMessages(sessionId)
+      .then((raw) => {
+        if (historyRestoreToken.current !== restoreToken) return;
+        dispatch({
+          channel: "ui:session-loaded",
+          payload: {
+            sessionId,
+            messages: mapSessionMessages(raw),
+          },
+        });
+        setHistoryLoadingSessionId((current) => (current === sessionId ? undefined : current));
+      })
+      .catch(() => {
+        if (historyRestoreToken.current === restoreToken) {
+          setHistoryLoadingSessionId((current) => (current === sessionId ? undefined : current));
+        }
+      })
+      .finally(() => {
+        if (historyRestoreToken.current !== restoreToken) return;
+        bridge.resumeSession(sessionId, sessionId).then(() => {
+          refreshSessions();
+        }).catch(() => {});
+      });
   }
 
   function handleSelectProjects() {
@@ -194,11 +279,8 @@ export function App() {
         onNewChat={handleNewChat}
         onSelectConversation={handleSelectConversation}
         onSelectProjects={handleSelectProjects}
-        onResumeSession={(sessionId) => {
-          bridge.resumeSession(requestRunId, sessionId).then(() => {
-            refreshSessions();
-          }).catch(() => {});
-        }}
+        onResumeSession={handleResumeSession}
+        onSettingsClick={() => setSettingsOpen((v) => !v)}
       />
       <ConversationPane
         state={state}
@@ -206,6 +288,7 @@ export function App() {
         composerValue={composerValue}
         hasTestExecution={shouldShowTestConsole}
         activeRunId={state.activeRunId}
+        loadingHistorySession={historyLoadingSessionId !== undefined && historyLoadingSessionId === state.activeRunId}
         modelName={selectedModel}
         onApprove={bridge.approveTool}
         onDeny={bridge.denyTool}
