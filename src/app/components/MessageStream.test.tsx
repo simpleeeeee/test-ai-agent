@@ -42,7 +42,8 @@ describe("MessageStream", () => {
     expect(screen.getByText("正在生成计划")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "复制回复" })).toHaveLength(1);
     expect(screen.getAllByRole("button", { name: "重试回复" })).toHaveLength(1);
-    expect(screen.getByText("AI 测试助手想使用浏览器工具")).toBeInTheDocument();
+    expect(screen.getByText("ai-assistant request browser.navigate")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "允许一次" })).toBeInTheDocument();
     expect(screen.getByText("需要补充信息")).toBeInTheDocument();
     expect(screen.queryByText("SDK Usage")).not.toBeInTheDocument();
     expect(screen.queryByText(/SDK Raw Message/)).not.toBeInTheDocument();

@@ -1346,6 +1346,93 @@ input:focus-visible {
 .tool-call-detail.open { display: block; }
 .tool-call-detail.is-output { color: var(--text-primary); }
 
+/* ============================================================
+   APPROVAL CARD — 深色迷你终端 无红绿灯
+   ============================================================ */
+.approval-card {
+  background: #1e1d1a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-xl);
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: var(--font-sm);
+  line-height: 1.6;
+  color: #d4d1c8;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.approval-card .term-line {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.approval-card .term-prompt {
+  color: #788c5d;
+  flex: none;
+  font-weight: 600;
+}
+
+.approval-card .term-text {
+  color: #d4d1c8;
+}
+
+.approval-card .term-block {
+  margin: 0;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-xs);
+  color: rgba(255, 255, 255, 0.6);
+  white-space: pre-wrap;
+  overflow: auto;
+  max-height: 140px;
+}
+
+.approval-card .term-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.approval-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  min-height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: var(--font-mono);
+  font-size: var(--font-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.approval-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+
+.approval-btn:disabled {
+  opacity: 0.2;
+  cursor: default;
+  pointer-events: none;
+}
+
+.approval-btn.is-selected {
+  border-color: rgba(255, 255, 255, 0.45);
+  color: #fff;
+}
+
 @media (max-width: 1120px) {
   body {
     min-width: 0;
