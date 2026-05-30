@@ -1,6 +1,10 @@
 import type { RunEvent } from "../../src/domain/testRun.js";
 import { mapPermissionRequestToRunEvent } from "./runEventMapper.js";
 
+function isAskUserQuestionTool(toolName: string): boolean {
+  return ["AskUserQuestion", "ask_user_question", "askUserQuestion"].includes(toolName);
+}
+
 type PermissionContext = {
   signal: AbortSignal;
   suggestions?: unknown[];
@@ -37,7 +41,7 @@ export class ApprovalBridge {
       this.deny(requestId, "请求已取消");
     }, { once: true });
 
-    if (toolName === "AskUserQuestion") {
+    if (isAskUserQuestionTool(toolName)) {
       this.emit({
         type: "question:required",
         requestId,

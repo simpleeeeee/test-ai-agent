@@ -68,4 +68,30 @@ describe("ApprovalBridge", () => {
       },
     });
   });
+
+  it.each(["ask_user_question", "askUserQuestion"])("emits question requests for %s", async (toolName) => {
+    const emit = vi.fn();
+    const bridge = new ApprovalBridge("run-1", emit);
+    const decision = bridge.canUseTool(toolName, {
+      questions: [{ question: "选择环境", options: [{ label: "QA" }] }],
+    }, {
+      signal: new AbortController().signal,
+      suggestions: [],
+    });
+
+    expect(emit).toHaveBeenCalledWith({
+      type: "question:required",
+      requestId: "approval-1",
+      questions: [{ question: "选择环境", options: [{ label: "QA" }] }],
+    });
+
+    bridge.answerQuestion("approval-1", { "选择环境": "QA" });
+    await expect(decision).resolves.toEqual({
+      behavior: "allow",
+      updatedInput: {
+        questions: [{ question: "选择环境", options: [{ label: "QA" }] }],
+        answers: { "选择环境": "QA" },
+      },
+    });
+  });
 });
