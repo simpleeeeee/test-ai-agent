@@ -83,7 +83,7 @@ describe("IPC payload schemas", () => {
   });
 
   it("accepts assistant message started payloads", () => {
-    expect(parseMainToRendererPayload("assistant:message-started" as any, {
+    expect(parseMainToRendererPayload("assistant:message-started", {
       runId: "run-1",
       messageId: "msg-1",
       model: "claude-sonnet-4-6",
@@ -113,7 +113,7 @@ describe("IPC payload schemas", () => {
   });
 
   it("accepts streamed tool input payloads", () => {
-    expect(parseMainToRendererPayload("tool:input-json-delta" as any, {
+    expect(parseMainToRendererPayload("tool:input-json-delta", {
       runId: "run-1",
       toolCallId: "toolu-1",
       delta: "{\"url\"",
@@ -147,7 +147,7 @@ describe("IPC payload schemas", () => {
   });
 
   it("accepts SDK system events", () => {
-    expect(parseMainToRendererPayload("sdk:system-event" as any, {
+    expect(parseMainToRendererPayload("sdk:system-event", {
       runId: "run-1",
       subtype: "compact",
       raw: { type: "system", subtype: "compact" },
@@ -156,5 +156,22 @@ describe("IPC payload schemas", () => {
       subtype: "compact",
       raw: { type: "system", subtype: "compact" },
     });
+  });
+
+  it("rejects tool:input-json-delta with empty delta", () => {
+    expect(() => parseMainToRendererPayload("tool:input-json-delta", {
+      runId: "run-1",
+      toolCallId: "toolu-1",
+      delta: "",
+      inputSummary: "",
+    })).toThrow();
+  });
+
+  it("rejects sdk:system-event with empty subtype", () => {
+    expect(() => parseMainToRendererPayload("sdk:system-event", {
+      runId: "run-1",
+      subtype: "",
+      raw: {},
+    })).toThrow();
   });
 });

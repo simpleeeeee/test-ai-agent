@@ -76,7 +76,7 @@ const mainSchemas = {
   "tool:input-json-delta": z.object({
     runId: nonEmptyString,
     toolCallId: nonEmptyString,
-    delta: z.string(),
+    delta: nonEmptyString,
     inputSummary: z.string(),
   }),
   "sdk:system-event": z.object({
