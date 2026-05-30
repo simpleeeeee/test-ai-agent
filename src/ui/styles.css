@@ -1126,6 +1126,98 @@ input:focus-visible {
   animation: none;
 }
 
+/* ============================================================
+   SETTINGS OVERLAY — 从侧边栏底部弹出
+   ============================================================ */
+.settings-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+
+.settings-overlay.open {
+  display: block;
+}
+
+.settings-panel {
+  position: fixed;
+  left: 10px;
+  bottom: 56px;
+  z-index: 51;
+  width: 240px;
+  padding: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  display: grid;
+  gap: 12px;
+}
+
+.settings-panel .setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-panel .setting-label {
+  font-size: var(--font-sm);
+  font-weight: 520;
+}
+
+.settings-panel input {
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: var(--font-sm);
+  font-family: var(--font-mono);
+}
+
+.settings-panel input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.settings-panel .setting-row-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.settings-panel .setting-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 2px 0;
+}
+
+.theme-switch {
+  display: flex;
+  gap: 1px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.theme-switch button {
+  padding: 4px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-xs);
+  cursor: pointer;
+}
+
+.theme-switch button.active {
+  background: var(--bg-sidebar-active);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
 @media (max-width: 1120px) {
   body {
     min-width: 0;
