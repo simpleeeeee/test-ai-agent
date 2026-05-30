@@ -220,6 +220,43 @@ describe("AgentSessionManager", () => {
     manager.stopRun("run-1");
   });
 
+  it("does not push an initial user message when forking a session", async () => {
+    // We need to mock the SDK forkSession to return a new session ID
+    // The key assertion: adapter.start is called with resume option and NO initial user message
+    async function* messages() {
+      yield { type: "result", subtype: "success", session_id: "session-1" };
+    }
+    let capturedPrompt: AsyncIterable<any> | undefined;
+    const adapter = {
+      start: vi.fn((params: any) => {
+        capturedPrompt = params.prompt;
+        return { messages: messages(), close: vi.fn() };
+      }),
+    };
+    const mockFork = sdkForkSession as ReturnType<typeof vi.fn>;
+    mockFork.mockResolvedValue({ sessionId: "forked-sid" });
+
+    const manager = new AgentSessionManager({
+      adapter: adapter as any,
+      loadConfig: () => ({ sdkOptions: {} }),
+      emit: vi.fn(),
+    });
+
+    await manager.forkSession("run-1", "session-source");
+
+    // The input queue should be empty — no initial prompt pushed when forking
+    const iterator = capturedPrompt![Symbol.asyncIterator]();
+    const first = await Promise.race([
+      iterator.next(),
+      new Promise<{ done: boolean; value?: unknown }>((resolve) =>
+        setTimeout(() => resolve({ done: false, value: "__timeout__" }), 50)
+      ),
+    ]);
+
+    expect(first.value).toBe("__timeout__");
+    manager.stopRun("run-1");
+  });
+
   it("uses stable message.id from message_start for all deltas in the same turn", async () => {
     async function* messages() {
       yield {
@@ -267,6 +304,38 @@ describe("AgentSessionManager", () => {
     expect(emit).toHaveBeenCalledWith("assistant:message-completed", expect.objectContaining({
       runId: "run-1",
       messageId: "msg_stable_abc",
+    }));
+  });
+
+  it("uses one mapper session per run so thinking duration spans multiple SDK events", async () => {
+    async function* messages() {
+      yield { type: "stream_event", uuid: "u1", event: { type: "message_start", message: { id: "msg-1" } } };
+      yield { type: "stream_event", uuid: "u2", event: { type: "content_block_start", index: 0, content_block: { type: "thinking" } } };
+      yield { type: "stream_event", uuid: "u3", event: { type: "content_block_delta", index: 0, delta: { type: "thinking_delta", thinking: "分析" } } };
+      yield { type: "stream_event", uuid: "u4", event: { type: "content_block_stop", index: 0 } };
+      yield { type: "stream_event", uuid: "u5", event: { type: "message_stop" } };
+      yield { type: "result", subtype: "success" };
+    }
+
+    const emit = vi.fn();
+    const adapter = { start: vi.fn(() => ({ messages: messages(), close: vi.fn() })) };
+    const manager = new AgentSessionManager({
+      adapter: adapter as any,
+      loadConfig: () => ({ sdkOptions: {} }),
+      emit,
+    });
+
+    await manager.startRun("run-1", "测试");
+
+    expect(emit).toHaveBeenCalledWith("assistant:thinking-delta", expect.objectContaining({
+      runId: "run-1",
+      messageId: "msg-1",
+      delta: "分析",
+    }));
+    expect(emit).toHaveBeenCalledWith("assistant:message-completed", expect.objectContaining({
+      runId: "run-1",
+      messageId: "msg-1",
+      thinkingDuration: expect.stringMatching(/s$/),
     }));
   });
 

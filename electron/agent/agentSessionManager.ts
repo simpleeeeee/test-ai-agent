@@ -4,7 +4,7 @@ import { AsyncMessageQueue } from "./asyncMessageQueue.js";
 import { ApprovalBridge } from "./approvalBridge.js";
 import { ClaudeAgentRuntimeAdapter } from "./claudeAgentRuntimeAdapter.js";
 import { loadAgentRuntimeConfig } from "./agentConfig.js";
-import { mapSdkMessageToRunEvents } from "./runEventMapper.js";
+import { SdkRunEventMapperSession } from "./runEventMapper.js";
 import {
   listSessions as sdkListSessions,
   getSessionInfo as sdkGetSessionInfo,
@@ -170,7 +170,7 @@ export class AgentSessionManager {
     if (this.runs.has(runId)) {
       this.stopRun(runId);
     }
-    return this.startRun(runId, "恢复之前的会话", { resume: sessionId });
+    return this.startRun(runId, "", { resume: sessionId });
   }
 
   async forkSession(runId: string, sessionId: string) {
@@ -180,11 +180,11 @@ export class AgentSessionManager {
     if (this.runs.has(runId)) {
       this.stopRun(runId);
     }
-    return this.startRun(runId, "从会话分支继续执行", { resume: newSessionId });
+    return this.startRun(runId, "", { resume: newSessionId });
   }
 
   async continueRun(runId: string) {
-    return this.startRun(runId, "继续执行", { continue: true });
+    return this.startRun(runId, "", { continue: true });
   }
 
   async renameSession(sessionId: string, title: string) {
@@ -204,12 +204,9 @@ export class AgentSessionManager {
   }
 
   private async drainMessages(runId: string, messages: AsyncIterable<unknown>) {
-    let assistantMessageId: string | undefined;
+    const mapper = new SdkRunEventMapperSession(runId);
     for await (const message of messages) {
-      if (isAssistantMessageStart(message)) {
-        assistantMessageId = (message as any).event.message.id as string;
-      }
-      for (const event of mapSdkMessageToRunEvents(runId, message, assistantMessageId)) {
+      for (const event of mapper.map(message)) {
         this.emitRunEvent(runId, event);
       }
     }
@@ -230,13 +227,4 @@ export class AgentSessionManager {
   private session(runId: string): RuntimeSession {
     return this.run(runId).session;
   }
-}
-
-function isAssistantMessageStart(message: unknown): boolean {
-  if (!message || typeof message !== "object") return false;
-  const m = message as Record<string, unknown>;
-  return m.type === "stream_event"
-    && m.event != null
-    && typeof m.event === "object"
-    && (m.event as Record<string, unknown>).type === "message_start";
 }
