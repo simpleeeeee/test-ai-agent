@@ -222,7 +222,7 @@ describe("Composer", () => {
     });
 
     it("shows counted input tokens when provided", () => {
-      render(<Composer value="测试" onChange={vi.fn()} onSubmit={vi.fn()} onAddContent={vi.fn()} modelName="Claude Sonnet 4.6" usage={{ inputTokens: 128, outputTokens: 0 }} />);
+      render(<Composer value="测试" onChange={vi.fn()} onSubmit={vi.fn()} onAddContent={vi.fn()} placeholder="向 AI 测试助手提问…" modelName="Claude Sonnet 4.6" usage={{ inputTokens: 128, outputTokens: 0 }} />);
       expect(screen.getByText(/128/)).toBeInTheDocument();
     });
   });

@@ -31,6 +31,8 @@ describe("MessageStream", () => {
       errors: [{ message: "网关认证失败", retryable: true }],
       tasks: [{ taskId: "task-1", summary: "正在执行子任务" }],
       sessions: [],
+      permissionDenials: [],
+      systemEvents: [],
     }} onApprove={vi.fn()} onDeny={vi.fn()} onAnswer={vi.fn()} onCopyMessage={vi.fn()} onRetryMessage={vi.fn()} />);
 
     const column = document.querySelector(".message-column");
@@ -68,6 +70,8 @@ describe("MessageStream", () => {
       errors: [],
       tasks: [],
       sessions: [],
+      permissionDenials: [],
+      systemEvents: [],
     }} onApprove={vi.fn()} onDeny={vi.fn()} onAnswer={vi.fn()} onCopyMessage={vi.fn()} onRetryMessage={vi.fn()} />);
 
     expect(screen.getByText("思考中…")).toBeInTheDocument();
@@ -91,6 +95,8 @@ describe("MessageStream", () => {
       errors: [],
       tasks: [],
       sessions: [],
+      permissionDenials: [],
+      systemEvents: [],
     }} onApprove={vi.fn()} onDeny={vi.fn()} onAnswer={vi.fn()} onCopyMessage={vi.fn()} onRetryMessage={vi.fn()} />);
 
     expect(screen.getByText("思考已完成")).toBeInTheDocument();
