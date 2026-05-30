@@ -62,6 +62,7 @@ export function createInitialSdkUiState(): SdkUiState {
     sessions: [],
     permissionDenials: [],
     systemEvents: [],
+    runStats: undefined,
   };
 }
 
