@@ -51,4 +51,27 @@ describe("MessageStream", () => {
     expect(screen.queryByLabelText("赞同回复")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("反对回复")).not.toBeInTheDocument();
   });
+
+  it("renders thinking blocks for assistant messages that have thinking content", () => {
+    render(<MessageStream state={{
+      activeRunId: "run-1",
+      workspaceModes: {},
+      messages: [
+        { id: "msg-1", role: "assistant", content: "计划已生成", complete: true, thinkingContent: "分析用户需求…检查测试范围…", thinkingDuration: "2s" },
+      ],
+      approvals: [],
+      questions: [],
+      mcpServers: [],
+      evidence: [],
+      rawMessages: [],
+      usage: { inputTokens: 10, outputTokens: 20 },
+      errors: [],
+      tasks: [],
+      sessions: [],
+    }} onApprove={vi.fn()} onDeny={vi.fn()} onAnswer={vi.fn()} onCopyMessage={vi.fn()} onRetryMessage={vi.fn()} />);
+
+    expect(screen.getByText("思考中…")).toBeInTheDocument();
+    expect(screen.getByText("2s")).toBeInTheDocument();
+    expect(screen.getByText("分析用户需求…检查测试范围…")).toBeInTheDocument();
+  });
 });

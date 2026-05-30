@@ -24,26 +24,34 @@ const fallbackApi = {
     if (channel === "run:create") {
       const prompt = (payload as { prompt?: string })?.prompt ?? "";
       const runId = "run-1";
+      const msgId = "msg-1";
       setTimeout(() => {
         emitFallback("run:created", { runId, prompt });
-        emitFallback("assistant:text-delta", { runId, messageId: "msg-1", delta: `已根据"${prompt}"生成测试计划，请审核后点击确认执行。` });
-        emitFallback("assistant:message-completed", { runId, messageId: "msg-1" });
+        emitFallback("assistant:thinking-delta", { runId, messageId: msgId, delta: "分析用户需求…" });
+        emitFallback("assistant:thinking-delta", { runId, messageId: msgId, delta: "匹配测试策略…" });
+        emitFallback("assistant:text-delta", { runId, messageId: msgId, delta: `已根据"${prompt}"生成测试计划，请审核后点击确认执行。` });
+        emitFallback("assistant:message-completed", { runId, messageId: msgId, thinkingDuration: "2s" });
+        emitFallback("sdk:usage", { runId, raw: { input_tokens: 1132, output_tokens: 423, cache_read_input_tokens: 580, context_tokens: 2100, max_context_tokens: 25000 } });
         emitFallback("sdk:task-progress", { runId, taskId: "task-1", summary: "等待审核测试计划" });
         emitFallback("sdk:mcp-status", { runId, servers: [{ name: "browser", status: "connected" }, { name: "api", status: "pending" }] });
       }, 0);
     } else if (channel === "run:approve-plan") {
       const runId = (payload as { runId?: string })?.runId ?? "run-1";
+      const msgId = `msg-${Date.now()}`;
       setTimeout(() => {
         emitFallback("sdk:task-progress", { runId, taskId: "task-2", summary: "执行测试计划中…" });
-        emitFallback("assistant:text-delta", { runId, messageId: "msg-2", delta: "计划已确认，开始执行测试。" });
-        emitFallback("assistant:message-completed", { runId, messageId: "msg-2" });
+        emitFallback("assistant:text-delta", { runId, messageId: msgId, delta: "计划已确认，开始执行测试。" });
+        emitFallback("assistant:message-completed", { runId, messageId: msgId });
+        emitFallback("sdk:usage", { runId, raw: { input_tokens: 2458, output_tokens: 847, cache_read_input_tokens: 1230, context_tokens: 3200, max_context_tokens: 25000 } });
       }, 0);
     } else if (channel === "run:send-message") {
       const runId = (payload as { runId?: string })?.runId ?? "run-1";
       const message = (payload as { message?: string })?.message ?? "";
+      const msgId = `msg-${Date.now()}`;
       setTimeout(() => {
-        emitFallback("assistant:text-delta", { runId, messageId: `msg-${Date.now()}`, delta: `已收到补充指令："${message}"，继续执行测试。` });
-        emitFallback("assistant:message-completed", { runId, messageId: `msg-${Date.now()}` });
+        emitFallback("assistant:text-delta", { runId, messageId: msgId, delta: `已收到补充指令："${message}"，继续执行测试。` });
+        emitFallback("assistant:message-completed", { runId, messageId: msgId });
+        emitFallback("sdk:usage", { runId, raw: { input_tokens: 3670, output_tokens: 1102, context_tokens: 4300, max_context_tokens: 25000 } });
         emitFallback("sdk:task-progress", { runId, taskId: `task-${Date.now()}`, summary: "已处理补充指令" });
       }, 0);
     }
@@ -121,6 +129,7 @@ export function App() {
   const [historyLoadingSessionId, setHistoryLoadingSessionId] = useState<string | undefined>();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [settingsModel, setSettingsModel] = useState("");
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
@@ -143,6 +152,12 @@ export function App() {
     refreshSessions();
   }, [refreshSessions]);
 
+  useEffect(() => {
+    bridge.loadSettings().then((s) => {
+      setSettingsModel(s.model || "");
+    }).catch(() => {});
+  }, [bridge]);
+
   const requestRunId = state.activeRunId ?? "run-1";
   const activeTaskId = state.tasks.at(-1)?.taskId;
   const hasActiveConversation = !!state.activeRunId;
@@ -159,6 +174,9 @@ export function App() {
 
 
   function handleComposerSubmit(value: string) {
+    const userMessageId = `user-${crypto.randomUUID()}`;
+    dispatch({ channel: "ui:user-message-sent", payload: { messageId: userMessageId, content: value } });
+
     const isTestExecutionRequest = isExplicitTestExecutionRequest(value);
     if (hasActiveConversation) {
       if (isTestExecutionRequest && state.activeRunId) {
@@ -267,6 +285,7 @@ export function App() {
         hasTestExecution={shouldShowTestConsole}
         activeRunId={state.activeRunId}
         loadingHistorySession={historyLoadingSessionId !== undefined && historyLoadingSessionId === state.activeRunId}
+        modelName={settingsModel || undefined}
         onApprove={bridge.approveTool}
         onDeny={bridge.denyTool}
         onAnswer={bridge.answerQuestion}

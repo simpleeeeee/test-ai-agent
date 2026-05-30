@@ -214,6 +214,44 @@ describe("App backend integration", () => {
     expect(screen.getByRole("main", { name: "对话" })).toHaveTextContent("订单模块回归测试");
   });
 
+  it("displays context and token usage in the composer info bar after sdk:usage event", async () => {
+    invoke.mockImplementation((channel: string) => {
+      if (channel === "run:list-sessions") return Promise.resolve([]);
+      if (channel === "settings:get") {
+        return Promise.resolve({ baseUrl: "", apiKey: "", model: "claude-opus-4-8" });
+      }
+      return Promise.resolve(undefined);
+    });
+
+    render(<App />);
+
+    // Before usage event, all token displays should show default placeholder "—"
+    const dashes = await screen.findAllByText("—");
+    expect(dashes.length).toBeGreaterThanOrEqual(3); // input, output, context
+
+    emit("sdk:usage", {
+      runId: "run-1",
+      raw: { inputTokens: 2458, outputTokens: 847, contextTokens: 2100, maxContextTokens: 25000, cacheReadInputTokens: 1230 },
+    });
+
+    expect(await screen.findByText("context")).toBeInTheDocument();
+    expect(screen.getByText("2.1k")).toBeInTheDocument();  // contextTokens 2100 → 2.1k
+  });
+
+  it("loads settings model name and passes it to the composer info bar", async () => {
+    invoke.mockImplementation((channel: string) => {
+      if (channel === "run:list-sessions") return Promise.resolve([]);
+      if (channel === "settings:get") {
+        return Promise.resolve({ baseUrl: "https://api.anthropic.com", apiKey: "sk-test", model: "claude-opus-4-8" });
+      }
+      return Promise.resolve(undefined);
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText("claude-opus-4-8")).toBeInTheDocument();
+  });
+
   it("shows a loading banner while a clicked history session is being restored", async () => {
     const user = userEvent.setup();
     let resolveMessages: ((value: unknown) => void) | undefined;

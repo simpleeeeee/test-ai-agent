@@ -174,6 +174,25 @@ describe("Composer", () => {
       expect(screen.getByText("1.5k")).toBeInTheDocument();   // 1500 → 1.5k
     });
 
+    it("displays default placeholder '—' for all token stats when usage is undefined but modelName is set", () => {
+      render(
+        <Composer
+          value=""
+          onChange={vi.fn()}
+          onSubmit={vi.fn()}
+          onAddContent={vi.fn()}
+          placeholder="向 AI 测试助手提问…"
+          modelName="Claude Opus 4.8"
+        />,
+      );
+
+      // Info bar should be visible
+      expect(document.querySelector(".composer-info-bar")).toBeInTheDocument();
+      // All token values should show placeholder "—"
+      const dashes = screen.getAllByText("—");
+      expect(dashes.length).toBeGreaterThanOrEqual(3); // input, output, context at minimum
+    });
+
     it("renders context tooltip content on hover", async () => {
       const user = userEvent.setup();
       render(

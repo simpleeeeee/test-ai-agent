@@ -6,6 +6,8 @@ export type SdkMessage = {
   role: "user" | "assistant" | "system";
   content: string;
   complete: boolean;
+  thinkingContent?: string;
+  thinkingDuration?: string;
 };
 
 export type ApprovalRequest = {
@@ -58,6 +60,9 @@ export type LocalUiEvent = {
 } | {
   channel: "ui:session-loaded";
   payload: { sessionId: string; messages: SdkMessage[] };
+} | {
+  channel: "ui:user-message-sent";
+  payload: { messageId: string; content: string };
 };
 
 export type TokenUsage = {

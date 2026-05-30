@@ -1,6 +1,7 @@
 import { Copy, RefreshCcw, Sparkles } from "lucide-react";
 import type { SdkUiState } from "../sdkUiTypes";
 import { AskUserQuestionCard } from "./AskUserQuestionCard";
+import { ThinkingBlock } from "./ThinkingBlock";
 import { ToolApprovalCard } from "./ToolApprovalCard";
 
 type Props = {
@@ -21,6 +22,11 @@ export function MessageStream({ state, onApprove, onDeny, onAnswer, onCopyMessag
             <>
               <Sparkles aria-hidden="true" className="assistant-mark" size={22} />
               <div>
+                {message.thinkingContent ? (
+                  <ThinkingBlock duration={message.thinkingDuration ?? ""}>
+                    {message.thinkingContent}
+                  </ThinkingBlock>
+                ) : null}
                 <p>{message.content}</p>
                 <div className="assistant-actions">
                   <button aria-label="复制回复" type="button" onClick={() => onCopyMessage(message.content)}><Copy aria-hidden="true" size={14} />复制</button>

@@ -91,65 +91,59 @@ export function Composer({
       {showInfoBar ? (
         <div className="composer-info-bar">
           <span className="composer-info-model">{modelName ?? ""}</span>
-          {hasTokenStats(usage) ? (
-            <div className="composer-info-tokens">
-              {usage.inputTokens !== undefined ? (
-                <span className="composer-token-item">
-                  <span aria-hidden="true">↘</span>{" "}
-                  <strong>{formatTokens(usage.inputTokens)}</strong>
+          <div className="composer-info-tokens">
+            <span className="composer-token-item">
+              <span aria-hidden="true">↘</span>{" "}
+              <strong>{usage?.inputTokens !== undefined ? formatTokens(usage.inputTokens) : "—"}</strong>
+            </span>
+            <span className="composer-token-item">
+              <span aria-hidden="true">↗</span>{" "}
+              <strong>{usage?.outputTokens !== undefined ? formatTokens(usage.outputTokens) : "—"}</strong>
+            </span>
+            {showCache ? (
+              <span className="composer-token-item cache-hit">
+                <span aria-hidden="true">⚡</span>{" "}
+                <strong>{formatTokens(cacheTokens)}</strong>
+              </span>
+            ) : null}
+            <span className="composer-token-item context-zone">
+              <span>context</span>{" "}
+              <strong>{usage?.contextTokens !== undefined ? formatTokens(usage.contextTokens) : "—"}</strong>
+              {contextPct !== undefined ? (
+                <span className="composer-context-bar" aria-hidden="true">
+                  <span
+                    className="composer-context-fill"
+                    style={{ width: `${(contextPct * 100).toFixed(0)}%` }}
+                  />
                 </span>
               ) : null}
-              {usage.outputTokens !== undefined ? (
-                <span className="composer-token-item">
-                  <span aria-hidden="true">↗</span>{" "}
-                  <strong>{formatTokens(usage.outputTokens)}</strong>
-                </span>
-              ) : null}
-              {showCache ? (
-                <span className="composer-token-item cache-hit">
-                  <span aria-hidden="true">⚡</span>{" "}
-                  <strong>{formatTokens(cacheTokens)}</strong>
-                </span>
-              ) : null}
-              {usage.contextTokens !== undefined ? (
-                <span className="composer-token-item context-zone">
-                  <span>context</span>{" "}
-                  <strong>{formatTokens(usage.contextTokens)}</strong>
+              {usage?.contextTokens !== undefined ? (
+                <span className="composer-context-tooltip">
+                  <div className="tooltip-heading">当前会话 tokens 总量</div>
+                  <div>
+                    已用{" "}
+                    {usage.contextTokens!.toLocaleString()}
+                    {" / "}
+                    {usage.maxContextTokens?.toLocaleString() ?? "--"}{" "}
+                    tokens
+                  </div>
                   {contextPct !== undefined ? (
-                    <span className="composer-context-bar" aria-hidden="true">
+                    <div className="tooltip-progress">
                       <span
-                        className="composer-context-fill"
+                        className="tooltip-progress-fill"
                         style={{ width: `${(contextPct * 100).toFixed(0)}%` }}
                       />
-                    </span>
-                  ) : null}
-                  <span className="composer-context-tooltip">
-                    <div className="tooltip-heading">当前会话 tokens 总量</div>
-                    <div>
-                      已用{" "}
-                      {usage.contextTokens!.toLocaleString()}
-                      {" / "}
-                      {usage.maxContextTokens?.toLocaleString() ?? "--"}{" "}
-                      tokens
                     </div>
-                    {contextPct !== undefined ? (
-                      <div className="tooltip-progress">
-                        <span
-                          className="tooltip-progress-fill"
-                          style={{ width: `${(contextPct * 100).toFixed(0)}%` }}
-                        />
-                      </div>
-                    ) : null}
-                    {usage.maxContextTokens !== undefined ? (
-                      <div className="tooltip-capacity">
-                        LLM 单会话最大容量：{(usage.maxContextTokens / 1000).toFixed(0)}k tokens
-                      </div>
-                    ) : null}
-                  </span>
+                  ) : null}
+                  {usage.maxContextTokens !== undefined ? (
+                    <div className="tooltip-capacity">
+                      LLM 单会话最大容量：{(usage.maxContextTokens / 1000).toFixed(0)}k tokens
+                    </div>
+                  ) : null}
                 </span>
               ) : null}
-            </div>
-          ) : null}
+            </span>
+          </div>
         </div>
       ) : null}
     </div>

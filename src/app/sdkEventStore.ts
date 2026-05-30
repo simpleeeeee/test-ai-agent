@@ -90,6 +90,14 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
     };
   }
 
+  if (event.channel === "ui:user-message-sent") {
+    return {
+      ...state,
+      activeRunId,
+      messages: [...state.messages, { id: event.payload.messageId, role: "user" as const, content: event.payload.content, complete: true }],
+    };
+  }
+
   if (event.channel === "ui:test-execution-confirmed") {
     return markHasTestExecution({ ...state, activeRunId }, activeRunId);
   }
@@ -104,12 +112,31 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
     return { ...state, activeRunId, messages };
   }
 
+  if (event.channel === "assistant:thinking-delta") {
+    const messageId = String(payload.messageId);
+    const delta = typeof payload.delta === "string" ? payload.delta : "";
+    const existing = state.messages.find((message) => message.id === messageId);
+    const messages = existing
+      ? state.messages.map((message) =>
+          message.id === messageId
+            ? { ...message, thinkingContent: (message.thinkingContent ?? "") + delta }
+            : message,
+        )
+      : [...state.messages, { id: messageId, role: "assistant" as const, content: "", complete: false, thinkingContent: delta }];
+    return { ...state, activeRunId, messages };
+  }
+
   if (event.channel === "assistant:message-completed") {
     const messageId = String(payload.messageId);
+    const thinkingDuration = typeof payload.thinkingDuration === "string" ? payload.thinkingDuration : undefined;
     return {
       ...state,
       activeRunId,
-      messages: state.messages.map((message) => message.id === messageId ? { ...message, complete: true } : message),
+      messages: state.messages.map((message) =>
+        message.id === messageId
+          ? { ...message, complete: true, ...(thinkingDuration !== undefined ? { thinkingDuration } : {}) }
+          : message,
+      ),
     };
   }
 

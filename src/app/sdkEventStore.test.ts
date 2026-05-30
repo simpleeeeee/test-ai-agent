@@ -224,6 +224,61 @@ describe("sdkEventStore", () => {
     expect(state.errors).toEqual([]);
   });
 
+  it("adds a user message to the message list when ui:user-message-sent is dispatched", () => {
+    let state = createInitialSdkUiState();
+    state = reduceSdkUiEvent(state, {
+      channel: "ui:user-message-sent",
+      payload: { messageId: "user-1", content: "帮我分析订单风险" },
+    });
+
+    expect(state.messages).toEqual([
+      { id: "user-1", role: "user", content: "帮我分析订单风险", complete: true },
+    ]);
+  });
+
+  it("appends thinking content to an existing assistant message", () => {
+    let state = createInitialSdkUiState();
+    // First add an assistant message stub
+    state = reduceSdkUiEvent(state, {
+      channel: "assistant:text-delta",
+      payload: { runId: "run-1", messageId: "msg-1", delta: "计划已生成" },
+    });
+    // Then add thinking to it
+    state = reduceSdkUiEvent(state, {
+      channel: "assistant:thinking-delta",
+      payload: { runId: "run-1", messageId: "msg-1", delta: "分析用户需求…" },
+    });
+    state = reduceSdkUiEvent(state, {
+      channel: "assistant:thinking-delta",
+      payload: { runId: "run-1", messageId: "msg-1", delta: "检查测试范围…" },
+    });
+
+    expect(state.messages[0].thinkingContent).toBe("分析用户需求…检查测试范围…");
+  });
+
+  it("creates a stub message when thinking arrives before any text delta (real API order)", () => {
+    let state = createInitialSdkUiState();
+    // Thinking arrives FIRST (as in the real Anthropic API and fallback API)
+    state = reduceSdkUiEvent(state, {
+      channel: "assistant:thinking-delta",
+      payload: { runId: "run-1", messageId: "msg-1", delta: "分析用户需求…" },
+    });
+    state = reduceSdkUiEvent(state, {
+      channel: "assistant:thinking-delta",
+      payload: { runId: "run-1", messageId: "msg-1", delta: "匹配测试策略…" },
+    });
+    // Text delta arrives AFTER thinking
+    state = reduceSdkUiEvent(state, {
+      channel: "assistant:text-delta",
+      payload: { runId: "run-1", messageId: "msg-1", delta: "计划已生成" },
+    });
+
+    expect(state.messages[0].role).toBe("assistant");
+    expect(state.messages[0].thinkingContent).toBe("分析用户需求…匹配测试策略…");
+    expect(state.messages[0].content).toBe("计划已生成");
+    expect(state.messages[0].complete).toBe(false);
+  });
+
   it("preserves sessions across ui:new-chat", () => {
     let state = createInitialSdkUiState();
     state.sessions = [{ id: "s1", title: "历史", tags: [] }];

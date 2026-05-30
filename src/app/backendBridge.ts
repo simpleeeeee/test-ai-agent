@@ -23,6 +23,7 @@ const streamChannels: MainToRendererChannel[] = [
   "evidence:created",
   "bug-draft:created",
   "assistant:text-delta",
+  "assistant:thinking-delta",
   "assistant:message-completed",
   "sdk:raw-message",
   "sdk:session-changed",
