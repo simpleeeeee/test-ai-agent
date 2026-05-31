@@ -119,6 +119,8 @@ export async function loadResolvedSettings(cwd: string): Promise<{
           ANTHROPIC_BASE_URL: manual.baseUrl,
           ANTHROPIC_AUTH_TOKEN: manual.apiKey,
           ANTHROPIC_MODEL: manual.model,
+          ...(manual.effort ? { CLAUDE_CODE_EFFORT: manual.effort } : {}),
+          ...(manual.sandboxEnabled !== undefined ? { CLAUDE_CODE_SANDBOX_ENABLED: String(manual.sandboxEnabled) } : {}),
         },
       } as Settings,
       provenance: {},
