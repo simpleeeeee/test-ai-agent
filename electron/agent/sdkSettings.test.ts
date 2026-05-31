@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import type { SettingsFormValues } from "./sdkSettings.js";
 import { ensureClaudeCodeSettings, loadClaudeCodeSettings, saveClaudeCodeSettings, settingsLocalPathForCwd, settingsPathForCwd } from "./sdkSettings.js";
 
 describe("sdkSettings", () => {
@@ -216,5 +217,29 @@ describe("sdkSettings", () => {
     ensureClaudeCodeSettings({ cwd });
 
     expect(JSON.parse(fs.readFileSync(settingsPathForCwd(cwd), "utf8"))).toEqual(existing);
+  });
+});
+
+describe("SettingsFormValues", () => {
+  it("accepts effort and sandboxEnabled optional fields", () => {
+    const valid: SettingsFormValues = {
+      baseUrl: "https://gateway.example.com",
+      apiKey: "sk-test",
+      model: "claude-sonnet-4",
+      effort: "high",
+      sandboxEnabled: true,
+    };
+    expect(valid.effort).toBe("high");
+    expect(valid.sandboxEnabled).toBe(true);
+  });
+
+  it("allows omitting new fields for backward compatibility", () => {
+    const minimal: SettingsFormValues = {
+      baseUrl: "",
+      apiKey: "",
+      model: "",
+    };
+    expect(minimal.effort).toBeUndefined();
+    expect(minimal.sandboxEnabled).toBeUndefined();
   });
 });
