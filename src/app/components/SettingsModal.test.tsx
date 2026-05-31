@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { SettingsModal } from "./SettingsModal";
 
@@ -30,5 +31,19 @@ describe("SettingsModal", () => {
     expect(screen.getByText("Base URL")).toBeInTheDocument();
     expect(screen.getByText("API Key")).toBeInTheDocument();
     expect(screen.getByText("模型")).toBeInTheDocument();
+  });
+
+  it("switches panel when clicking nav items", async () => {
+    const user = userEvent.setup();
+    render(<SettingsModal bridge={bridge} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
+
+    // Click 外观 nav → see 主题模式
+    await user.click(screen.getByText("外观"));
+    expect(screen.getByText("主题模式")).toBeInTheDocument();
+    expect(screen.queryByText("API 连接配置")).not.toBeInTheDocument();
+
+    // Click 连接 nav → back to connection
+    await user.click(screen.getByText("连接"));
+    expect(screen.getByText("API 连接配置")).toBeInTheDocument();
   });
 });
