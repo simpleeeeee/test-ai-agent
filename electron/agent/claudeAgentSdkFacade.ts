@@ -1,3 +1,4 @@
+export { foldSessionSummary } from "@anthropic-ai/claude-agent-sdk";
 export * from "@anthropic-ai/claude-agent-sdk";
 
 export async function countPromptTokens(): Promise<{ inputTokens: number }> {

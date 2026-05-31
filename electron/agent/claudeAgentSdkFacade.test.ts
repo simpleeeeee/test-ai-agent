@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+import { foldSessionSummary } from "./claudeAgentSdkFacade.js";
 
 describe("claudeAgentSdkFacade", () => {
+  it("foldSessionSummary is exported and is a function", () => {
+    expect(typeof foldSessionSummary).toBe("function");
+  });
   it("re-exports every public runtime export from the installed Claude Agent SDK", async () => {
     const realSdk = await import("@anthropic-ai/claude-agent-sdk");
     const facade = await import("./claudeAgentSdkFacade.js");
