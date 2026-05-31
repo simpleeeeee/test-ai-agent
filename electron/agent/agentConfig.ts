@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { loadClaudeCodeSettings } from "./sdkSettings.js";
+// 以下类型按需从 facade 导入；若因版本差异导致导入失败（循环依赖或类型缺失），可降级为 any
+import type { OnElicitation, SpawnOptions, SpawnedProcess } from "./claudeAgentSdkFacade.js";
 
 export type AgentRuntimeConfig = {
   cwd: string;
@@ -229,6 +231,12 @@ export function loadAgentRuntimeConfig(input: {
   cwd: string;
   claudeConfigDir?: string | null;
   userSdkOptions?: unknown;
+  codeOptions?: {
+    onElicitation?: OnElicitation;
+    spawnClaudeCodeProcess?: (options: SpawnOptions) => SpawnedProcess;
+    stderr?: (data: string) => void;
+    abortController?: AbortController;
+  };
 }): AgentRuntimeConfig {
   const settings = loadClaudeCodeSettings({ cwd: input.cwd });
   const baseUrl = settings.baseUrl.trim();
@@ -254,10 +262,18 @@ export function loadAgentRuntimeConfig(input: {
 
   const pathToClaudeCodeExecutable = pathToClaudeCodeExecutableForCwd(input.cwd);
   const userSdkOptions = sanitizeUserSdkOptions(input.userSdkOptions);
+
+  // Thinking 配置：userSdkOptions 优先，兜底 display 为 summarized
   const thinking = {
     display: "summarized" as ThinkingDisplay,
     ...(userSdkOptions.thinking ?? {}),
   };
+
+  // === 合并 settings 中的新字段：userSdkOptions 优先，settings 作为默认值 ===
+  const effort = userSdkOptions.effort ?? settings.effort;
+  const sandboxEnabled = userSdkOptions.sandbox?.enabled !== undefined
+    ? userSdkOptions.sandbox.enabled
+    : settings.sandboxEnabled;
 
   return {
     cwd: input.cwd,
@@ -268,7 +284,19 @@ export function loadAgentRuntimeConfig(input: {
       includePartialMessages: true,
       permissionMode: userSdkOptions.permissionMode ?? "default",
       thinking,
+      // 新字段合并（userSdkOptions 已经包含了这些字段，此处用合并后的值覆盖）
+      ...(effort ? { effort } : {}),
+      ...(sandboxEnabled !== undefined
+        ? { sandbox: { ...(userSdkOptions.sandbox ?? {}), enabled: sandboxEnabled } }
+        : userSdkOptions.sandbox
+          ? { sandbox: userSdkOptions.sandbox }
+          : {}),
       ...(input.claudeConfigDir ? { env: { CLAUDE_CONFIG_DIR: input.claudeConfigDir } } : {}),
+      // 注入 codeOptions：将回调/实例类型的运行时选项传递到 SDK options
+      ...(input.codeOptions?.onElicitation ? { onElicitation: input.codeOptions.onElicitation } : {}),
+      ...(input.codeOptions?.spawnClaudeCodeProcess ? { spawnClaudeCodeProcess: input.codeOptions.spawnClaudeCodeProcess } : {}),
+      ...(input.codeOptions?.stderr ? { stderr: input.codeOptions.stderr } : {}),
+      ...(input.codeOptions?.abortController ? { abortController: input.codeOptions.abortController } : {}),
     },
   };
 }
