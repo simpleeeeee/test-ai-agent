@@ -208,4 +208,17 @@ describe("applyRunEvent", () => {
 
     expect(finalRun).toEqual(run);
   });
+
+  it("14 new RunEvent types pass through applyRunEvent unchanged", () => {
+    const run = createInitialRun({ prompt: "test", projectName: "p", environmentName: "e", agentName: "a" });
+    const events: RunEvent[] = [
+      { type: "sdk:tool-progress", toolUseId: "t1", status: "running" },
+      { type: "sdk:rate-limit", info: { tokensRemaining: 100 } },
+      { type: "sdk:notification", message: "test", notificationType: "info" },
+      { type: "sdk:compact-boundary", direction: "pre" },
+    ];
+    for (const event of events) {
+      expect(applyRunEvent(run, event)).toEqual(run);
+    }
+  });
 });

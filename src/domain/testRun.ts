@@ -88,18 +88,32 @@ export type RunEvent =
   | { type: "assistant:message-started"; messageId: string; model?: string; usage?: unknown }
   | { type: "assistant:thinking-delta"; messageId: string; delta: string }
   | { type: "sdk:raw-message"; runId: string; message: unknown }
-  | { type: "sdk:session-changed"; sessionId: string }
+  | { type: "sdk:session-changed"; sessionId: string; state?: string }
   | { type: "sdk:status"; status: string; raw?: unknown }
   | { type: "sdk:usage"; raw: unknown; modelUsage?: unknown; cost?: unknown; durationMs?: number; numTurns?: number; model?: string }
   | { type: "sdk:error"; message: string; retryable: boolean; raw?: unknown }
   | { type: "sdk:permission-denied"; toolName: string; raw?: unknown }
   | { type: "tool:input-json-delta"; toolCallId: string; delta: string; inputSummary: string }
   | { type: "sdk:mcp-status"; servers: unknown[] }
-  | { type: "sdk:task-progress"; taskId: string; summary?: string; raw?: unknown }
-  | { type: "sdk:hook-event"; hookName: string; raw: unknown }
+  | { type: "sdk:task-progress"; taskId: string; summary?: string; status?: string; raw?: unknown }
+  | { type: "sdk:hook-event"; hookName: string; stage?: string; raw: unknown }
   | { type: "sdk:system-event"; subtype: string; raw: unknown }
   | { type: "question:required"; requestId: string; questions: unknown[] }
-  | { type: "question:answered"; requestId: string };
+  | { type: "question:answered"; requestId: string }
+  | { type: "sdk:tool-progress"; toolUseId: string; status: string; progress?: unknown }
+  | { type: "sdk:tool-summary"; toolUseId: string; summary: string }
+  | { type: "sdk:task-notification"; taskId: string; status: string; description?: string }
+  | { type: "sdk:notification"; message: string; title?: string; notificationType: string }
+  | { type: "sdk:local-command-output"; command: string; output: string }
+  | { type: "sdk:plugin-install"; pluginName: string; status: string }
+  | { type: "sdk:rate-limit"; info: unknown }
+  | { type: "sdk:files-persisted"; files: string[]; totalBytes?: number }
+  | { type: "sdk:memory-recall"; memories: unknown[] }
+  | { type: "sdk:mirror-error"; message: string }
+  | { type: "sdk:elicitation-complete"; serverName: string; elicitationId?: string }
+  | { type: "sdk:user-message-replay"; messageId: string; content: string }
+  | { type: "sdk:compact-boundary"; direction: "pre" | "post" }
+  | { type: "sdk:deferred-tool-use"; toolName: string; toolUseId: string };
 
 export function applyRunEvent(run: TestRun, event: RunEvent): TestRun {
   switch (event.type) {
@@ -159,6 +173,20 @@ export function applyRunEvent(run: TestRun, event: RunEvent): TestRun {
     case "sdk:task-progress":
     case "sdk:hook-event":
     case "sdk:system-event":
+    case "sdk:tool-progress":
+    case "sdk:tool-summary":
+    case "sdk:task-notification":
+    case "sdk:notification":
+    case "sdk:local-command-output":
+    case "sdk:plugin-install":
+    case "sdk:rate-limit":
+    case "sdk:files-persisted":
+    case "sdk:memory-recall":
+    case "sdk:mirror-error":
+    case "sdk:elicitation-complete":
+    case "sdk:user-message-replay":
+    case "sdk:compact-boundary":
+    case "sdk:deferred-tool-use":
     case "question:required":
     case "question:answered":
       return run;
