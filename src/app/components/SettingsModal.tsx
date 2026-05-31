@@ -28,6 +28,7 @@ export function SettingsModal({ onClose, theme, onThemeChange, connectionStatus 
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("");
+  const [showConnectionError, setShowConnectionError] = useState(false);
 
   return (
     <div className="settings-modal-overlay" role="presentation" onClick={onClose}>
@@ -80,7 +81,13 @@ export function SettingsModal({ onClose, theme, onThemeChange, connectionStatus 
               <div className="settings-section">
                 <div className="settings-section-title">连接状态</div>
                 <div className="settings-field">
-                  <div className={`settings-conn-status${connectionStatus.state === "connected" ? " connected" : ""}`}>
+                  <div
+                    className={`settings-conn-status${connectionStatus.state === "connected" ? " connected" : ""}`}
+                    onClick={() => connectionStatus.state === "failed" && setShowConnectionError(!showConnectionError)}
+                    role={connectionStatus.state === "failed" ? "button" : undefined}
+                    aria-expanded={connectionStatus.state === "failed" ? showConnectionError : undefined}
+                    style={connectionStatus.state === "failed" ? { cursor: "pointer" } : undefined}
+                  >
                     <span className="conn-dot" />
                     <span>
                       {connectionStatus.state === "connected" ? "已连接" :
@@ -92,6 +99,12 @@ export function SettingsModal({ onClose, theme, onThemeChange, connectionStatus 
                   </div>
                   <button className="settings-btn">测试连接</button>
                 </div>
+                {showConnectionError && connectionStatus.error && (
+                  <div className="settings-conn-error" role="region" aria-label="连接错误详情">
+                    <p>{connectionStatus.error.message}</p>
+                    <p className="conn-error-suggestion">{connectionStatus.error.suggestion}</p>
+                  </div>
+                )}
               </div>
             )}
             {activeNav === "appearance" && (

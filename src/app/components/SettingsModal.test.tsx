@@ -85,4 +85,28 @@ describe("SettingsModal", () => {
     );
     expect(screen.getByText("已连接")).toBeInTheDocument();
   });
+
+  it("shows error detail when clicking failed connection status", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    const connectionStatus = {
+      state: "failed" as const,
+      baseUrl: "https://api.example.com",
+      model: "claude-sonnet",
+      probedAt: Date.now(),
+      error: {
+        code: "AUTH_ERROR",
+        message: "API 密钥无效，请检查后重试",
+        suggestion: "请在 API Key 字段中更新密钥后重新测试连接",
+      },
+    };
+    render(
+      <SettingsModal bridge={bridge} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" connectionStatus={connectionStatus} />,
+    );
+    expect(screen.getByText("连接失败")).toBeInTheDocument();
+    expect(screen.queryByText("API 密钥无效，请检查后重试")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /连接失败/ }));
+    expect(screen.getByText("API 密钥无效，请检查后重试")).toBeInTheDocument();
+    expect(screen.getByText("请在 API Key 字段中更新密钥后重新测试连接")).toBeInTheDocument();
+  });
 });
