@@ -334,4 +334,46 @@ describe("SettingsModal", () => {
     await user.click(screen.getByRole("button", { name: "测试连接" }));
     expect(await screen.findByText("已连接")).toBeInTheDocument();
   });
+
+  it("resets showConnectionError on new probe so error is not auto-expanded", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    // First probe fails
+    const probeConnection = vi.fn()
+      .mockResolvedValueOnce({
+        state: "failed",
+        baseUrl: "https://api.example.com",
+        model: "claude-sonnet",
+        error: { code: "401", message: "API 密钥无效", suggestion: "请更新密钥" },
+        probedAt: Date.now(),
+      })
+      // Second probe also fails (different error)
+      .mockResolvedValueOnce({
+        state: "failed",
+        baseUrl: "https://api.example.com",
+        model: "claude-sonnet",
+        error: { code: "500", message: "服务器内部错误", suggestion: "请稍后重试" },
+        probedAt: Date.now(),
+      });
+    const b = {
+      loadSettings: () => Promise.resolve({ baseUrl: "https://api.example.com", apiKey: "sk-test", model: "claude-sonnet" }),
+      saveSettings: vi.fn(),
+      probeConnection,
+    };
+    render(<SettingsModal bridge={b} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
+
+    // First probe → fails
+    await user.click(screen.getByRole("button", { name: "测试连接" }));
+    expect(await screen.findByText("连接失败")).toBeInTheDocument();
+
+    // User expands error detail
+    await user.click(screen.getByText("连接失败"));
+    expect(screen.getByText("API 密钥无效")).toBeInTheDocument();
+
+    // Second probe → also fails
+    await user.click(screen.getByRole("button", { name: "测试连接" }));
+    expect(await screen.findByText("连接失败")).toBeInTheDocument();
+
+    // Error detail should NOT be auto-expanded (showConnectionError was reset)
+    expect(screen.queryByText("服务器内部错误")).not.toBeInTheDocument();
+  });
 });

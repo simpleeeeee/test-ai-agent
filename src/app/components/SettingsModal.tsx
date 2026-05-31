@@ -170,6 +170,7 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                     disabled={probing}
                     onClick={async () => {
                       setProbing(true);
+                      setShowConnectionError(false);
                       setProbeResult({ state: "connecting", baseUrl, model, probedAt: Date.now() });
                       try {
                         if (!bridge.probeConnection) {
