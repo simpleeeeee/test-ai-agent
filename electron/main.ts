@@ -12,6 +12,7 @@ import { createBackendRuntime, type BackendRuntime } from "./agent/backendRuntim
 import { resolveClaudeConfigDir } from "./agent/claudeConfigDir.js";
 import { startup } from "./agent/claudeAgentSdkFacade.js";
 import { ensureClaudeCodeSettings, loadClaudeCodeSettings, loadAppSettings, saveAppSettings, saveClaudeCodeSettings } from "./agent/sdkSettings.js";
+import type { ConnectionProbeQuery } from "./agent/connectionProbe.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -46,6 +47,7 @@ function appBaseDirectory() {
 }
 
 let backendRuntime: BackendRuntime | undefined;
+let sdkWarmQuery: ConnectionProbeQuery | undefined;
 
 function registerBackendIpc(window: BrowserWindow, cwd: string, configDir: string | null): BackendRuntime {
   const runtime = createBackendRuntime({
@@ -132,6 +134,23 @@ function registerBackendIpc(window: BrowserWindow, cwd: string, configDir: strin
       saveAppSettings(cwd, appSettings);
     }
     return loadClaudeCodeSettings({ cwd });
+  });
+  handleRequest("settings:probe-connection", async ({ baseUrl, model }) => {
+    if (!sdkWarmQuery) {
+      return {
+        state: "failed",
+        baseUrl,
+        model,
+        error: {
+          code: "NOT_READY",
+          message: "SDK 尚未初始化完成，请稍后重试",
+          suggestion: "应用启动完成后即可使用连接测试",
+        },
+        probedAt: Date.now(),
+      };
+    }
+    const { probeConnection } = await import("./agent/connectionProbe.js");
+    return probeConnection(sdkWarmQuery, { baseUrl, model });
   });
   handleRequest("task:stop", ({ runId, taskId }) => manager.stopTask(runId, taskId));
   handleRequest("run:list-sessions", () =>
@@ -238,6 +257,7 @@ async function createWindow() {
 }
 
 startup().then((warmQuery) => {
+  sdkWarmQuery = warmQuery as unknown as ConnectionProbeQuery;
   app.on("before-quit", async (event) => {
     event.preventDefault();
     try {

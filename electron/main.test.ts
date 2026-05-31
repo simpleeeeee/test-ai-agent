@@ -214,6 +214,7 @@ describe("electron main IPC registration", () => {
       "sdk:supported-commands",
       "sdk:supported-models",
       "settings:get",
+      "settings:probe-connection",
       "settings:save",
       "task:stop",
     ]);
@@ -317,5 +318,12 @@ describe("electron main IPC registration", () => {
       appDir,
       expect.objectContaining({ outputFormat: undefined }),
     );
+  });
+
+  it("registers settings:probe-connection as invoke handler", async () => {
+    await import("./main.js");
+    await flushMicrotasks();
+    const handledChannels = handle.mock.calls.map(([channel]) => channel);
+    expect(handledChannels).toContain("settings:probe-connection");
   });
 });
