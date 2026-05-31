@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { OUTPUT_SCHEMA_TEMPLATES } from "../../domain/outputSchemas.js";
 
 type Props = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  bridge: { loadSettings: () => Promise<unknown>; saveSettings: (s: any) => any };
+  bridge: { loadSettings: () => Promise<Record<string, unknown>>; saveSettings: (settings: Record<string, unknown>) => unknown };
   onClose: () => void;
   onThemeChange: (mode: "light" | "dark") => void;
   theme: "light" | "dark";
@@ -80,7 +79,7 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
       debug, debugFile, maxBudgetUsd, maxTurns,
       outputFormat: outputFormatValue,
       ...overrides,
-    } as Parameters<typeof bridge.saveSettings>[0]);
+    });
   }
 
   function handleApplySdkSettings() {
