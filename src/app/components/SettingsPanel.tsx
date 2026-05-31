@@ -4,6 +4,8 @@ type SettingsFormValues = {
   baseUrl: string;
   apiKey: string;
   model: string;
+  effort?: string;
+  sandboxEnabled?: boolean;
 };
 
 type SettingsBridge = {
@@ -27,17 +29,21 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
   const [permissionMode, setPermissionMode] = useState("default");
   const [thinkingEffort, setThinkingEffort] = useState("medium");
   const [thinkingDisplay, setThinkingDisplay] = useState("summarized");
+  const [effort, setEffort] = useState("high");
+  const [sandboxEnabled, setSandboxEnabled] = useState(false);
 
   useEffect(() => {
     bridge.loadSettings().then((s) => {
       setBaseUrl(s.baseUrl || "");
       setApiKey(s.apiKey || "");
       setModel(s.model || "");
+      setEffort(s.effort || "high");
+      setSandboxEnabled(s.sandboxEnabled ?? false);
     });
   }, [bridge]);
 
-  function handleSave() {
-    bridge.saveSettings({ baseUrl, apiKey, model });
+  function handleSave(overrides?: Partial<SettingsFormValues>) {
+    bridge.saveSettings({ baseUrl, apiKey, model, effort, sandboxEnabled, ...overrides });
   }
 
   function handleApplySdkSettings() {
@@ -54,15 +60,15 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
       <div className="settings-panel" onClick={(e) => e.stopPropagation()}>
         <div className="setting-row">
           <div className="setting-label">Base URL</div>
-          <input type="text" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} onBlur={handleSave} placeholder="https://api.anthropic.com" />
+          <input type="text" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} onBlur={() => handleSave()} placeholder="https://api.anthropic.com" />
         </div>
         <div className="setting-row">
           <div className="setting-label">API Key</div>
-          <input type="text" value={apiKey} onChange={(e) => setApiKey(e.target.value)} onBlur={handleSave} placeholder="sk-ant-api-..." />
+          <input type="text" value={apiKey} onChange={(e) => setApiKey(e.target.value)} onBlur={() => handleSave()} placeholder="sk-ant-api-..." />
         </div>
         <div className="setting-row">
           <div className="setting-label">模型</div>
-          <input type="text" value={model} onChange={(e) => setModel(e.target.value)} onBlur={handleSave} placeholder="claude-sonnet-4-6" />
+          <input type="text" value={model} onChange={(e) => setModel(e.target.value)} onBlur={() => handleSave()} placeholder="claude-sonnet-4-6" />
         </div>
         <div className="setting-divider" />
         <div className="setting-row">
@@ -92,6 +98,17 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
           </select>
         </div>
         <div className="setting-row">
+          <label className="setting-label" htmlFor="sdk-effort">推理努力程度</label>
+          <select id="sdk-effort" aria-label="推理努力程度"
+            value={effort} onChange={(e) => { setEffort(e.target.value); handleSave({ effort: e.target.value }); }}>
+            <option value="low">低</option>
+            <option value="medium">中</option>
+            <option value="high">高</option>
+            <option value="xhigh">极高</option>
+            <option value="max">最大</option>
+          </select>
+        </div>
+        <div className="setting-row">
           <button type="button" onClick={handleApplySdkSettings}>应用设置</button>
         </div>
         <div className="setting-divider" />
@@ -100,6 +117,20 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
           <div className="theme-switch">
             <button className={theme === "light" ? "active" : ""} onClick={() => onThemeChange("light")}>浅色</button>
             <button className={theme === "dark" ? "active" : ""} onClick={() => onThemeChange("dark")}>暗色</button>
+          </div>
+        </div>
+        <div className="setting-divider" />
+        <div className="setting-row-inline">
+          <span className="setting-label">沙箱保护</span>
+          <div className="sandbox-switch">
+            <button className={sandboxEnabled ? "active" : ""}
+              onClick={() => { setSandboxEnabled(true); handleSave({ sandboxEnabled: true }); }}>
+              开
+            </button>
+            <button className={!sandboxEnabled ? "active" : ""}
+              onClick={() => { setSandboxEnabled(false); handleSave({ sandboxEnabled: false }); }}>
+              关
+            </button>
           </div>
         </div>
       </div>

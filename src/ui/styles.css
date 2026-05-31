@@ -1283,6 +1283,30 @@ input:focus-visible {
 }
 
 /* ============================================================
+   SANDBOX SWITCH — 沙箱保护开关
+   ============================================================ */
+.sandbox-switch {
+  display: flex;
+  gap: 1px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.sandbox-switch button {
+  padding: 4px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-xs);
+  cursor: pointer;
+}
+.sandbox-switch button.active {
+  background: var(--bg-sidebar-active);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ============================================================
    THINKING BLOCK — LLM 思考过程可折叠区块
    ============================================================ */
 .thinking-block {
