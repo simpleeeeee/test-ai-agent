@@ -103,6 +103,8 @@ export type TokenUsage = {
   outputTokens: number;
   cacheCreationInputTokens?: number;
   cacheReadInputTokens?: number;
+  /** 缓存命中率（百分比，0-100） */
+  cacheHitRate?: number;
   /** 当前会话已使用的上下文 tokens 总量 */
   contextTokens?: number;
   /** LLM 支持的单会话最大上下文 tokens */

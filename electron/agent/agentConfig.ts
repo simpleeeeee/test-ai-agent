@@ -117,7 +117,7 @@ export function sanitizeUserSdkOptions(input: unknown): UserSdkOptions {
   if (source.outputConfig !== undefined) options.outputConfig = source.outputConfig;
   if (source.contextEditing !== undefined) options.contextEditing = source.contextEditing;
   if (source.compaction !== undefined) options.compaction = source.compaction;
-  if (source.promptCaching !== undefined) options.promptCaching = source.promptCaching;
+  if (typeof source.promptCaching === "boolean") options.promptCaching = source.promptCaching;
   // ===== A 组：白名单 Set 校验 =====
   if (typeof source.effort === "string" && thinkingEfforts.has(source.effort)) {
     options.effort = source.effort as ThinkingEffort;

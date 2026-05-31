@@ -15,6 +15,7 @@ export type SettingsFormValues = {
   model: string;
   effort?: string;          // 推理努力程度: low | medium | high | xhigh | max
   sandboxEnabled?: boolean; // 沙箱是否启用
+  promptCaching?: boolean;  // Prompt 缓存开关
 };
 
 export function settingsPathForCwd(cwd: string) {
@@ -57,6 +58,9 @@ export function loadClaudeCodeSettings({ cwd }: { cwd: string }): SettingsFormVa
     sandboxEnabled: (local.env?.CLAUDE_CODE_SANDBOX_ENABLED ?? shared.env?.CLAUDE_CODE_SANDBOX_ENABLED) === "true" ? true
       : (local.env?.CLAUDE_CODE_SANDBOX_ENABLED ?? shared.env?.CLAUDE_CODE_SANDBOX_ENABLED) === "false" ? false
       : undefined,
+    promptCaching: (local.env?.CLAUDE_CODE_PROMPT_CACHING ?? shared.env?.CLAUDE_CODE_PROMPT_CACHING) === "true" ? true
+      : (local.env?.CLAUDE_CODE_PROMPT_CACHING ?? shared.env?.CLAUDE_CODE_PROMPT_CACHING) === "false" ? false
+      : undefined,
   };
 }
 
@@ -91,6 +95,7 @@ export function saveClaudeCodeSettings(input: SettingsFormValues & { cwd: string
       ANTHROPIC_MODEL: input.model.trim(),
       ...(input.effort ? { CLAUDE_CODE_EFFORT: input.effort } : {}),
       ...(input.sandboxEnabled !== undefined ? { CLAUDE_CODE_SANDBOX_ENABLED: String(input.sandboxEnabled) } : {}),
+      ...(input.promptCaching !== undefined ? { CLAUDE_CODE_PROMPT_CACHING: String(input.promptCaching) } : {}),
     },
   };
 
@@ -121,6 +126,7 @@ export async function loadResolvedSettings(cwd: string): Promise<{
           ANTHROPIC_MODEL: manual.model,
           ...(manual.effort ? { CLAUDE_CODE_EFFORT: manual.effort } : {}),
           ...(manual.sandboxEnabled !== undefined ? { CLAUDE_CODE_SANDBOX_ENABLED: String(manual.sandboxEnabled) } : {}),
+          ...(manual.promptCaching !== undefined ? { CLAUDE_CODE_PROMPT_CACHING: String(manual.promptCaching) } : {}),
         },
       } as Settings,
       provenance: {},

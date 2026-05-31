@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ModelCapabilities } from "../sdkUiTypes";
+import { OUTPUT_SCHEMA_TEMPLATES } from "../../domain/outputSchemas.js";
 
 type SettingsFormValues = {
   baseUrl: string;
@@ -7,6 +8,7 @@ type SettingsFormValues = {
   model: string;
   effort?: string;
   sandboxEnabled?: boolean;
+  promptCaching?: boolean;
 };
 
 type SettingsBridge = {
@@ -42,6 +44,10 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
   const [thinkingDisplay, setThinkingDisplay] = useState("summarized");
   const [effort, setEffort] = useState("high");
   const [sandboxEnabled, setSandboxEnabled] = useState(false);
+  const [promptCaching, setPromptCaching] = useState(false);
+  const [outputFormatEnabled, setOutputFormatEnabled] = useState(false);
+  const [outputFormatTemplate, setOutputFormatTemplate] = useState("test_plan");
+  const [customSchema, setCustomSchema] = useState("");
   const [showConnectionError, setShowConnectionError] = useState(false);
 
   useEffect(() => {
@@ -51,11 +57,12 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
       setModel(s.model || "");
       setEffort(s.effort || "high");
       setSandboxEnabled(s.sandboxEnabled ?? false);
+      setPromptCaching(s.promptCaching ?? false);
     });
   }, [bridge]);
 
   function handleSave(overrides?: Partial<SettingsFormValues>) {
-    bridge.saveSettings({ baseUrl, apiKey, model, effort, sandboxEnabled, ...overrides });
+    bridge.saveSettings({ baseUrl, apiKey, model, effort, sandboxEnabled, promptCaching, ...overrides });
   }
 
   function handleApplySdkSettings() {
@@ -198,6 +205,50 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
             </button>
           </div>
         </div>
+        <div className="setting-divider" />
+        <div className="setting-row">
+          <div className="setting-label">
+            <span>Prompt 缓存</span>
+            <span className="setting-subtitle">重复上下文可降低 token 消耗</span>
+          </div>
+          <div className="switch-group">
+            <button className={promptCaching ? "active" : ""} onClick={() => { setPromptCaching(true); handleSave({ promptCaching: true }); }}
+                    disabled={!modelCapabilities?.supportsPromptCaching}
+                    title={!modelCapabilities?.supportsPromptCaching ? "当前模型不支持 Prompt Caching" : undefined}>开</button>
+            <button className={!promptCaching ? "active" : ""} onClick={() => { setPromptCaching(false); handleSave({ promptCaching: false }); }}>关</button>
+          </div>
+        </div>
+        <div className="setting-divider" />
+        <div className="setting-row">
+          <div className="setting-label">
+            <span>结构化输出</span>
+            <span className="setting-subtitle">让 AI 按指定 JSON 格式输出</span>
+          </div>
+          <div className="switch-group">
+            <button className={outputFormatEnabled ? "active" : ""} onClick={() => setOutputFormatEnabled(true)}
+                    disabled={!modelCapabilities?.supportsJsonSchema}
+                    title={!modelCapabilities?.supportsJsonSchema ? "当前模型不支持 JSON Schema 输出" : undefined}>开</button>
+            <button className={!outputFormatEnabled ? "active" : ""} onClick={() => setOutputFormatEnabled(false)}>关</button>
+          </div>
+        </div>
+        {outputFormatEnabled && (
+          <>
+            <div className="setting-row">
+              <label className="setting-label" htmlFor="output-template">输出模板</label>
+              <select id="output-template" value={outputFormatTemplate} onChange={(e) => setOutputFormatTemplate(e.target.value)}>
+                {OUTPUT_SCHEMA_TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+              </select>
+            </div>
+            {outputFormatTemplate === "custom" && (
+              <div className="setting-row">
+                <label className="setting-label" htmlFor="custom-schema">自定义 Schema</label>
+                <textarea id="custom-schema" value={customSchema} onChange={(e) => setCustomSchema(e.target.value)}
+                          placeholder='{ "type": "object", "properties": {...} }'
+                          style={{ fontFamily: "var(--font-mono)", minHeight: 120 }} />
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

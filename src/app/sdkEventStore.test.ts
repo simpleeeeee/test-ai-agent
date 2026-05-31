@@ -77,6 +77,7 @@ describe("sdkEventStore", () => {
       inputTokens: 100,
       outputTokens: 50,
       cacheReadInputTokens: 30,
+      cacheHitRate: 30,
       contextTokens: 500,
       maxContextTokens: 10000,
     });

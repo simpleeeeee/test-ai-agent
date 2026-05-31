@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { SettingsPanel } from "./SettingsPanel";
@@ -63,8 +63,9 @@ describe("SettingsPanel", () => {
   it("renders sandbox toggle switch", async () => {
     render(<SettingsPanel bridge={bridge} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
     await screen.findByText("沙箱保护");
-    expect(screen.getByText("开")).toBeInTheDocument();
-    expect(screen.getByText("关")).toBeInTheDocument();
+    const sandboxRow = document.querySelector(".sandbox-switch") as HTMLElement;
+    expect(within(sandboxRow).getByText("开")).toBeInTheDocument();
+    expect(within(sandboxRow).getByText("关")).toBeInTheDocument();
   });
 
   it("saves effort on change", async () => {
@@ -81,7 +82,8 @@ describe("SettingsPanel", () => {
     const bridge = { loadSettings: () => Promise.resolve({ baseUrl: "", apiKey: "", model: "" }), saveSettings };
     render(<SettingsPanel bridge={bridge} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
     await screen.findByText("沙箱保护");
-    fireEvent.click(screen.getByText("开"));
+    const sandboxRow = document.querySelector(".sandbox-switch") as HTMLElement;
+    fireEvent.click(within(sandboxRow).getByText("开"));
     expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({ sandboxEnabled: true }));
   });
 

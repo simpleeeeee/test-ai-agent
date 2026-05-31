@@ -246,10 +246,14 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
   }
 
   if (event.channel === "sdk:usage") {
+    const usage = normalizeUsage(payload.raw);
+    if (usage.cacheReadInputTokens && usage.inputTokens > 0) {
+      usage.cacheHitRate = Math.round((usage.cacheReadInputTokens / usage.inputTokens) * 100);
+    }
     return {
       ...state,
       activeRunId,
-      usage: normalizeUsage(payload.raw),
+      usage,
       runStats: {
         ...state.runStats,
         ...(typeof payload.model === "string" ? { model: payload.model } : {}),
