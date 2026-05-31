@@ -110,10 +110,8 @@ function registerBackendIpc(window: BrowserWindow, cwd: string, configDir: strin
     saveClaudeCodeSettings({ cwd, baseUrl, apiKey, model, effort, sandboxEnabled, promptCaching, debug, debugFile, maxBudgetUsd, maxTurns });
     const appSettings = loadAppSettings(cwd);
     let appChanged = false;
-    if (outputFormat !== undefined) {
-      appSettings.outputFormat = outputFormat;
-      appChanged = true;
-    }
+    appSettings.outputFormat = outputFormat;
+    appChanged = true;
     if (permissionMode !== undefined) {
       appSettings.permissionMode = typeof permissionMode === "string" ? permissionMode : undefined;
       appChanged = true;

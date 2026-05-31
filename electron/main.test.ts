@@ -297,4 +297,25 @@ describe("electron main IPC registration", () => {
       expect.objectContaining({ theme: "dark" }),
     );
   });
+
+  it("clears outputFormat from appSettings when set to undefined", async () => {
+    loadAppSettings.mockReturnValueOnce({ version: 1, outputFormat: { template: "test_plan" } });
+
+    await import("./main.js");
+    await flushMicrotasks();
+
+    const [, saveHandler] = handle.mock.calls.find(([channel]) => channel === "settings:save")!;
+
+    saveHandler({}, {
+      baseUrl: "https://api.example.com",
+      apiKey: "sk-test",
+      model: "claude-sonnet",
+      outputFormat: undefined,
+    });
+
+    expect(saveAppSettings).toHaveBeenCalledWith(
+      appDir,
+      expect.objectContaining({ outputFormat: undefined }),
+    );
+  });
 });
