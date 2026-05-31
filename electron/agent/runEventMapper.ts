@@ -182,6 +182,41 @@ function mapSdkMessageWithSession(session: SdkRunEventMapperSession, runId: stri
       session.finishBlock(index);
     }
 
+    if (sdkEvent?.type === "tool_progress") {
+      events.push({
+        type: "sdk:tool-progress",
+        toolUseId: sdkEvent.tool_use_id ?? "",
+        status: sdkEvent.status ?? "running",
+        ...(sdkEvent.progress ? { progress: sdkEvent.progress } : {}),
+      });
+    }
+
+    if (sdkEvent?.type === "tool_summary") {
+      events.push({
+        type: "sdk:tool-summary",
+        toolUseId: sdkEvent.tool_use_id ?? "",
+        summary: sdkEvent.summary ?? "",
+      });
+    }
+
+    if (sdkEvent?.type === "task_started") {
+      events.push({
+        type: "sdk:task-progress",
+        taskId: sdkEvent.task_id ?? "",
+        status: "started",
+        ...(sdkEvent.summary ? { summary: sdkEvent.summary } : {}),
+      });
+    }
+
+    if (sdkEvent?.type === "task_updated") {
+      events.push({
+        type: "sdk:task-progress",
+        taskId: sdkEvent.task_id ?? "",
+        status: "updated",
+        ...(sdkEvent.summary ? { summary: sdkEvent.summary } : {}),
+      });
+    }
+
     if (sdkEvent?.type === "message_delta") {
       session.setStopReason(typeof sdkEvent.delta?.stop_reason === "string" ? sdkEvent.delta.stop_reason : undefined);
       if (sdkEvent.usage) {
@@ -283,8 +318,143 @@ function mapNonStreamSdkMessage(runId: string, message: any): RunEvent[] {
     });
   }
 
+  if (message.type === "system" && message.subtype === "task_notification") {
+    events.push({
+      type: "sdk:task-notification",
+      taskId: message.task_id ?? "",
+      status: message.status ?? "",
+      ...(message.description ? { description: message.description } : {}),
+    });
+  }
+  if (message.type === "system" && message.subtype === "notification") {
+    events.push({
+      type: "sdk:notification",
+      message: message.message ?? "",
+      ...(message.title ? { title: message.title } : {}),
+      notificationType: message.notification_type ?? "",
+    });
+  }
+  if (message.type === "system" && message.subtype === "hook_started") {
+    events.push({
+      type: "sdk:hook-event",
+      hookName: message.hook_name ?? "",
+      stage: "started",
+      raw: message,
+    });
+  }
+  if (message.type === "system" && message.subtype === "hook_progress") {
+    events.push({
+      type: "sdk:hook-event",
+      hookName: message.hook_name ?? "",
+      stage: "progress",
+      raw: message,
+    });
+  }
+  if (message.type === "system" && message.subtype === "hook_response") {
+    events.push({
+      type: "sdk:hook-event",
+      hookName: message.hook_name ?? "",
+      stage: "response",
+      raw: message,
+    });
+  }
+  if (message.type === "system" && message.subtype === "local_command_output") {
+    events.push({
+      type: "sdk:local-command-output",
+      command: message.command ?? "",
+      output: message.output ?? "",
+    });
+  }
+  if (message.type === "system" && message.subtype === "plugin_install") {
+    events.push({
+      type: "sdk:plugin-install",
+      pluginName: message.plugin_name ?? "",
+      status: message.status ?? "",
+    });
+  }
+  if (message.type === "system" && message.subtype === "rate_limit") {
+    events.push({
+      type: "sdk:rate-limit",
+      info: message.rate_limit_info ?? {},
+    });
+  }
+  if (message.type === "system" && message.subtype === "files_persisted") {
+    events.push({
+      type: "sdk:files-persisted",
+      files: Array.isArray(message.files) ? message.files : [],
+      ...(message.total_bytes !== undefined ? { totalBytes: message.total_bytes } : {}),
+    });
+  }
+  if (message.type === "system" && message.subtype === "memory_recall") {
+    events.push({
+      type: "sdk:memory-recall",
+      memories: Array.isArray(message.memories) ? message.memories : [],
+    });
+  }
+  if (message.type === "system" && message.subtype === "session_state_changed") {
+    events.push({
+      type: "sdk:session-changed",
+      sessionId: message.session_id ?? "",
+      state: message.state ?? "",
+    });
+  }
+  if (message.type === "system" && message.subtype === "mirror_error") {
+    events.push({
+      type: "sdk:mirror-error",
+      message: message.message ?? "",
+    });
+  }
+  if (message.type === "system" && message.subtype === "elicitation_complete") {
+    events.push({
+      type: "sdk:elicitation-complete",
+      serverName: message.mcp_server_name ?? "",
+      ...(message.elicitation_id ? { elicitationId: message.elicitation_id } : {}),
+    });
+  }
+  if (message.type === "system" && message.subtype === "user_message_replay") {
+    events.push({
+      type: "sdk:user-message-replay",
+      messageId: message.uuid ?? "",
+      content: typeof message.message === "string" ? message.message : JSON.stringify(message.message ?? ""),
+    });
+  }
+  if (message.type === "system" && message.subtype === "compact_boundary") {
+    events.push({
+      type: "sdk:compact-boundary",
+      direction: (message.direction === "pre" || message.direction === "post") ? message.direction : "pre",
+    });
+  }
+  if (message.type === "system" && message.subtype === "deferred_tool_use") {
+    events.push({
+      type: "sdk:deferred-tool-use",
+      toolName: message.tool_name ?? "",
+      toolUseId: message.tool_use_id ?? "",
+    });
+  }
+
+  const knownSystemSubtypes = new Set([
+    "task_progress",
+    "mcp_server_status",
+    "task_notification",
+    "notification",
+    "hook_started",
+    "hook_progress",
+    "hook_response",
+    "local_command_output",
+    "plugin_install",
+    "rate_limit",
+    "files_persisted",
+    "memory_recall",
+    "session_state_changed",
+    "mirror_error",
+    "elicitation_complete",
+    "user_message_replay",
+    "compact_boundary",
+    "deferred_tool_use",
+  ]);
+
   if (message.type === "system" && typeof message.subtype === "string") {
-    if (message.subtype !== "task_progress" && message.subtype !== "mcp_server_status") {
+    if (!knownSystemSubtypes.has(message.subtype)) {
       events.push({
         type: "sdk:system-event",
         subtype: message.subtype,

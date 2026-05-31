@@ -286,6 +286,33 @@ describe("mapSdkMessageToRunEvents", () => {
   });
 });
 
+describe("new stream_event mappings", () => {
+  const session = new SdkRunEventMapperSession("run-1");
+  it("maps tool_progress", () => {
+    const events = session.map({ type: "stream_event", event: { type: "tool_progress", tool_use_id: "tu1", status: "running" } });
+    expect(events).toContainEqual(expect.objectContaining({ type: "sdk:tool-progress", toolUseId: "tu1" }));
+  });
+  it("maps task_started", () => {
+    const events = session.map({ type: "stream_event", event: { type: "task_started", task_id: "t1" } });
+    expect(events).toContainEqual(expect.objectContaining({ type: "sdk:task-progress", status: "started" }));
+  });
+});
+
+describe("new system message mappings", () => {
+  it("maps rate_limit", () => {
+    const events = mapSdkMessageToRunEvents("run-1", { type: "system", subtype: "rate_limit", rate_limit_info: { tokensRemaining: 100 } });
+    expect(events).toContainEqual(expect.objectContaining({ type: "sdk:rate-limit", info: { tokensRemaining: 100 } }));
+  });
+  it("maps compact_boundary", () => {
+    const events = mapSdkMessageToRunEvents("run-1", { type: "system", subtype: "compact_boundary", direction: "pre" });
+    expect(events).toContainEqual(expect.objectContaining({ type: "sdk:compact-boundary", direction: "pre" }));
+  });
+  it("maps notification", () => {
+    const events = mapSdkMessageToRunEvents("run-1", { type: "system", subtype: "notification", message: "compacting", notification_type: "info" });
+    expect(events).toContainEqual(expect.objectContaining({ type: "sdk:notification", message: "compacting" }));
+  });
+});
+
 describe("mapPermissionRequestToRunEvent", () => {
   it("maps permission requests to approval-required tool calls", () => {
     expect(mapPermissionRequestToRunEvent("request-1", "mcp__db__query", { sql: "select 1" }, "AI 请求查询订单数据库"))
