@@ -23,7 +23,7 @@ const NAV_ITEMS = [
   { key: "debug", icon: "🔧", label: "调试" },
 ] as const;
 
-export function SettingsModal({ onClose, theme, onThemeChange, connectionStatus }: Props) {
+export function SettingsModal({ bridge, onClose, theme, onThemeChange, connectionStatus }: Props) {
   const [activeNav, setActiveNav] = useState("connection");
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -35,6 +35,10 @@ export function SettingsModal({ onClose, theme, onThemeChange, connectionStatus 
   const [effort, setEffort] = useState("high");
   const [maxTurns, setMaxTurns] = useState(50);
   const [maxBudgetUsd, setMaxBudgetUsd] = useState(5);
+
+  function handleSave(overrides?: Record<string, unknown>) {
+    bridge.saveSettings({ baseUrl, apiKey, model, effort, ...overrides } as Parameters<typeof bridge.saveSettings>[0]);
+  }
 
   return (
     <div className="settings-modal-overlay" role="presentation" onClick={onClose}>
@@ -182,7 +186,7 @@ export function SettingsModal({ onClose, theme, onThemeChange, connectionStatus 
                       <span className="settings-field-hint">控制模型推理深度</span>
                     </div>
                     <select id="sdk-effort" className="settings-select" aria-label="推理努力程度"
-                      value={effort} onChange={(e) => setEffort(e.target.value)}>
+                      value={effort} onChange={(e) => { setEffort(e.target.value); handleSave({ effort: e.target.value }); }}>
                       <option value="low">低</option>
                       <option value="medium">中</option>
                       <option value="high">高</option>

@@ -104,6 +104,17 @@ describe("SettingsModal", () => {
     expect(screen.getByText("已连接")).toBeInTheDocument();
   });
 
+  it("saves effort on change", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    const saveSettings = vi.fn();
+    const b = { loadSettings: () => Promise.resolve({ baseUrl: "", apiKey: "", model: "" }), saveSettings };
+    render(<SettingsModal bridge={b} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
+
+    await user.click(screen.getByText("对话"));
+    await user.selectOptions(screen.getByLabelText("推理努力程度"), "max");
+    expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({ effort: "max" }));
+  });
+
   it("shows error detail when clicking failed connection status", async () => {
     const user = (await import("@testing-library/user-event")).default.setup();
     const connectionStatus = {
