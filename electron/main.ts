@@ -219,6 +219,21 @@ startup().then((warmQuery) => {
       // Silently ignore dispose errors during shutdown
     }
   });
+
+  // Connection probe
+  const settings = loadClaudeCodeSettings({ cwd: appBaseDirectory() });
+  import("./agent/connectionProbe.js").then(({ probeConnection }) => {
+    probeConnection(warmQuery, {
+      baseUrl: settings.baseUrl,
+      model: settings.model,
+    }).then((status) => {
+      for (const win of BrowserWindow.getAllWindows()) {
+        sendToRenderer(win, "sdk:connection-status", status);
+      }
+    }).catch((err) => {
+      console.warn("Connection probe failed:", err);
+    });
+  });
 }).catch((e) => {
   console.warn("SDK startup 预热失败:", e);
 });
