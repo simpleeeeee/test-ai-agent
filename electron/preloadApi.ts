@@ -9,8 +9,12 @@ const rendererToMainChannels = [
   "question:answer", "task:stop",
   "sdk:supported-models", "sdk:supported-commands", "sdk:supported-agents",
   "sdk:account-info", "sdk:initialization-result",
+  "sdk:count-tokens",
   "settings:get", "settings:save",
   "window:minimize", "window:toggle-maximize", "window:close",
+  "run:get-context-usage", "run:interrupt", "run:background-tasks",
+  "run:read-file", "run:reload-plugins", "run:rewind-files",
+  "run:seed-read-state", "run:get-subagent-messages", "run:list-subagents",
 ];
 
 const mainToRendererChannels = [
@@ -18,9 +22,10 @@ const mainToRendererChannels = [
   "tool:call-started", "tool:approval-required", "tool:call-completed",
   "tool:call-failed", "evidence:created", "bug-draft:created",
   "assistant:text-delta", "assistant:thinking-delta", "assistant:message-completed",
+  "assistant:message-started", "tool:input-json-delta",
   "sdk:raw-message", "sdk:session-changed", "sdk:status", "sdk:usage",
   "sdk:error", "sdk:permission-denied", "sdk:mcp-status",
-  "sdk:task-progress", "sdk:hook-event",
+  "sdk:task-progress", "sdk:hook-event", "sdk:system-event", "sdk:token-counted",
   "question:required", "question:answered",
 ];
 

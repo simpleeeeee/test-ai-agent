@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createSafeIpcApi } from "./preloadApi.js";
+import { mainToRendererChannels, rendererToMainChannels } from "../src/ipc/channels.js";
 
 describe("createSafeIpcApi", () => {
   it("sends only allowlisted renderer channels", () => {
@@ -55,5 +56,19 @@ describe("preload api contract", () => {
       invoke: expect.any(Function),
       on: expect.any(Function),
     });
+  });
+
+  it("keeps preload channel validation in sync with shared IPC channels", () => {
+    const sender = { send: vi.fn(), invoke: vi.fn(), on: vi.fn(), off: vi.fn() };
+    const api = createSafeIpcApi(sender);
+
+    for (const channel of rendererToMainChannels) {
+      expect(() => api.send(channel, undefined)).not.toThrow();
+      expect(() => api.invoke(channel, undefined)).not.toThrow();
+    }
+
+    for (const channel of mainToRendererChannels) {
+      expect(() => api.on(channel, vi.fn())).not.toThrow();
+    }
   });
 });
