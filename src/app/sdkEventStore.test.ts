@@ -408,6 +408,30 @@ describe("sdkEventStore", () => {
     });
   });
 
+  it("normalizes total_tokens into estimated input/output split", () => {
+    const state = reduceSdkUiEvent(createInitialSdkUiState(), {
+      channel: "sdk:usage",
+      payload: { runId: "run-1", raw: { total_tokens: 4000 } },
+    });
+    expect(state.usage).toEqual({ inputTokens: 3000, outputTokens: 1000 });
+  });
+
+  it("maps prompt_tokens / completion_tokens to inputTokens / outputTokens", () => {
+    const state = reduceSdkUiEvent(createInitialSdkUiState(), {
+      channel: "sdk:usage",
+      payload: { runId: "run-1", raw: { prompt_tokens: 500, completion_tokens: 200 } },
+    });
+    expect(state.usage).toEqual({ inputTokens: 500, outputTokens: 200 });
+  });
+
+  it("extracts tokens from nested response.usage", () => {
+    const state = reduceSdkUiEvent(createInitialSdkUiState(), {
+      channel: "sdk:usage",
+      payload: { runId: "run-1", raw: { response: { usage: { input_tokens: 100, output_tokens: 50 } } } },
+    });
+    expect(state.usage).toEqual({ inputTokens: 100, outputTokens: 50 });
+  });
+
   it("sdk:connection-status stores failed state with error detail", () => {
     const state = createInitialSdkUiState();
     const next = reduceSdkUiEvent(state, {

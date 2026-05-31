@@ -9,11 +9,37 @@ function normalizeUsage(raw: unknown): TokenUsage {
   if (!raw || typeof raw !== "object") {
     return { inputTokens: 0, outputTokens: 0 };
   }
-  const r = raw as Record<string, unknown>;
+  let r = raw as Record<string, unknown>;
   const num = (key: string): number | undefined => {
     const v = r[key];
     return typeof v === "number" ? v : undefined;
   };
+
+  const hasInputOutput = (num("input_tokens") ?? num("inputTokens")) !== undefined
+    && (num("output_tokens") ?? num("outputTokens")) !== undefined;
+
+  // 兼容 1：total_tokens 替代分项（国产 API 常见）
+  if (!hasInputOutput && typeof r.total_tokens === "number") {
+    r.input_tokens = Math.round(r.total_tokens * 0.75);
+    r.output_tokens = Math.round(r.total_tokens * 0.25);
+  }
+
+  // 兼容 2：嵌套 usage（response.usage）
+  if (!r.input_tokens && !r.inputTokens && r.response && typeof r.response === "object") {
+    const resp = r.response as Record<string, unknown>;
+    if (resp.usage && typeof resp.usage === "object") {
+      r = { ...r, ...(resp.usage as Record<string, unknown>) };
+    }
+  }
+
+  // 兼容 3：prompt_tokens / completion_tokens（OpenAI 风格）
+  if (!r.input_tokens && !r.inputTokens && typeof r.prompt_tokens === "number") {
+    r.input_tokens = r.prompt_tokens;
+  }
+  if (!r.output_tokens && !r.outputTokens && typeof r.completion_tokens === "number") {
+    r.output_tokens = r.completion_tokens;
+  }
+
   return {
     inputTokens: num("input_tokens") ?? num("inputTokens") ?? 0,
     outputTokens: num("output_tokens") ?? num("outputTokens") ?? 0,

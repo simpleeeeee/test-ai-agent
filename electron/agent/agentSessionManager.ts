@@ -18,6 +18,7 @@ import {
   type SDKSessionInfo,
   type SessionMessage,
 } from "./claudeAgentSdkFacade.js";
+import { loadClaudeCodeSettings } from "./sdkSettings.js";
 
 type RuntimeSession = ReturnType<ClaudeAgentRuntimeAdapter["start"]>;
 
@@ -150,12 +151,26 @@ export class AgentSessionManager {
     return this.session(runId).supportedAgents();
   }
 
-  accountInfo(runId: string) {
-    return this.session(runId).accountInfo();
+  async accountInfo(runId: string) {
+    const raw = await this.session(runId).accountInfo();
+    const config = await this.loadConfig({ cwd: this.deps.cwd ?? process.cwd(), claudeConfigDir: this.deps.configDir });
+    const env = (config.sdkOptions.env ?? {}) as Record<string, string>;
+    return {
+      endpoint: env.ANTHROPIC_BASE_URL ?? "",
+      model: env.ANTHROPIC_MODEL ?? "",
+      provider: "third_party",
+      sdkApiProvider: (raw as any)?.apiProvider,
+    };
   }
 
-  initializationResult(runId: string) {
-    return this.session(runId).initializationResult();
+  async initializationResult(runId: string) {
+    const settings = loadClaudeCodeSettings({ cwd: this.deps.cwd ?? process.cwd() });
+    return {
+      endpoint: settings.baseUrl,
+      authenticated: !!settings.apiKey,
+      model: settings.model,
+      provider: "third_party",
+    };
   }
 
   stopTask(runId: string, taskId: string) {
