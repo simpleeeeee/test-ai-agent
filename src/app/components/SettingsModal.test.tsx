@@ -73,6 +73,24 @@ describe("SettingsModal", () => {
     expect(onThemeChange).toHaveBeenCalledWith("dark");
   });
 
+  it("renders conversation panel with SDK settings and Chinese labels", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    render(<SettingsModal bridge={bridge} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
+
+    await user.click(screen.getByText("对话"));
+
+    expect(screen.getByText("SDK 会话配置")).toBeInTheDocument();
+    expect(screen.getByLabelText("权限模式")).toBeInTheDocument();
+    expect(screen.getByLabelText("思考强度")).toBeInTheDocument();
+    expect(screen.getByLabelText("Thinking 展示")).toBeInTheDocument();
+    expect(screen.getByLabelText("推理努力程度")).toBeInTheDocument();
+
+    // 推理努力程度使用中文标签
+    expect(screen.getByRole("option", { name: "低" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "高" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "最大" })).toBeInTheDocument();
+  });
+
   it("shows 已连接 when connectionStatus state is connected", () => {
     const connectionStatus = {
       state: "connected" as const,
