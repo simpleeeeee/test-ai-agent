@@ -13,6 +13,8 @@ import {
   renameSession as sdkRenameSession,
   tagSession as sdkTagSession,
   deleteSession as sdkDeleteSession,
+  getSubagentMessages as sdkGetSubagentMessages,
+  listSubagents as sdkListSubagents,
   type SDKSessionInfo,
   type SessionMessage,
 } from "./claudeAgentSdkFacade.js";
@@ -151,6 +153,40 @@ export class AgentSessionManager {
 
   stopTask(runId: string, taskId: string) {
     return this.session(runId).stopTask(taskId);
+  }
+
+  // === Plan 2 新增: Query 方法委托 (7) ===
+  getContextUsage(runId: string) {
+    return this.session(runId).getContextUsage();
+  }
+  interrupt(runId: string) {
+    return this.session(runId).interrupt();
+  }
+  backgroundTasks(runId: string, toolUseId?: string) {
+    return this.session(runId).backgroundTasks(toolUseId);
+  }
+  readFile(runId: string, path: string, options?: { maxBytes?: number; encoding?: "utf-8" | "base64" }) {
+    return this.session(runId).readFile(path, options);
+  }
+  reloadPlugins(runId: string) {
+    return this.session(runId).reloadPlugins();
+  }
+  rewindFiles(runId: string, userMessageId: string, options?: { dryRun?: boolean }) {
+    return this.session(runId).rewindFiles(userMessageId, options);
+  }
+  seedReadState(runId: string, path: string, mtime: number) {
+    return this.session(runId).seedReadState(path, mtime);
+  }
+
+  // === Plan 2 新增: SDK 独立函数 (2) ===
+  async getSubagentMessages(sessionId: string, agentId: string, options?: { limit?: number; offset?: number }) {
+    return sdkGetSubagentMessages(sessionId, agentId, {
+      dir: this.resolveDir(),
+      ...options,
+    });
+  }
+  async listSubagents(sessionId: string) {
+    return sdkListSubagents(sessionId, { dir: this.resolveDir() });
   }
 
   async listSessions(): Promise<SDKSessionInfo[]> {

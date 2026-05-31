@@ -7,6 +7,8 @@ import {
   renameSession as sdkRenameSession,
   tagSession as sdkTagSession,
   deleteSession as sdkDeleteSession,
+  getSubagentMessages as sdkGetSubagentMessages,
+  listSubagents as sdkListSubagents,
 } from "./claudeAgentSdkFacade.js";
 
 vi.mock("./claudeAgentSdkFacade.js", async () => {
@@ -19,6 +21,8 @@ vi.mock("./claudeAgentSdkFacade.js", async () => {
     renameSession: vi.fn(),
     tagSession: vi.fn(),
     deleteSession: vi.fn(),
+    getSubagentMessages: vi.fn(),
+    listSubagents: vi.fn(),
   };
 });
 
@@ -360,6 +364,13 @@ describe("AgentSessionManager", () => {
       initializationResult: vi.fn().mockResolvedValue({}),
       streamInput: vi.fn(),
       stopTask: vi.fn().mockResolvedValue(undefined),
+      getContextUsage: vi.fn().mockResolvedValue({ tokens: 100 }),
+      interrupt: vi.fn().mockResolvedValue(undefined),
+      backgroundTasks: vi.fn().mockResolvedValue([]),
+      readFile: vi.fn().mockResolvedValue("content"),
+      reloadPlugins: vi.fn().mockResolvedValue(undefined),
+      rewindFiles: vi.fn().mockResolvedValue({ changed: [] }),
+      seedReadState: vi.fn().mockResolvedValue(undefined),
     };
     const manager = new AgentSessionManager({
       adapter: { start: vi.fn(() => session) } as any,
@@ -382,10 +393,24 @@ describe("AgentSessionManager", () => {
     await manager.accountInfo("run-1");
     await manager.initializationResult("run-1");
     await manager.stopTask("run-1", "task-1");
+    await manager.getContextUsage("run-1");
+    await manager.interrupt("run-1");
+    await manager.backgroundTasks("run-1", "tool-1");
+    await manager.readFile("run-1", "/etc/hosts", { maxBytes: 1024, encoding: "utf-8" });
+    await manager.reloadPlugins("run-1");
+    await manager.rewindFiles("run-1", "msg-1", { dryRun: true });
+    await manager.seedReadState("run-1", "/etc/hosts", 1234567890);
     manager.stopRun("run-1");
 
     expect(session.setModel).toHaveBeenCalledWith("model-a");
     expect(session.stopTask).toHaveBeenCalledWith("task-1");
+    expect(session.getContextUsage).toHaveBeenCalledOnce();
+    expect(session.interrupt).toHaveBeenCalledOnce();
+    expect(session.backgroundTasks).toHaveBeenCalledWith("tool-1");
+    expect(session.readFile).toHaveBeenCalledWith("/etc/hosts", { maxBytes: 1024, encoding: "utf-8" });
+    expect(session.reloadPlugins).toHaveBeenCalledOnce();
+    expect(session.rewindFiles).toHaveBeenCalledWith("msg-1", { dryRun: true });
+    expect(session.seedReadState).toHaveBeenCalledWith("/etc/hosts", 1234567890);
     expect(session.close).toHaveBeenCalledOnce();
   });
 });
@@ -492,5 +517,45 @@ describe("AgentSessionManager SDK session methods", () => {
     const mock = sdkDeleteSession as ReturnType<typeof vi.fn>;
     mock.mockRejectedValue(new Error("Session corrupted"));
     await expect(createManager().deleteSession("bad")).rejects.toThrow("Session corrupted");
+  });
+
+  it("throws for unknown runId on new query methods", () => {
+    const manager = createManager();
+    expect(() => manager.getContextUsage("nonexistent")).toThrow("Unknown run");
+    expect(() => manager.interrupt("nonexistent")).toThrow("Unknown run");
+    expect(() => manager.backgroundTasks("nonexistent")).toThrow("Unknown run");
+    expect(() => manager.readFile("nonexistent", "/etc/hosts")).toThrow("Unknown run");
+    expect(() => manager.reloadPlugins("nonexistent")).toThrow("Unknown run");
+    expect(() => manager.rewindFiles("nonexistent", "msg-1")).toThrow("Unknown run");
+    expect(() => manager.seedReadState("nonexistent", "/etc/hosts", 0)).toThrow("Unknown run");
+  });
+
+  it("getSubagentMessages and listSubagents are independent of active runs", async () => {
+    const mockGetMessages = sdkGetSubagentMessages as ReturnType<typeof vi.fn>;
+    const mockListAgents = sdkListSubagents as ReturnType<typeof vi.fn>;
+    mockGetMessages.mockResolvedValue([{ role: "assistant", content: "ok" }]);
+    mockListAgents.mockResolvedValue([{ id: "agent-1", name: "helper" }]);
+
+    const manager = createManager();
+
+    const messages = await manager.getSubagentMessages("sess-1", "agent-1");
+    expect(Array.isArray(messages)).toBe(true);
+    expect(messages).toEqual([{ role: "assistant", content: "ok" }]);
+    expect(mockGetMessages).toHaveBeenCalledWith("sess-1", "agent-1", { dir: "D:/project" });
+
+    const agents = await manager.listSubagents("sess-1");
+    expect(Array.isArray(agents)).toBe(true);
+    expect(agents).toEqual([{ id: "agent-1", name: "helper" }]);
+    expect(mockListAgents).toHaveBeenCalledWith("sess-1", { dir: "D:/project" });
+  });
+
+  it("getSubagentMessages passes limit and offset options", async () => {
+    const mock = sdkGetSubagentMessages as ReturnType<typeof vi.fn>;
+    mock.mockResolvedValue([]);
+
+    const manager = createManager();
+    await manager.getSubagentMessages("sess-1", "agent-1", { limit: 10, offset: 5 });
+
+    expect(mock).toHaveBeenCalledWith("sess-1", "agent-1", { dir: "D:/project", limit: 10, offset: 5 });
   });
 });
