@@ -1,21 +1,10 @@
 import { diagnoseError } from "./errorDiagnostics.js";
+import type { ConnectionState, ConnectionStatus } from "../../src/ipc/connectionTypes.js";
 
-export type ConnectionState = "connected" | "unverified" | "connecting" | "failed";
+export type { ConnectionState, ConnectionStatus };
 
 export type ConnectionProbeQuery = {
   query: (input: { prompt: unknown; options?: Record<string, unknown> }) => unknown;
-};
-
-export type ConnectionStatus = {
-  state: ConnectionState;
-  baseUrl: string;
-  model: string;
-  error?: {
-    code: string;
-    message: string;
-    suggestion: string;
-  };
-  probedAt: number;
 };
 
 function extractErrorCode(error: unknown): string {

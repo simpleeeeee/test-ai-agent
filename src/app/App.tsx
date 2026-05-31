@@ -7,6 +7,7 @@ import { TestConsole } from "./components/TestConsole";
 import { SettingsModal } from "./components/SettingsModal";
 import type { Evidence } from "../domain/testRun";
 import type { SdkMessage, SessionSummary } from "./sdkUiTypes";
+import type { ConnectionStatus } from "../ipc/connectionTypes.js";
 import { isExplicitTestExecutionRequest } from "./testIntent";
 import "../ui/styles.css";
 
@@ -130,13 +131,7 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [settingsModel, setSettingsModel] = useState("");
-  const [connectionStatus, setConnectionStatus] = useState<{
-    state: string;
-    baseUrl: string;
-    model: string;
-    error?: { code: string; message: string; suggestion: string };
-    probedAt: number;
-  } | undefined>();
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>();
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");

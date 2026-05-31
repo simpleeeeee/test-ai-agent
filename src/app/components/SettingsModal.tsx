@@ -1,20 +1,15 @@
 import { useEffect, useState } from "react";
 import { OUTPUT_SCHEMA_TEMPLATES } from "../../domain/outputSchemas.js";
+import type { ConnectionStatus } from "../../ipc/connectionTypes.js";
 
 type Props = {
-  bridge: { loadSettings: () => Promise<Record<string, unknown>>; saveSettings: (settings: Record<string, unknown>) => unknown; probeConnection?: (baseUrl: string, model: string) => Promise<{ state: string; baseUrl: string; model: string; error?: { code: string; message: string; suggestion: string }; probedAt: number }> };
+  bridge: { loadSettings: () => Promise<Record<string, unknown>>; saveSettings: (settings: Record<string, unknown>) => unknown; probeConnection?: (baseUrl: string, model: string) => Promise<ConnectionStatus> };
   onClose: () => void;
   onThemeChange: (mode: "light" | "dark") => void;
   theme: "light" | "dark";
   activeRunId?: string;
   onApplySettings?: (runId: string, settings: Record<string, unknown>) => void;
-  connectionStatus?: {
-    state: string;
-    baseUrl: string;
-    model: string;
-    error?: { code: string; message: string; suggestion: string };
-    probedAt: number;
-  };
+  connectionStatus?: ConnectionStatus;
 };
 
 const NAV_ITEMS = [
@@ -46,13 +41,7 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
   const [debug, setDebug] = useState(false);
   const [debugFile, setDebugFile] = useState("");
   const [probing, setProbing] = useState(false);
-  const [probeResult, setProbeResult] = useState<{
-    state: string;
-    baseUrl: string;
-    model: string;
-    error?: { code: string; message: string; suggestion: string };
-    probedAt: number;
-  } | null>(null);
+  const [probeResult, setProbeResult] = useState<ConnectionStatus | null>(null);
 
   useEffect(() => {
     let cancelled = false;

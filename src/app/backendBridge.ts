@@ -1,4 +1,5 @@
 import type { MainToRendererChannel, RendererToMainChannel } from "../ipc/channels";
+import type { ConnectionStatus } from "../ipc/connectionTypes.js";
 
 export type RendererEventEnvelope = {
   channel: MainToRendererChannel;
@@ -124,13 +125,7 @@ export function createBackendBridge(api: AiTestAssistantApi) {
       return api.invoke("settings:save", settings);
     },
     probeConnection(baseUrl: string, model: string) {
-      return api.invoke("settings:probe-connection", { baseUrl, model }) as Promise<{
-        state: string;
-        baseUrl: string;
-        model: string;
-        error?: { code: string; message: string; suggestion: string };
-        probedAt: number;
-      }>;
+      return api.invoke("settings:probe-connection", { baseUrl, model }) as Promise<ConnectionStatus>;
     },
     listSessions() {
       return api.invoke("run:list-sessions", undefined);
