@@ -25,6 +25,30 @@ describe("SettingsModal", () => {
     expect(screen.getByText("调试")).toBeInTheDocument();
   });
 
+  describe("security panel", () => {
+    it("renders sandbox and prompt caching fields when security nav is clicked", async () => {
+      const user = (await import("@testing-library/user-event")).default.setup();
+      render(<SettingsModal bridge={bridge} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
+
+      await user.click(screen.getByText("安全"));
+      expect(screen.getByText("安全与优化")).toBeInTheDocument();
+      expect(screen.getByText("沙箱保护")).toBeInTheDocument();
+      expect(screen.getByText("Prompt 缓存")).toBeInTheDocument();
+    });
+
+    it("saves sandboxEnabled on toggle in security panel", async () => {
+      const user = (await import("@testing-library/user-event")).default.setup();
+      const saveSettings = vi.fn();
+      const b = { loadSettings: () => Promise.resolve({ baseUrl: "", apiKey: "", model: "" }), saveSettings };
+      render(<SettingsModal bridge={b} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
+
+      await user.click(screen.getByText("安全"));
+      const sandboxField = screen.getByText("沙箱保护").closest(".settings-field")!;
+      await user.click(sandboxField.querySelectorAll("button")[0]); // "开"
+      expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({ sandboxEnabled: true }));
+    });
+  });
+
   it("shows connection panel by default with Base URL, API Key and model fields", () => {
     render(<SettingsModal bridge={bridge} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
     expect(screen.getByText("API 连接配置")).toBeInTheDocument();

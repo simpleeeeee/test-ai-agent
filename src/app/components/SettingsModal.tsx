@@ -37,6 +37,8 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
   const [effort, setEffort] = useState("high");
   const [maxTurns, setMaxTurns] = useState(50);
   const [maxBudgetUsd, setMaxBudgetUsd] = useState(5);
+  const [sandboxEnabled, setSandboxEnabled] = useState(false);
+  const [promptCaching, setPromptCaching] = useState(false);
 
   function handleSave(overrides?: Record<string, unknown>) {
     bridge.saveSettings({ baseUrl, apiKey, model, effort, ...overrides } as Parameters<typeof bridge.saveSettings>[0]);
@@ -145,6 +147,35 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                       className={`settings-toggle-btn${theme === "dark" ? " active" : ""}`}
                       onClick={() => onThemeChange("dark")}
                     >暗色</button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {activeNav === "security" && (
+              <div className="settings-section">
+                <div className="settings-section-title">安全与优化</div>
+                <div className="settings-field">
+                  <div className="settings-field-label-group">
+                    <span className="settings-field-label">沙箱保护</span>
+                    <span className="settings-field-hint">隔离文件系统和网络访问</span>
+                  </div>
+                  <div className="settings-toggle">
+                    <button className={`settings-toggle-btn${sandboxEnabled ? " active" : ""}`}
+                      onClick={() => { setSandboxEnabled(true); handleSave({ sandboxEnabled: true }); }}>开</button>
+                    <button className={`settings-toggle-btn${!sandboxEnabled ? " active" : ""}`}
+                      onClick={() => { setSandboxEnabled(false); handleSave({ sandboxEnabled: false }); }}>关</button>
+                  </div>
+                </div>
+                <div className="settings-field">
+                  <div className="settings-field-label-group">
+                    <span className="settings-field-label">Prompt 缓存</span>
+                    <span className="settings-field-hint">重复上下文可降低 token 消耗</span>
+                  </div>
+                  <div className="settings-toggle">
+                    <button className={`settings-toggle-btn${promptCaching ? " active" : ""}`}
+                      onClick={() => { setPromptCaching(true); handleSave({ promptCaching: true }); }}>开</button>
+                    <button className={`settings-toggle-btn${!promptCaching ? " active" : ""}`}
+                      onClick={() => { setPromptCaching(false); handleSave({ promptCaching: false }); }}>关</button>
                   </div>
                 </div>
               </div>
