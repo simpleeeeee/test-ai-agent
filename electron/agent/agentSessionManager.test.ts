@@ -48,7 +48,7 @@ describe("AgentSessionManager", () => {
 
     expect(adapter.start).toHaveBeenCalledWith(expect.objectContaining({
       prompt: expect.any(Object),
-      options: { cwd: "D:/repo" },
+      options: expect.objectContaining({ cwd: "D:/repo" }),
       canUseTool: expect.any(Function),
     }));
     expect(emit).toHaveBeenCalledWith("assistant:text-delta", expect.objectContaining({

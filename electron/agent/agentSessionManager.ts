@@ -19,6 +19,7 @@ import {
   type SessionMessage,
 } from "./claudeAgentSdkFacade.js";
 import { loadClaudeCodeSettings } from "./sdkSettings.js";
+import { buildSystemPrompt } from "./systemPromptBuilder.js";
 
 type RuntimeSession = ReturnType<ClaudeAgentRuntimeAdapter["start"]>;
 
@@ -65,14 +66,31 @@ export class AgentSessionManager {
       input.push({ type: "user", message: { role: "user", content: prompt } });
     }
 
+    const systemPrompt = buildSystemPrompt({
+      staticParts: [
+        "你是 AI 测试助手，帮助测试人员生成测试计划、执行测试、收集证据、生成缺陷草稿。",
+        "请始终使用中文回复。",
+      ],
+      dynamicContext: {
+        currentTime: new Date().toLocaleString("zh-CN"),
+        userName: "测试员",
+        projectName: "待定",
+        environmentName: "待定",
+        sessionId: runId,
+      },
+    });
+
+    const finalOptions = {
+      ...config.sdkOptions,
+      systemPrompt: systemPrompt + (config.sdkOptions.systemPrompt ? "\n\n" + config.sdkOptions.systemPrompt : ""),
+      ...(runOptions?.resume ? { resume: runOptions.resume } : {}),
+      ...(runOptions?.continue ? { continue: true } : {}),
+    };
+
     const approvalBridge = new ApprovalBridge(runId, (event) => this.emitRunEvent(runId, event));
     const session = this.adapter.start({
       prompt: input,
-      options: {
-        ...config.sdkOptions,
-        ...(runOptions?.resume ? { resume: runOptions.resume } : {}),
-        ...(runOptions?.continue ? { continue: true } : {}),
-      },
+      options: finalOptions,
       canUseTool: approvalBridge.canUseTool,
     });
 
