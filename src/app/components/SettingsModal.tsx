@@ -23,7 +23,7 @@ export function SettingsModal({ onClose, theme, onThemeChange }: Props) {
   const [model, setModel] = useState("");
 
   return (
-    <div className="settings-modal-overlay" role="presentation">
+    <div className="settings-modal-overlay" role="presentation" onClick={onClose}>
       <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
         <div className="settings-modal-header">
           <h2>设置</h2>
