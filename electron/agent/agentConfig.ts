@@ -67,6 +67,10 @@ export type UserSdkOptions = {
   extraArgs?: Record<string, string | null>;
   executableArgs?: string[];
   resumeSessionAt?: string;
+  outputFormat?: {
+    type: "json_schema";
+    json_schema: { name: string; strict: boolean; schema: Record<string, unknown> };
+  };
 };
 
 const permissionModes = new Set(["default", "acceptEdits", "bypassPermissions", "plan", "dontAsk", "auto"]);
@@ -180,6 +184,15 @@ export function sanitizeUserSdkOptions(input: unknown): UserSdkOptions {
     options.executableArgs = source.executableArgs as string[];
   }
   if (typeof source.resumeSessionAt === "string") options.resumeSessionAt = source.resumeSessionAt;
+  if (source.outputFormat && typeof source.outputFormat === "object" && !Array.isArray(source.outputFormat)) {
+    const fmt = source.outputFormat as Record<string, unknown>;
+    if (fmt.type === "json_schema" && fmt.json_schema && typeof fmt.json_schema === "object") {
+      const js = fmt.json_schema as Record<string, unknown>;
+      if (typeof js.name === "string" && js.name.length > 0 && js.schema && typeof js.schema === "object") {
+        options.outputFormat = fmt as UserSdkOptions["outputFormat"];
+      }
+    }
+  }
 
   return options;
 }

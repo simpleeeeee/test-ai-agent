@@ -85,7 +85,12 @@ export function createBackendBridge(api: AiTestAssistantApi) {
     setPermissionMode(runId: string, permissionMode: string) {
       return api.invoke("run:set-permission-mode", { runId, permissionMode });
     },
-    applySettings(runId: string, settings: Record<string, unknown>) {
+    applySettings(runId: string, settings: Record<string, unknown> & {
+      outputFormat?: {
+        type: "json_schema";
+        json_schema: { name: string; strict: boolean; schema: Record<string, unknown> };
+      };
+    }) {
       return api.invoke("run:apply-settings", { runId, settings });
     },
     mcpStatus(runId: string) {

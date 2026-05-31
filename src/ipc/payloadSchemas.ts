@@ -34,7 +34,19 @@ const rendererSchemas = {
   "run:send-message": z.object({ runId: nonEmptyString, message: nonEmptyString }),
   "run:set-model": z.object({ runId: nonEmptyString, model: nonEmptyString }),
   "run:set-permission-mode": z.object({ runId: nonEmptyString, permissionMode: nonEmptyString }),
-  "run:apply-settings": z.object({ runId: nonEmptyString, settings: jsonObject }),
+  "run:apply-settings": z.object({
+    runId: nonEmptyString,
+    settings: z.object({
+      outputFormat: z.object({
+        type: z.literal("json_schema"),
+        json_schema: z.object({
+          name: z.string().min(1),
+          strict: z.boolean(),
+          schema: z.record(z.string(), z.unknown()),
+        }),
+      }).optional(),
+    }).catchall(z.unknown()),
+  }),
   "run:list-sessions": noPayload,
   "run:get-session": z.object({ sessionId: nonEmptyString }),
   "run:get-session-messages": z.object({ sessionId: nonEmptyString }),
