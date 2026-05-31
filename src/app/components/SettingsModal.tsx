@@ -5,6 +5,8 @@ type Props = {
   onClose: () => void;
   onThemeChange: (mode: "light" | "dark") => void;
   theme: "light" | "dark";
+  activeRunId?: string;
+  onApplySettings?: (runId: string, settings: Record<string, unknown>) => void;
   connectionStatus?: {
     state: string;
     baseUrl: string;
@@ -23,7 +25,7 @@ const NAV_ITEMS = [
   { key: "debug", icon: "🔧", label: "调试" },
 ] as const;
 
-export function SettingsModal({ bridge, onClose, theme, onThemeChange, connectionStatus }: Props) {
+export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRunId, onApplySettings, connectionStatus }: Props) {
   const [activeNav, setActiveNav] = useState("connection");
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -38,6 +40,15 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, connectio
 
   function handleSave(overrides?: Record<string, unknown>) {
     bridge.saveSettings({ baseUrl, apiKey, model, effort, ...overrides } as Parameters<typeof bridge.saveSettings>[0]);
+  }
+
+  function handleApplySdkSettings() {
+    if (activeRunId && onApplySettings) {
+      onApplySettings(activeRunId, {
+        permissionMode,
+        thinking: { effort: thinkingEffort, display: thinkingDisplay },
+      });
+    }
   }
 
   return (
@@ -215,7 +226,7 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, connectio
                   </div>
                 </div>
                 <div className="settings-actions">
-                  <button className="settings-btn primary" type="button">应用设置</button>
+                  <button className="settings-btn primary" type="button" onClick={handleApplySdkSettings}>应用设置</button>
                 </div>
               </>
             )}

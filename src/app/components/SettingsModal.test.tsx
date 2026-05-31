@@ -138,4 +138,24 @@ describe("SettingsModal", () => {
     expect(screen.getByText("API 密钥无效，请检查后重试")).toBeInTheDocument();
     expect(screen.getByText("请在 API Key 字段中更新密钥后重新测试连接")).toBeInTheDocument();
   });
+
+  it("submits SDK settings when apply button clicked", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    const onApplySettings = vi.fn();
+    render(
+      <SettingsModal bridge={bridge} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light"
+        activeRunId="run-1" onApplySettings={onApplySettings} />,
+    );
+
+    await user.click(screen.getByText("对话"));
+    await user.selectOptions(screen.getByLabelText("权限模式"), "plan");
+    await user.selectOptions(screen.getByLabelText("思考强度"), "high");
+    await user.selectOptions(screen.getByLabelText("Thinking 展示"), "summarized");
+    await user.click(screen.getByRole("button", { name: "应用设置" }));
+
+    expect(onApplySettings).toHaveBeenCalledWith("run-1", {
+      permissionMode: "plan",
+      thinking: { effort: "high", display: "summarized" },
+    });
+  });
 });
