@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { SettingsFormValues } from "./sdkSettings.js";
-import { ensureClaudeCodeSettings, loadClaudeCodeSettings, saveClaudeCodeSettings, settingsLocalPathForCwd, settingsPathForCwd } from "./sdkSettings.js";
+import { ensureClaudeCodeSettings, filterEscalatingMode, loadClaudeCodeSettings, loadResolvedSettings, saveClaudeCodeSettings, settingsLocalPathForCwd, settingsPathForCwd } from "./sdkSettings.js";
 
 describe("sdkSettings", () => {
   it("writes the native Claude Code project settings shape without $schema", () => {
@@ -274,5 +274,27 @@ describe("SettingsFormValues", () => {
     };
     expect(minimal.effort).toBeUndefined();
     expect(minimal.sandboxEnabled).toBeUndefined();
+  });
+});
+
+describe("loadResolvedSettings", () => {
+  it("returns effective settings and provenance for valid cwd", async () => {
+    const result = await loadResolvedSettings(process.cwd());
+    expect(result).toHaveProperty("effective");
+    expect(result).toHaveProperty("provenance");
+    expect(typeof result.effective).toBe("object");
+  });
+
+  it("resolves settings even for non-existent project directories (uses user-level settings)", async () => {
+    const result = await loadResolvedSettings("/nonexistent/path");
+    expect(result).toHaveProperty("effective");
+    expect(result).toHaveProperty("provenance");
+    expect(typeof result.effective).toBe("object");
+  });
+});
+
+describe("filterEscalatingMode", () => {
+  it("is a function", () => {
+    expect(typeof filterEscalatingMode).toBe("function");
   });
 });

@@ -1,5 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
+import { resolveSettings, filterEscalatingDefaultMode } from "./claudeAgentSdkFacade.js";
+import type { ResolvedSettings, Settings } from "./claudeAgentSdkFacade.js";
 
 type NativeClaudeCodeSettings = {
   $schema?: string;
@@ -95,4 +97,35 @@ export function saveClaudeCodeSettings(input: SettingsFormValues & { cwd: string
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
   fs.writeFileSync(targetPath, `${JSON.stringify(settings, null, 2)}\n`, "utf8");
   return settings;
+}
+
+export async function loadResolvedSettings(cwd: string): Promise<{
+  effective: Settings;
+  provenance: Record<string, { source: string; path?: string }>;
+}> {
+  try {
+    const resolved: ResolvedSettings = await resolveSettings({ cwd });
+    const safe: Settings = filterEscalatingDefaultMode(resolved);
+    return {
+      effective: safe,
+      provenance: (resolved.provenance ?? {}) as Record<string, { source: string; path?: string }>,
+    };
+  } catch (error) {
+    console.warn("resolveSettings failed, falling back to manual merge:", error);
+    const manual = loadClaudeCodeSettings({ cwd });
+    return {
+      effective: {
+        env: {
+          ANTHROPIC_BASE_URL: manual.baseUrl,
+          ANTHROPIC_AUTH_TOKEN: manual.apiKey,
+          ANTHROPIC_MODEL: manual.model,
+        },
+      } as Settings,
+      provenance: {},
+    };
+  }
+}
+
+export function filterEscalatingMode(resolved: ResolvedSettings): Settings {
+  return filterEscalatingDefaultMode(resolved);
 }
