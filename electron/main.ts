@@ -211,7 +211,14 @@ async function createWindow() {
 }
 
 startup().then((warmQuery) => {
-  app.on("will-quit", () => { warmQuery[Symbol.asyncDispose](); });
+  app.on("before-quit", async (event) => {
+    event.preventDefault();
+    try {
+      await warmQuery[Symbol.asyncDispose]();
+    } catch {
+      // Silently ignore dispose errors during shutdown
+    }
+  });
 }).catch((e) => {
   console.warn("SDK startup 预热失败:", e);
 });

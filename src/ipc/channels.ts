@@ -84,7 +84,6 @@ export const mainToRendererChannels = [
   "sdk:user-message-replay",
   "sdk:compact-boundary",
   "sdk:deferred-tool-use",
-  "sdk:token-counted",
   "question:required",
   "question:answered",
 ] as const;

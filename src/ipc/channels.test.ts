@@ -21,7 +21,6 @@ describe("IPC channels", () => {
     expect(isMainToRendererChannel("assistant:message-started")).toBe(true);
     expect(isMainToRendererChannel("tool:input-json-delta")).toBe(true);
     expect(isMainToRendererChannel("sdk:system-event")).toBe(true);
-    expect(isMainToRendererChannel("sdk:token-counted" as any)).toBe(true);
   });
 
   it("rejects malformed or empty channel names", () => {
@@ -124,7 +123,6 @@ describe("IPC channels", () => {
       "sdk:user-message-replay",
       "sdk:compact-boundary",
       "sdk:deferred-tool-use",
-      "sdk:token-counted",
       "question:required",
       "question:answered",
     ]);

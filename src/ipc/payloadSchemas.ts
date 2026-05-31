@@ -112,7 +112,6 @@ const mainSchemas = {
   "sdk:mcp-status": z.object({ runId: nonEmptyString, servers: z.array(z.unknown()) }),
   "sdk:task-progress": z.object({ runId: nonEmptyString, taskId: nonEmptyString, summary: z.string().optional(), raw: z.unknown().optional() }),
   "sdk:hook-event": z.object({ runId: nonEmptyString, hookName: nonEmptyString, raw: z.unknown() }),
-  "sdk:token-counted": z.object({ runId: nonEmptyString, inputTokens: z.number().int().nonnegative() }),
   "question:required": z.object({ runId: nonEmptyString, requestId: nonEmptyString, questions: z.array(z.unknown()) }),
   "question:answered": z.object({ runId: nonEmptyString, requestId: nonEmptyString }),
 } satisfies Partial<Record<MainToRendererChannel, z.ZodTypeAny>>;
