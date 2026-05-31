@@ -104,4 +104,27 @@ describe("ClaudeAgentRuntimeAdapter", () => {
     }
     expect(collected).toEqual([{ type: "user", message: { role: "user", content: "继续" } }]);
   });
+
+  it("exposes all 7 new Query methods on returned session", () => {
+    const mockQuery = {
+      getContextUsage: vi.fn().mockResolvedValue({ total_tokens: 1000 }),
+      interrupt: vi.fn().mockResolvedValue(undefined),
+      backgroundTasks: vi.fn().mockResolvedValue(true),
+      readFile: vi.fn().mockResolvedValue({ content: "test" }),
+      reloadPlugins: vi.fn().mockResolvedValue({}),
+      rewindFiles: vi.fn().mockResolvedValue({ canRewind: true }),
+      seedReadState: vi.fn().mockResolvedValue(undefined),
+    };
+    const mockSdk = { query: vi.fn().mockReturnValue(mockQuery) };
+    const adapter = new ClaudeAgentRuntimeAdapter(mockSdk as any);
+    const session = adapter.start({ prompt: "test", options: {}, canUseTool: async () => ({ behavior: "allow" as const }) });
+
+    expect(session.getContextUsage).toBeDefined();
+    expect(session.interrupt).toBeDefined();
+    expect(session.backgroundTasks).toBeDefined();
+    expect(session.readFile).toBeDefined();
+    expect(session.reloadPlugins).toBeDefined();
+    expect(session.rewindFiles).toBeDefined();
+    expect(session.seedReadState).toBeDefined();
+  });
 });

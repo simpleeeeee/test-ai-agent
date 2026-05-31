@@ -46,6 +46,17 @@ export class ClaudeAgentRuntimeAdapter {
         return queryResult.streamInput(once() as any);
       },
       stopTask: (taskId: string) => queryResult.stopTask(taskId),
+      // === Plan 2 新增 ===
+      getContextUsage: () => (queryResult as any).getContextUsage(),
+      interrupt: () => (queryResult as any).interrupt(),
+      backgroundTasks: (toolUseId?: string) => (queryResult as any).backgroundTasks(toolUseId),
+      readFile: (path: string, options?: { maxBytes?: number; encoding?: "utf-8" | "base64" }) =>
+        (queryResult as any).readFile(path, options),
+      reloadPlugins: () => (queryResult as any).reloadPlugins(),
+      rewindFiles: (userMessageId: string, options?: { dryRun?: boolean }) =>
+        (queryResult as any).rewindFiles(userMessageId, options),
+      seedReadState: (path: string, mtime: number) =>
+        (queryResult as any).seedReadState(path, mtime),
     };
   }
 }
