@@ -223,7 +223,7 @@ function assertThirdPartyBaseUrl(baseUrl: string) {
   const url = new URL(baseUrl);
   const host = url.hostname.toLowerCase();
   if (host === "api.anthropic.com" || host.endsWith(".anthropic.com")) {
-    throw new Error("Official Anthropic endpoints are not allowed");
+    throw new Error("请使用第三方 API 网关地址，不支持 Anthropic 官方端点");
   }
 }
 

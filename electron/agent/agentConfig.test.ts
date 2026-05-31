@@ -78,7 +78,7 @@ describe("loadAgentRuntimeConfig", () => {
 
     expect(() => loadAgentRuntimeConfig({
       cwd,
-    })).toThrow("Official Anthropic endpoints are not allowed");
+    })).toThrow("请使用第三方 API 网关地址，不支持 Anthropic 官方端点");
   });
 
   it("passes CLAUDE_CONFIG_DIR in sdkOptions.env when claudeConfigDir is provided", () => {
