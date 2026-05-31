@@ -188,7 +188,55 @@ if (sdkEvent?.type === "task_updated") {
 
 所有新增数组字段沿用现有截断策略：`>= 200` 时 `slice(-199)` 后追加新条目。
 
-## 六、错误处理
+## 六、UI 层展示设计
+
+新增的 20 种事件按用户可见性分为三级。
+
+### 6.1 一级：需要独立 UI 控件（3 种）
+
+| 事件 | 展示位置 | 控件类型 | 说明 |
+|------|---------|---------|------|
+| `sdk:rate-limit` | `MessageStream` 消息流顶部 | 警告横幅（黄色背景 + 图标） | 速率限制直接影响用户操作，必须醒目 |
+| `sdk:notification` | `MessageStream` 消息流中 | 系统消息气泡（灰色小字，与用户/助手消息区分） | 如"正在压缩上下文"等系统通知 |
+| `sdk:task-notification` | `TestConsole` 任务区 | 任务状态更新条目 | 后台任务完成/失败，延续现有任务展示模式 |
+
+### 6.2 二级：扩充现有控件（2 种）
+
+| 事件 | 展示位置 | 改动内容 |
+|------|---------|---------|
+| `sdk:task-progress`（扩充 `status` 字段） | `TestConsole` 任务区 | 在现有 `summary` 外增加状态标签（`started` / `updated`） |
+| `sdk:tool-progress` | `ToolCallCard` 组件内部 | 工具执行时在卡片中实时展示进度文字（如 Bash 命令实时输出） |
+
+### 6.3 三级：不进 UI，仅透传 raw 数据（15 种）
+
+以下事件通过 `sdk:raw-message` 通道进入 `rawMessages` 数组，UI 不做专门渲染：
+
+| 事件 | 不进 UI 的原因 |
+|------|---------------|
+| `sdk:tool-summary` | 已有 `tool:call-completed` 展示调用结果 |
+| `sdk:local-command-output` | Electron 桌面应用无 CLI 终端 |
+| `sdk:plugin-install` | 当前无插件系统，预留 |
+| `sdk:files-persisted` | SDK 内部事件，用户无需感知 |
+| `sdk:memory-recall` | 内部机制，暂不展示 |
+| `sdk:mirror-error` | SessionStore 未启用 |
+| `sdk:elicitation-complete` | MCP 引出交互完结，内部事件 |
+| `sdk:user-message-replay` | 会话恢复内部机制 |
+| `sdk:compact-boundary` | 上下文压缩内部标记 |
+| `sdk:deferred-tool-use` | 内部机制 |
+| `sdk:hook-event`（3 种 stage） | Debug 用途，当前不展示 |
+| `sdk:session-changed`（扩充 `state` 字段） | 会话状态由侧边栏管理，不额外展示 |
+
+### 6.4 影响组件
+
+| 组件 | 改动类型 |
+|------|---------|
+| `MessageStream.tsx` | 新增速率限制警告横幅 + 系统通知气泡 |
+| `ToolCallCard.tsx` | 新增进度文字展示区域 |
+| `TestConsole.tsx` | 扩充任务状态标签 |
+
+---
+
+## 七、错误处理
 
 | 场景 | 处理方式 |
 |------|---------|
@@ -197,7 +245,7 @@ if (sdkEvent?.type === "task_updated") {
 | mapper 抛异常 | `drainMessages` 的 `for await` 循环内异常会被 SDK 子进程捕获，映射失败的消息静默跳过，不影响后续消息处理 |
 | UI reducer 中 payload 类型不符 | `payloadRecord()` 安全转换，字段缺失时用默认值（与现有 reducer 行为一致） |
 
-## 七、测试策略
+## 八、测试策略
 
 ### 7.1 领域层测试（`testRun.test.ts`）
 
@@ -226,7 +274,7 @@ if (sdkEvent?.type === "task_updated") {
 npm run build  # tsc 三遍（主进程 + preload + 渲染进程）
 ```
 
-## 八、不在范围内
+## 九、不在范围内
 
 - 不做 `SDKPromptSuggestionMessage` 映射（依赖 Anthropic 建议模型，第三方 API 不适用）
 - 不做消息类型的 UI 组件展示（留给后续 UI spec）
