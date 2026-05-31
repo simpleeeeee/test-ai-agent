@@ -129,14 +129,41 @@ export class AgentSessionManager {
       },
     });
 
-    const session = this.adapter.start({
+    let session = this.adapter.start({
       prompt: input,
       options: finalOptions,
       canUseTool: approvalBridge.canUseTool,
     });
 
     this.runs.set(runId, { input, session, approvalBridge, processManager });
-    await this.drainMessages(runId, session.messages);
+
+    // Retry loop: on retryable errors, re-create the session to get a fresh messages stream
+    const MAX_RETRIES = 3;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        await this.drainMessages(runId, session.messages);
+        break; // success
+      } catch (error) {
+        if (attempt < MAX_RETRIES && isRetryable(error)) {
+          this.deps.emit("sdk:system-event", {
+            runId,
+            subtype: "retry_attempt",
+            raw: { attempt, maxRetries: MAX_RETRIES, error: errorMsg(error) },
+          });
+          await new Promise<void>((resolve) => setTimeout(resolve, 1000 * attempt));
+          // Re-create session for clean messages stream
+          session.close();
+          session = this.adapter.start({
+            prompt: input,
+            options: finalOptions,
+            canUseTool: approvalBridge.canUseTool,
+          });
+          this.runs.set(runId, { input, session, approvalBridge, processManager });
+          continue;
+        }
+        throw error; // non-retryable or exhausted retries
+      }
+    }
   }
 
   approvePlan(runId: string) {
@@ -327,26 +354,12 @@ export class AgentSessionManager {
     return this.deps.cwd ?? process.cwd();
   }
 
-  private async drainMessages(runId: string, messages: AsyncIterable<unknown>, retries = 3, attempt = 1): Promise<void> {
+  private async drainMessages(runId: string, messages: AsyncIterable<unknown>): Promise<void> {
     const mapper = new SdkRunEventMapperSession(runId);
-    try {
-      for await (const message of messages) {
-        for (const event of mapper.map(message)) {
-          this.emitRunEvent(runId, event);
-        }
+    for await (const message of messages) {
+      for (const event of mapper.map(message)) {
+        this.emitRunEvent(runId, event);
       }
-    } catch (error) {
-      if (isRetryable(error) && attempt <= retries) {
-        this.deps.emit("sdk:system-event", {
-          runId,
-          subtype: "retry_attempt",
-          raw: { attempt, retries, error: errorMsg(error) },
-        });
-        await new Promise<void>((resolve) => setTimeout(resolve, 1000 * attempt));
-        // Re-create the session messages stream via the existing run's session
-        return this.drainMessages(runId, messages, retries, attempt + 1);
-      }
-      throw error;
     }
   }
 

@@ -174,15 +174,26 @@ export function createProcessManager(options: ProcessManagerOptions) {
 
   async function shutdown(timeoutMs: number): Promise<void> {
     if (shuttingDown) {
-      // 已经在关闭流程中，等待当前流程结束
-      return new Promise<void>((resolve) => {
-        const check = setInterval(() => {
-          if (state.status === "stopped" || !child) {
+      // 已经在关闭流程中，等待当前流程结束（带超时保护）
+      let check: ReturnType<typeof setInterval> | null = null;
+      return Promise.race([
+        new Promise<void>((resolve) => {
+          check = setInterval(() => {
+            if (state.status === "stopped" || !child) {
+              clearInterval(check!);
+              check = null;
+              resolve();
+            }
+          }, 50);
+        }),
+        new Promise<void>((resolve) => setTimeout(() => {
+          if (check) {
             clearInterval(check);
-            resolve();
+            check = null;
           }
-        }, 50);
-      });
+          resolve();
+        }, timeoutMs)),
+      ]);
     }
 
     shuttingDown = true;

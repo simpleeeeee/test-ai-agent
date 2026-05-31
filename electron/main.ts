@@ -239,7 +239,7 @@ startup().then((warmQuery) => {
   // Connection probe
   const settings = loadClaudeCodeSettings({ cwd: appBaseDirectory() });
   import("./agent/connectionProbe.js").then(({ probeConnection }) => {
-    probeConnection(warmQuery, {
+    probeConnection(warmQuery as unknown as import("./agent/connectionProbe.js").ConnectionProbeQuery, {
       baseUrl: settings.baseUrl,
       model: settings.model,
     }).then((status) => {

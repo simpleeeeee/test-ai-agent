@@ -433,6 +433,56 @@ describe("sdkEventStore", () => {
     expect(state.usage).toEqual({ inputTokens: 100, outputTokens: 50 });
   });
 
+  it("stores process health on process_health system event", () => {
+    const state = createInitialSdkUiState();
+    const result = reduceSdkUiEvent(state, {
+      channel: "sdk:system-event" as any,
+      payload: {
+        subtype: "process_health",
+        raw: { pid: 123, status: "running", restartCount: 0, message: "" },
+      },
+    });
+    expect(result.processHealth).toBeDefined();
+    expect(result.processHealth!.pid).toBe(123);
+    expect(result.processHealth!.status).toBe("running");
+    expect(result.processHealth!.restartCount).toBe(0);
+  });
+
+  it("stores capability degradations on capability_degraded system event", () => {
+    const state = createInitialSdkUiState();
+    const result = reduceSdkUiEvent(state, {
+      channel: "sdk:system-event" as any,
+      payload: {
+        subtype: "capability_degraded",
+        raw: {
+          model: "test-model",
+          degradations: [{ feature: "thinking", reason: "不支持" }],
+        },
+      },
+    });
+    // Check notification was created
+    expect(result.notifications.length).toBeGreaterThan(0);
+    expect(result.notifications[0].notificationType).toBe("warning");
+    expect(result.notifications[0].message).toContain("thinking");
+  });
+
+  it("handles retry_attempt system event", () => {
+    const state = createInitialSdkUiState();
+    const result = reduceSdkUiEvent(state, {
+      channel: "sdk:system-event" as any,
+      payload: {
+        subtype: "retry_attempt",
+        raw: { attempt: 2, maxRetries: 3 },
+      },
+    });
+    // retry_attempt is stored in systemEvents
+    const retryEvent = result.systemEvents.find(
+      (e) => e.subtype === "retry_attempt",
+    );
+    expect(retryEvent).toBeDefined();
+    expect((retryEvent!.raw as any).attempt).toBe(2);
+  });
+
   it("sdk:connection-status stores failed state with error detail", () => {
     const state = createInitialSdkUiState();
     const next = reduceSdkUiEvent(state, {

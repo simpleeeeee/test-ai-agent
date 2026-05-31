@@ -143,6 +143,7 @@ export function diagnoseError(raw: unknown): ErrorDiagnostic {
     }
   }
 
-  // 3. 回退到通用错误
+  // 3. 回退到通用错误（记录原始错误以便调试）
+  console.debug("errorDiagnostics: unmapped error", raw);
   return GENERIC_RESULT;
 }

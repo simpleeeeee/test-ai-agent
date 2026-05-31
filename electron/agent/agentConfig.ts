@@ -375,18 +375,18 @@ export async function loadAgentRuntimeConfig(input: {
   // === 模型能力检测 + 自动降级 ===
   const degradations: Array<{ feature: string; reason: string }> = [];
   if (model) {
-    let caps: ModelCapabilities;
+    let caps: ModelCapabilities | undefined;
     try {
       caps = await detectModelCapabilities(
         { query: /* NOTE: SDK query not available here; use heuristic */ undefined as any },
         model,
       );
     } catch {
-      caps = { model, supportsThinking: true, supportsJsonSchema: true, supportsPromptCaching: true, maxContextWindow: 200000, supportsToolUse: true, detectedAt: Date.now(), detectionMethod: "heuristic" };
+      // caps 保持 undefined，由下方统一回退
     }
 
-    // 若探测失败回退到保守默认值，在此处覆盖为乐观启发式默认值（无真实 SDK 时假定全部支持）
-    if (caps.detectionMethod !== "probe") {
+    // 非 probe 结果（含探测失败和 heuristic）统一回退到乐观默认值
+    if (!caps || caps.detectionMethod !== "probe") {
       caps = { model, supportsThinking: true, supportsJsonSchema: true, supportsPromptCaching: true, maxContextWindow: 200000, supportsToolUse: true, detectedAt: Date.now(), detectionMethod: "heuristic" };
     }
 
