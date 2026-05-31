@@ -62,6 +62,56 @@ describe("SettingsModal", () => {
       await user.click(outputField.querySelectorAll("button")[0]); // "开"
       expect(screen.getByLabelText("输出模板")).toBeInTheDocument();
     });
+
+    it("saves outputFormat when enabling structured output", async () => {
+      const user = (await import("@testing-library/user-event")).default.setup();
+      const saveSettings = vi.fn();
+      const b = { loadSettings: () => Promise.resolve({ baseUrl: "", apiKey: "", model: "" }), saveSettings };
+      render(<SettingsModal bridge={b} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
+
+      await user.click(screen.getByText("输出"));
+      const outputField = screen.getByText("启用结构化输出").closest(".settings-field")!;
+      await user.click(outputField.querySelectorAll("button")[0]); // "开"
+
+      expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({
+        outputFormat: { template: "test_plan", customSchema: null },
+      }));
+    });
+
+    it("saves outputFormat as undefined when disabling structured output", async () => {
+      const user = (await import("@testing-library/user-event")).default.setup();
+      const saveSettings = vi.fn();
+      const b = {
+        loadSettings: () => Promise.resolve({ baseUrl: "", apiKey: "", model: "", outputFormat: { template: "test_plan" } }),
+        saveSettings,
+      };
+      render(<SettingsModal bridge={b} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
+
+      await user.click(screen.getByText("输出"));
+      const outputField = screen.getByText("启用结构化输出").closest(".settings-field")!;
+      await user.click(outputField.querySelectorAll("button")[1]); // "关"
+
+      expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({
+        outputFormat: undefined,
+      }));
+    });
+
+    it("saves outputFormat when changing template", async () => {
+      const user = (await import("@testing-library/user-event")).default.setup();
+      const saveSettings = vi.fn();
+      const b = {
+        loadSettings: () => Promise.resolve({ baseUrl: "", apiKey: "", model: "", outputFormat: { template: "test_plan" } }),
+        saveSettings,
+      };
+      render(<SettingsModal bridge={b} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
+
+      await user.click(screen.getByText("输出"));
+      await user.selectOptions(screen.getByLabelText("输出模板"), "bug_report");
+
+      expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({
+        outputFormat: { template: "bug_report", customSchema: null },
+      }));
+    });
   });
 
   describe("debug panel", () => {

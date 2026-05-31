@@ -234,9 +234,9 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                   </div>
                   <div className="settings-toggle">
                     <button className={`settings-toggle-btn${outputFormatEnabled ? " active" : ""}`}
-                      onClick={() => setOutputFormatEnabled(true)}>开</button>
+                      onClick={() => { setOutputFormatEnabled(true); handleSave({ outputFormat: { template: outputFormatTemplate, customSchema: outputFormatTemplate === "custom" ? customSchema : null } }); }}>开</button>
                     <button className={`settings-toggle-btn${!outputFormatEnabled ? " active" : ""}`}
-                      onClick={() => setOutputFormatEnabled(false)}>关</button>
+                      onClick={() => { setOutputFormatEnabled(false); handleSave({ outputFormat: undefined }); }}>关</button>
                   </div>
                 </div>
                 {outputFormatEnabled && (
@@ -247,7 +247,7 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                         <span className="settings-field-hint">选择预设的输出格式模板</span>
                       </div>
                       <select id="output-template" className="settings-select" value={outputFormatTemplate}
-                        onChange={(e) => setOutputFormatTemplate(e.target.value)}>
+                        onChange={(e) => { setOutputFormatTemplate(e.target.value); handleSave({ outputFormat: { template: e.target.value, customSchema: e.target.value === "custom" ? customSchema : null } }); }}>
                         {OUTPUT_SCHEMA_TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
                       </select>
                     </div>
@@ -259,6 +259,7 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                         </div>
                         <textarea id="custom-schema" className="settings-textarea"
                           value={customSchema} onChange={(e) => setCustomSchema(e.target.value)}
+                          onBlur={() => handleSave()}
                           placeholder='{ "type": "object", "properties": {...} }' />
                       </div>
                     )}
