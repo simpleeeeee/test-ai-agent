@@ -64,6 +64,24 @@ describe("SettingsModal", () => {
     });
   });
 
+  describe("debug panel", () => {
+    it("shows debug file path input only when debug mode is on", async () => {
+      const user = (await import("@testing-library/user-event")).default.setup();
+      const saveSettings = vi.fn();
+      const b = { loadSettings: () => Promise.resolve({ baseUrl: "", apiKey: "", model: "", debug: false }), saveSettings };
+      render(<SettingsModal bridge={b} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
+
+      await user.click(screen.getByText("调试"));
+      expect(screen.getByText("调试模式")).toBeInTheDocument();
+      expect(screen.queryByLabelText("日志文件路径")).not.toBeInTheDocument();
+
+      const debugField = screen.getByText("调试模式").closest(".settings-field")!;
+      await user.click(debugField.querySelectorAll("button")[0]); // "开"
+      expect(screen.getByLabelText("日志文件路径")).toBeInTheDocument();
+      expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({ debug: true }));
+    });
+  });
+
   it("shows connection panel by default with Base URL, API Key and model fields", () => {
     render(<SettingsModal bridge={bridge} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
     expect(screen.getByText("API 连接配置")).toBeInTheDocument();

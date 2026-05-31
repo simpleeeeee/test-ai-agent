@@ -43,6 +43,8 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
   const [outputFormatEnabled, setOutputFormatEnabled] = useState(false);
   const [outputFormatTemplate, setOutputFormatTemplate] = useState("test_plan");
   const [customSchema, setCustomSchema] = useState("");
+  const [debug, setDebug] = useState(false);
+  const [debugFile, setDebugFile] = useState("");
 
   function handleSave(overrides?: Record<string, unknown>) {
     bridge.saveSettings({ baseUrl, apiKey, model, effort, ...overrides } as Parameters<typeof bridge.saveSettings>[0]);
@@ -225,6 +227,42 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                   </>
                 )}
               </div>
+            )}
+            {activeNav === "debug" && (
+              <>
+                <div className="settings-section">
+                  <div className="settings-section-title">开发调试</div>
+                  <div className="settings-field">
+                    <div className="settings-field-label-group">
+                      <span className="settings-field-label">调试模式</span>
+                      <span className="settings-field-hint">记录 SDK 原始消息用于排查问题</span>
+                    </div>
+                    <div className="settings-toggle">
+                      <button className={`settings-toggle-btn${debug ? " active" : ""}`}
+                        onClick={() => { setDebug(true); handleSave({ debug: true }); }}>开</button>
+                      <button className={`settings-toggle-btn${!debug ? " active" : ""}`}
+                        onClick={() => { setDebug(false); handleSave({ debug: false }); }}>关</button>
+                    </div>
+                  </div>
+                  {debug && (
+                    <div className="settings-field">
+                      <div className="settings-field-label-group">
+                        <label className="settings-field-label" htmlFor="debug-file">日志文件路径</label>
+                        <span className="settings-field-hint">调试日志的保存位置</span>
+                      </div>
+                      <input id="debug-file" className="settings-input" type="text" value={debugFile}
+                        onChange={(e) => setDebugFile(e.target.value)} placeholder=".claude/debug.log" />
+                    </div>
+                  )}
+                </div>
+                <div className="settings-section">
+                  <div className="settings-section-title">日志操作</div>
+                  <div className="settings-actions">
+                    <button className="settings-btn" type="button">导出调试日志</button>
+                    <button className="settings-btn" type="button">复制最近日志</button>
+                  </div>
+                </div>
+              </>
             )}
             {activeNav === "conversation" && (
               <>
