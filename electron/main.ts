@@ -8,10 +8,10 @@ import {
   type RendererToMainChannel,
 } from "../src/ipc/channels.js";
 import { parseRendererToMainPayload } from "../src/ipc/payloadSchemas.js";
-import { createBackendRuntime } from "./agent/backendRuntime.js";
+import { createBackendRuntime, type BackendRuntime } from "./agent/backendRuntime.js";
 import { resolveClaudeConfigDir } from "./agent/claudeConfigDir.js";
 import { startup } from "./agent/claudeAgentSdkFacade.js";
-import { ensureClaudeCodeSettings, loadClaudeCodeSettings, saveClaudeCodeSettings } from "./agent/sdkSettings.js";
+import { ensureClaudeCodeSettings, loadClaudeCodeSettings, loadAppSettings, saveAppSettings, saveClaudeCodeSettings } from "./agent/sdkSettings.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -45,7 +45,9 @@ function appBaseDirectory() {
   return app.isPackaged ? path.dirname(app.getPath("exe")) : process.cwd();
 }
 
-function registerBackendIpc(window: BrowserWindow, cwd: string, configDir: string | null) {
+let backendRuntime: BackendRuntime | undefined;
+
+function registerBackendIpc(window: BrowserWindow, cwd: string, configDir: string | null): BackendRuntime {
   const runtime = createBackendRuntime({
     cwd,
     configDir,
@@ -104,8 +106,13 @@ function registerBackendIpc(window: BrowserWindow, cwd: string, configDir: strin
   handleRequest("sdk:account-info", ({ runId }) => manager.accountInfo(runId));
   handleRequest("sdk:initialization-result", ({ runId }) => manager.initializationResult(runId));
   handleRequest("settings:get", () => loadClaudeCodeSettings({ cwd }));
-  handleRequest("settings:save", ({ baseUrl, apiKey, model, effort, sandboxEnabled }) => {
-    saveClaudeCodeSettings({ cwd, baseUrl, apiKey, model, effort, sandboxEnabled });
+  handleRequest("settings:save", ({ baseUrl, apiKey, model, effort, sandboxEnabled, promptCaching, debug, debugFile, maxBudgetUsd, maxTurns, outputFormat }) => {
+    saveClaudeCodeSettings({ cwd, baseUrl, apiKey, model, effort, sandboxEnabled, promptCaching, debug, debugFile, maxBudgetUsd, maxTurns });
+    if (outputFormat !== undefined) {
+      const appSettings = loadAppSettings(cwd);
+      appSettings.outputFormat = outputFormat;
+      saveAppSettings(cwd, appSettings);
+    }
     return loadClaudeCodeSettings({ cwd });
   });
   handleRequest("task:stop", ({ runId, taskId }) => manager.stopTask(runId, taskId));
@@ -154,6 +161,8 @@ function registerBackendIpc(window: BrowserWindow, cwd: string, configDir: strin
   handleRequest("run:seed-read-state", ({ runId, path, mtime }) => manager.seedReadState(runId, path, mtime));
   handleRequest("run:get-subagent-messages", ({ runId, sessionId, agentId, limit, offset }) => manager.getSubagentMessages(sessionId, agentId, { limit, offset }));
   handleRequest("run:list-subagents", ({ runId, sessionId }) => manager.listSubagents(sessionId));
+
+  return runtime;
 }
 
 function focusedWindow() {
@@ -201,7 +210,7 @@ async function createWindow() {
     },
   });
 
-  registerBackendIpc(window, cwd, configDir);
+  backendRuntime = registerBackendIpc(window, cwd, configDir);
 
   if (process.env.VITE_DEV_SERVER_URL) {
     await window.loadURL(process.env.VITE_DEV_SERVER_URL);
@@ -214,10 +223,32 @@ startup().then((warmQuery) => {
   app.on("before-quit", async (event) => {
     event.preventDefault();
     try {
+      // Close all active sessions
+      if (backendRuntime) {
+        const manager = backendRuntime.sessionManager;
+        for (const runId of manager.activeRunIds()) {
+          try { manager.stopRun(runId); } catch { /* ignore */ }
+        }
+      }
       await warmQuery[Symbol.asyncDispose]();
     } catch {
       // Silently ignore dispose errors during shutdown
     }
+  });
+
+  // Connection probe
+  const settings = loadClaudeCodeSettings({ cwd: appBaseDirectory() });
+  import("./agent/connectionProbe.js").then(({ probeConnection }) => {
+    probeConnection(warmQuery as unknown as import("./agent/connectionProbe.js").ConnectionProbeQuery, {
+      baseUrl: settings.baseUrl,
+      model: settings.model,
+    }).then((status) => {
+      for (const win of BrowserWindow.getAllWindows()) {
+        sendToRenderer(win, "sdk:connection-status", status);
+      }
+    }).catch((err) => {
+      console.warn("Connection probe failed:", err);
+    });
   });
 }).catch((e) => {
   console.warn("SDK startup 预热失败:", e);

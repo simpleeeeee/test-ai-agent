@@ -18,6 +18,30 @@ import {
   type SDKSessionInfo,
   type SessionMessage,
 } from "./claudeAgentSdkFacade.js";
+import { loadClaudeCodeSettings } from "./sdkSettings.js";
+import { buildSystemPrompt } from "./systemPromptBuilder.js";
+import { createProcessManager, type ProcessState } from "./processManager.js";
+
+const RETRYABLE_ERRORS = new Set([
+  "ECONNRESET", "ETIMEDOUT", "ENOTFOUND", "ECONNREFUSED",
+  "socket hang up", "network error",
+]);
+
+function isRetryable(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const e = error as Record<string, unknown>;
+  const code = typeof e.code === "string" ? e.code : undefined;
+  if (code && RETRYABLE_ERRORS.has(code)) return true;
+  const msg = typeof e.message === "string" ? e.message : String(e);
+  for (const pattern of RETRYABLE_ERRORS) {
+    if (msg.includes(pattern)) return true;
+  }
+  return false;
+}
+
+function errorMsg(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
 
 type RuntimeSession = ReturnType<ClaudeAgentRuntimeAdapter["start"]>;
 
@@ -33,6 +57,7 @@ type ActiveRun = {
   input: AsyncMessageQueue<unknown>;
   session: RuntimeSession;
   approvalBridge: ApprovalBridge;
+  processManager: ReturnType<typeof createProcessManager>;
 };
 
 export class AgentSessionManager {
@@ -51,25 +76,94 @@ export class AgentSessionManager {
     runOptions?: { resume?: string; continue?: boolean },
   ) {
     const config = await this.loadConfig({ cwd: this.deps.cwd ?? process.cwd(), claudeConfigDir: this.deps.configDir });
+    if (config.degradations && config.degradations.length > 0) {
+      this.deps.emit("sdk:system-event", {
+        runId,
+        subtype: "capability_degraded",
+        raw: { model: config.model, degradations: config.degradations },
+      });
+    }
     const input = new AsyncMessageQueue<unknown>();
     const isResuming = !!(runOptions?.resume || runOptions?.continue);
     if (!isResuming) {
       input.push({ type: "user", message: { role: "user", content: prompt } });
     }
 
-    const approvalBridge = new ApprovalBridge(runId, (event) => this.emitRunEvent(runId, event));
-    const session = this.adapter.start({
-      prompt: input,
-      options: {
-        ...config.sdkOptions,
-        ...(runOptions?.resume ? { resume: runOptions.resume } : {}),
-        ...(runOptions?.continue ? { continue: true } : {}),
+    const systemPrompt = buildSystemPrompt({
+      staticParts: [
+        "你是 AI 测试助手，帮助测试人员生成测试计划、执行测试、收集证据、生成缺陷草稿。",
+        "请始终使用中文回复。",
+      ],
+      dynamicContext: {
+        currentTime: new Date().toLocaleString("zh-CN"),
+        userName: "测试员",
+        projectName: "待定",
+        environmentName: "待定",
+        sessionId: runId,
       },
+    });
+
+    const finalOptions = {
+      ...config.sdkOptions,
+      systemPrompt: systemPrompt + (config.sdkOptions.systemPrompt ? "\n\n" + config.sdkOptions.systemPrompt : ""),
+      ...(runOptions?.resume ? { resume: runOptions.resume } : {}),
+      ...(runOptions?.continue ? { continue: true } : {}),
+    };
+
+    const approvalBridge = new ApprovalBridge(runId, (event) => this.emitRunEvent(runId, event));
+
+    const processManager = createProcessManager({
+      maxRestarts: 3,
+      restartBackoffMs: 1000,
+      onStateChange: (state: ProcessState) => {
+        this.deps.emit("sdk:system-event", {
+          runId,
+          subtype: "process_health",
+          raw: {
+            pid: state.pid,
+            status: state.status,
+            restartCount: state.restartCount,
+            message: state.lastError ?? "",
+          },
+        });
+      },
+    });
+
+    let session = this.adapter.start({
+      prompt: input,
+      options: finalOptions,
       canUseTool: approvalBridge.canUseTool,
     });
 
-    this.runs.set(runId, { input, session, approvalBridge });
-    await this.drainMessages(runId, session.messages);
+    this.runs.set(runId, { input, session, approvalBridge, processManager });
+
+    // Retry loop: on retryable errors, re-create the session to get a fresh messages stream
+    const MAX_RETRIES = 3;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        await this.drainMessages(runId, session.messages);
+        break; // success
+      } catch (error) {
+        if (attempt < MAX_RETRIES && isRetryable(error)) {
+          this.deps.emit("sdk:system-event", {
+            runId,
+            subtype: "retry_attempt",
+            raw: { attempt, maxRetries: MAX_RETRIES, error: errorMsg(error) },
+          });
+          await new Promise<void>((resolve) => setTimeout(resolve, 1000 * attempt));
+          // Re-create session for clean messages stream
+          session.close();
+          session = this.adapter.start({
+            prompt: input,
+            options: finalOptions,
+            canUseTool: approvalBridge.canUseTool,
+          });
+          this.runs.set(runId, { input, session, approvalBridge, processManager });
+          continue;
+        }
+        throw error; // non-retryable or exhausted retries
+      }
+    }
   }
 
   approvePlan(runId: string) {
@@ -87,8 +181,15 @@ export class AgentSessionManager {
   }
 
   stopRun(runId: string) {
-    this.session(runId).close();
+    const run = this.runs.get(runId);
+    if (!run) return;
+    run.session.close();
+    run.processManager.shutdown(5000).catch(() => { /* ignore shutdown errors */ });
     this.runs.delete(runId);
+  }
+
+  activeRunIds(): string[] {
+    return Array.from(this.runs.keys());
   }
 
   approveTool(runId: string, requestId: string, options: { updatedInput?: Record<string, unknown>; applyPermissionSuggestions?: boolean }) {
@@ -143,12 +244,26 @@ export class AgentSessionManager {
     return this.session(runId).supportedAgents();
   }
 
-  accountInfo(runId: string) {
-    return this.session(runId).accountInfo();
+  async accountInfo(runId: string) {
+    const raw = await this.session(runId).accountInfo();
+    const config = await this.loadConfig({ cwd: this.deps.cwd ?? process.cwd(), claudeConfigDir: this.deps.configDir });
+    const env = (config.sdkOptions.env ?? {}) as Record<string, string>;
+    return {
+      endpoint: env.ANTHROPIC_BASE_URL ?? "",
+      model: env.ANTHROPIC_MODEL ?? "",
+      provider: "third_party",
+      sdkApiProvider: (raw as any)?.apiProvider,
+    };
   }
 
-  initializationResult(runId: string) {
-    return this.session(runId).initializationResult();
+  async initializationResult(runId: string) {
+    const settings = loadClaudeCodeSettings({ cwd: this.deps.cwd ?? process.cwd() });
+    return {
+      endpoint: settings.baseUrl,
+      authenticated: !!settings.apiKey,
+      model: settings.model,
+      provider: "third_party",
+    };
   }
 
   stopTask(runId: string, taskId: string) {
@@ -239,7 +354,7 @@ export class AgentSessionManager {
     return this.deps.cwd ?? process.cwd();
   }
 
-  private async drainMessages(runId: string, messages: AsyncIterable<unknown>) {
+  private async drainMessages(runId: string, messages: AsyncIterable<unknown>): Promise<void> {
     const mapper = new SdkRunEventMapperSession(runId);
     for await (const message of messages) {
       for (const event of mapper.map(message)) {

@@ -9,6 +9,15 @@ const settingsFormValues = z.object({
   model: nonEmptyString,
   effort: z.string().optional(),
   sandboxEnabled: z.boolean().optional(),
+  promptCaching: z.boolean().optional(),
+  debug: z.boolean().optional(),
+  debugFile: z.string().optional(),
+  maxBudgetUsd: z.number().optional(),
+  maxTurns: z.number().int().optional(),
+  outputFormat: z.object({
+    template: z.string().optional(),
+    customSchema: z.string().nullable().optional(),
+  }).optional(),
 });
 
 const noPayload = z.undefined().optional();
@@ -34,7 +43,19 @@ const rendererSchemas = {
   "run:send-message": z.object({ runId: nonEmptyString, message: nonEmptyString }),
   "run:set-model": z.object({ runId: nonEmptyString, model: nonEmptyString }),
   "run:set-permission-mode": z.object({ runId: nonEmptyString, permissionMode: nonEmptyString }),
-  "run:apply-settings": z.object({ runId: nonEmptyString, settings: jsonObject }),
+  "run:apply-settings": z.object({
+    runId: nonEmptyString,
+    settings: z.object({
+      outputFormat: z.object({
+        type: z.literal("json_schema"),
+        json_schema: z.object({
+          name: z.string().min(1),
+          strict: z.boolean(),
+          schema: z.record(z.string(), z.unknown()),
+        }),
+      }).optional(),
+    }).catchall(z.unknown()),
+  }),
   "run:list-sessions": noPayload,
   "run:get-session": z.object({ sessionId: nonEmptyString }),
   "run:get-session-messages": z.object({ sessionId: nonEmptyString }),
@@ -68,6 +89,20 @@ const rendererSchemas = {
   "run:list-subagents": z.object({ runId: nonEmptyString, sessionId: nonEmptyString }),
 } satisfies Record<RendererToMainChannel, z.ZodTypeAny>;
 
+const connectionStatusErrorSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  suggestion: z.string(),
+});
+
+const connectionStatusSchema = z.object({
+  state: z.enum(["connected", "unverified", "connecting", "failed"]),
+  baseUrl: z.string(),
+  model: z.string(),
+  error: connectionStatusErrorSchema.optional(),
+  probedAt: z.number(),
+});
+
 const mainSchemas = {
   "assistant:text-delta": z.object({ runId: nonEmptyString, messageId: nonEmptyString, delta: z.string() }),
   "assistant:thinking-delta": z.object({ runId: nonEmptyString, messageId: nonEmptyString, delta: z.string() }),
@@ -92,7 +127,7 @@ const mainSchemas = {
   }),
   "sdk:system-event": z.object({
     runId: nonEmptyString,
-    subtype: nonEmptyString,
+    subtype: z.enum(["capability_degraded", "process_health", "retry_attempt"]).or(nonEmptyString),
     raw: z.unknown(),
   }),
   "sdk:raw-message": z.object({ runId: nonEmptyString, message: z.unknown() }),
@@ -107,11 +142,12 @@ const mainSchemas = {
     numTurns: z.number().int().nonnegative().optional(),
     model: z.string().optional(),
   }),
-  "sdk:error": z.object({ runId: nonEmptyString.optional(), message: nonEmptyString, retryable: z.boolean() }),
+  "sdk:error": z.object({ runId: nonEmptyString.optional(), message: nonEmptyString, retryable: z.boolean(), suggestion: z.string().optional() }),
   "sdk:permission-denied": z.object({ runId: nonEmptyString, toolName: nonEmptyString, raw: z.unknown().optional() }),
   "sdk:mcp-status": z.object({ runId: nonEmptyString, servers: z.array(z.unknown()) }),
   "sdk:task-progress": z.object({ runId: nonEmptyString, taskId: nonEmptyString, summary: z.string().optional(), raw: z.unknown().optional() }),
   "sdk:hook-event": z.object({ runId: nonEmptyString, hookName: nonEmptyString, raw: z.unknown() }),
+  "sdk:connection-status": connectionStatusSchema,
   "question:required": z.object({ runId: nonEmptyString, requestId: nonEmptyString, questions: z.array(z.unknown()) }),
   "question:answered": z.object({ runId: nonEmptyString, requestId: nonEmptyString }),
 } satisfies Partial<Record<MainToRendererChannel, z.ZodTypeAny>>;

@@ -9,11 +9,37 @@ function normalizeUsage(raw: unknown): TokenUsage {
   if (!raw || typeof raw !== "object") {
     return { inputTokens: 0, outputTokens: 0 };
   }
-  const r = raw as Record<string, unknown>;
+  let r = raw as Record<string, unknown>;
   const num = (key: string): number | undefined => {
     const v = r[key];
     return typeof v === "number" ? v : undefined;
   };
+
+  const hasInputOutput = (num("input_tokens") ?? num("inputTokens")) !== undefined
+    && (num("output_tokens") ?? num("outputTokens")) !== undefined;
+
+  // 兼容 1：total_tokens 替代分项（国产 API 常见）
+  if (!hasInputOutput && typeof r.total_tokens === "number") {
+    r.input_tokens = Math.round(r.total_tokens * 0.75);
+    r.output_tokens = Math.round(r.total_tokens * 0.25);
+  }
+
+  // 兼容 2：嵌套 usage（response.usage）
+  if (!r.input_tokens && !r.inputTokens && r.response && typeof r.response === "object") {
+    const resp = r.response as Record<string, unknown>;
+    if (resp.usage && typeof resp.usage === "object") {
+      r = { ...r, ...(resp.usage as Record<string, unknown>) };
+    }
+  }
+
+  // 兼容 3：prompt_tokens / completion_tokens（OpenAI 风格）
+  if (!r.input_tokens && !r.inputTokens && typeof r.prompt_tokens === "number") {
+    r.input_tokens = r.prompt_tokens;
+  }
+  if (!r.output_tokens && !r.outputTokens && typeof r.completion_tokens === "number") {
+    r.output_tokens = r.completion_tokens;
+  }
+
   return {
     inputTokens: num("input_tokens") ?? num("inputTokens") ?? 0,
     outputTokens: num("output_tokens") ?? num("outputTokens") ?? 0,
@@ -220,10 +246,14 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
   }
 
   if (event.channel === "sdk:usage") {
+    const usage = normalizeUsage(payload.raw);
+    if (usage.cacheReadInputTokens && usage.inputTokens > 0) {
+      usage.cacheHitRate = Math.round((usage.cacheReadInputTokens / usage.inputTokens) * 100);
+    }
     return {
       ...state,
       activeRunId,
-      usage: normalizeUsage(payload.raw),
+      usage,
       runStats: {
         ...state.runStats,
         ...(typeof payload.model === "string" ? { model: payload.model } : {}),
@@ -304,12 +334,55 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
 
   if (event.channel === "sdk:system-event") {
     const systemEvent = { subtype: String(payload.subtype), raw: payload.raw };
-    return {
+    let nextState = {
       ...state,
       activeRunId,
       systemEvents: state.systemEvents.length >= 200
         ? [...state.systemEvents.slice(-199), systemEvent]
         : [...state.systemEvents, systemEvent],
+    };
+
+    // 进程健康状态更新
+    if (String(payload.subtype) === "process_health") {
+      const ph = payload.raw as { pid?: number | null; status?: string; restartCount?: number; message?: string } | undefined;
+      nextState = {
+        ...nextState,
+        processHealth: {
+          pid: typeof ph?.pid === "number" ? ph.pid : null,
+          status: typeof ph?.status === "string" ? ph.status : "unknown",
+          restartCount: typeof ph?.restartCount === "number" ? ph.restartCount : 0,
+          message: typeof ph?.message === "string" ? ph.message : "",
+        },
+      };
+    }
+
+    // 能力降级时添加用户通知
+    if (String(payload.subtype) === "capability_degraded") {
+      const raw = payload.raw as { model?: string; degradations?: Array<{ feature: string; reason: string }> } | undefined;
+      const degradationsList = raw?.degradations ?? [];
+      const modelLabel = raw?.model ? ` (${raw.model})` : "";
+      const features = degradationsList.map((d) => d.feature).join("、");
+      const notification = {
+        message: `模型${modelLabel}的以下功能已被自动降级：${features}`,
+        notificationType: "warning",
+      };
+      nextState = {
+        ...nextState,
+        notifications: nextState.notifications.length >= 200
+          ? [...nextState.notifications.slice(-199), notification]
+          : [...nextState.notifications, notification],
+      };
+    }
+
+    return nextState;
+  }
+
+  if (event.channel === "sdk:connection-status") {
+    const { runId: _runId, ...status } = payload;
+    return {
+      ...state,
+      activeRunId,
+      connectionStatus: status as SdkUiState["connectionStatus"],
     };
   }
 

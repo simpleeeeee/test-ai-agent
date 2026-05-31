@@ -83,6 +83,7 @@ export const mainToRendererChannels = [
   "sdk:elicitation-complete",
   "sdk:user-message-replay",
   "sdk:compact-boundary",
+  "sdk:connection-status",
   "sdk:deferred-tool-use",
   "question:required",
   "question:answered",

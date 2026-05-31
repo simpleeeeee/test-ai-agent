@@ -15,7 +15,37 @@ export type SettingsFormValues = {
   model: string;
   effort?: string;          // 推理努力程度: low | medium | high | xhigh | max
   sandboxEnabled?: boolean; // 沙箱是否启用
+  promptCaching?: boolean;  // Prompt 缓存开关
+  debug?: boolean;          // 调试模式：记录 SDK 原始消息
+  debugFile?: string;       // 调试日志文件路径
+  maxBudgetUsd?: number;    // 成本上限 (USD)
+  maxTurns?: number;        // 最大对话轮数
+  outputFormat?: { template?: string; customSchema?: string | null }; // 结构化输出配置
 };
+
+function appSettingsPath(cwd: string) {
+  return path.join(cwd, ".claude", "app-settings.json");
+}
+
+export type AppSettings = {
+  version: number;
+  outputFormat?: { template?: string; customSchema?: string | null };
+  lastConnectionCheck?: number;
+};
+
+export function loadAppSettings(cwd: string): AppSettings {
+  try {
+    const p = appSettingsPath(cwd);
+    if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, "utf8")) as AppSettings;
+  } catch { /* ignore */ }
+  return { version: 1 };
+}
+
+export function saveAppSettings(cwd: string, settings: AppSettings): void {
+  const p = appSettingsPath(cwd);
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  fs.writeFileSync(p, JSON.stringify({ ...settings, version: 1 }, null, 2), "utf8");
+}
 
 export function settingsPathForCwd(cwd: string) {
   return path.join(cwd, ".claude", "settings.json");
@@ -57,6 +87,16 @@ export function loadClaudeCodeSettings({ cwd }: { cwd: string }): SettingsFormVa
     sandboxEnabled: (local.env?.CLAUDE_CODE_SANDBOX_ENABLED ?? shared.env?.CLAUDE_CODE_SANDBOX_ENABLED) === "true" ? true
       : (local.env?.CLAUDE_CODE_SANDBOX_ENABLED ?? shared.env?.CLAUDE_CODE_SANDBOX_ENABLED) === "false" ? false
       : undefined,
+    promptCaching: (local.env?.CLAUDE_CODE_PROMPT_CACHING ?? shared.env?.CLAUDE_CODE_PROMPT_CACHING) === "true" ? true
+      : (local.env?.CLAUDE_CODE_PROMPT_CACHING ?? shared.env?.CLAUDE_CODE_PROMPT_CACHING) === "false" ? false
+      : undefined,
+    debug: (local.env?.CLAUDE_CODE_DEBUG ?? shared.env?.CLAUDE_CODE_DEBUG) === "true" ? true
+      : (local.env?.CLAUDE_CODE_DEBUG ?? shared.env?.CLAUDE_CODE_DEBUG) === "false" ? false
+      : undefined,
+    debugFile: stringValue(local.env?.CLAUDE_CODE_DEBUG_FILE ?? shared.env?.CLAUDE_CODE_DEBUG_FILE) || undefined,
+    maxBudgetUsd: parseFloat(local.env?.CLAUDE_CODE_MAX_BUDGET_USD ?? shared.env?.CLAUDE_CODE_MAX_BUDGET_USD ?? "") || undefined,
+    maxTurns: parseInt(local.env?.CLAUDE_CODE_MAX_TURNS ?? shared.env?.CLAUDE_CODE_MAX_TURNS ?? "", 10) || undefined,
+    outputFormat: loadAppSettings(cwd).outputFormat,
   };
 }
 
@@ -91,6 +131,11 @@ export function saveClaudeCodeSettings(input: SettingsFormValues & { cwd: string
       ANTHROPIC_MODEL: input.model.trim(),
       ...(input.effort ? { CLAUDE_CODE_EFFORT: input.effort } : {}),
       ...(input.sandboxEnabled !== undefined ? { CLAUDE_CODE_SANDBOX_ENABLED: String(input.sandboxEnabled) } : {}),
+      ...(input.promptCaching !== undefined ? { CLAUDE_CODE_PROMPT_CACHING: String(input.promptCaching) } : {}),
+      ...(input.debug !== undefined ? { CLAUDE_CODE_DEBUG: String(input.debug) } : {}),
+      ...(input.debugFile ? { CLAUDE_CODE_DEBUG_FILE: input.debugFile } : {}),
+      ...(input.maxBudgetUsd !== undefined ? { CLAUDE_CODE_MAX_BUDGET_USD: String(input.maxBudgetUsd) } : {}),
+      ...(input.maxTurns !== undefined ? { CLAUDE_CODE_MAX_TURNS: String(input.maxTurns) } : {}),
     },
   };
 
@@ -121,6 +166,11 @@ export async function loadResolvedSettings(cwd: string): Promise<{
           ANTHROPIC_MODEL: manual.model,
           ...(manual.effort ? { CLAUDE_CODE_EFFORT: manual.effort } : {}),
           ...(manual.sandboxEnabled !== undefined ? { CLAUDE_CODE_SANDBOX_ENABLED: String(manual.sandboxEnabled) } : {}),
+          ...(manual.promptCaching !== undefined ? { CLAUDE_CODE_PROMPT_CACHING: String(manual.promptCaching) } : {}),
+          ...(manual.debug !== undefined ? { CLAUDE_CODE_DEBUG: String(manual.debug) } : {}),
+          ...(manual.debugFile ? { CLAUDE_CODE_DEBUG_FILE: manual.debugFile } : {}),
+          ...(manual.maxBudgetUsd !== undefined ? { CLAUDE_CODE_MAX_BUDGET_USD: String(manual.maxBudgetUsd) } : {}),
+          ...(manual.maxTurns !== undefined ? { CLAUDE_CODE_MAX_TURNS: String(manual.maxTurns) } : {}),
         },
       } as Settings,
       provenance: {},

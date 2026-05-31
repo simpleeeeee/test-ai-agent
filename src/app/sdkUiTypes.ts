@@ -1,6 +1,17 @@
 import type { MainToRendererChannel } from "../ipc/channels";
 import type { BugDraft, Evidence, ToolCall } from "../domain/testRun";
 
+export type ModelCapabilities = {
+  model: string;
+  supportsThinking: boolean;
+  supportsJsonSchema: boolean;
+  supportsPromptCaching: boolean;
+  maxContextWindow: number;
+  supportsToolUse: boolean;
+  detectedAt: number;
+  detectionMethod: "probe" | "heuristic" | "manual";
+};
+
 export type SdkMessage = {
   id: string;
   role: "user" | "assistant" | "system";
@@ -92,6 +103,8 @@ export type TokenUsage = {
   outputTokens: number;
   cacheCreationInputTokens?: number;
   cacheReadInputTokens?: number;
+  /** 缓存命中率（百分比，0-100） */
+  cacheHitRate?: number;
   /** 当前会话已使用的上下文 tokens 总量 */
   contextTokens?: number;
   /** LLM 支持的单会话最大上下文 tokens */
@@ -121,6 +134,15 @@ export type SdkUiState = {
   notifications: Array<{ message: string; title?: string; notificationType: string }>;
   rateLimitInfo: unknown | undefined;
   mirrorErrors: Array<{ message: string }>;
+  connectionStatus?: {
+    state: "connected" | "unverified" | "connecting" | "failed";
+    baseUrl: string;
+    model: string;
+    error?: { code: string; message: string; suggestion: string };
+    probedAt: number;
+  };
+  modelCapabilities?: ModelCapabilities;
+  processHealth?: { pid: number | null; status: string; restartCount: number; message: string };
 };
 
 export type SdkUiEvent =

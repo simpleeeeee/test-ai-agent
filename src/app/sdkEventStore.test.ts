@@ -77,6 +77,7 @@ describe("sdkEventStore", () => {
       inputTokens: 100,
       outputTokens: 50,
       cacheReadInputTokens: 30,
+      cacheHitRate: 30,
       contextTokens: 500,
       maxContextTokens: 10000,
     });
@@ -385,5 +386,131 @@ describe("sdkEventStore", () => {
     });
     expect(state.permissionDenials).toEqual([{ toolName: "Write", raw: { reason: "blocked" } }]);
     expect(state.systemEvents).toEqual([{ subtype: "compact", raw: { type: "system", subtype: "compact" } }]);
+  });
+
+  it("sdk:connection-status stores connected state", () => {
+    const state = createInitialSdkUiState();
+    const next = reduceSdkUiEvent(state, {
+      channel: "sdk:connection-status" as any,
+      payload: {
+        runId: "run-1",
+        state: "connected",
+        baseUrl: "https://api.anthropic.com",
+        model: "claude-sonnet-4-6",
+        probedAt: 1717171717171,
+      },
+    });
+
+    expect(next.connectionStatus).toEqual({
+      state: "connected",
+      baseUrl: "https://api.anthropic.com",
+      model: "claude-sonnet-4-6",
+      probedAt: 1717171717171,
+    });
+  });
+
+  it("normalizes total_tokens into estimated input/output split", () => {
+    const state = reduceSdkUiEvent(createInitialSdkUiState(), {
+      channel: "sdk:usage",
+      payload: { runId: "run-1", raw: { total_tokens: 4000 } },
+    });
+    expect(state.usage).toEqual({ inputTokens: 3000, outputTokens: 1000 });
+  });
+
+  it("maps prompt_tokens / completion_tokens to inputTokens / outputTokens", () => {
+    const state = reduceSdkUiEvent(createInitialSdkUiState(), {
+      channel: "sdk:usage",
+      payload: { runId: "run-1", raw: { prompt_tokens: 500, completion_tokens: 200 } },
+    });
+    expect(state.usage).toEqual({ inputTokens: 500, outputTokens: 200 });
+  });
+
+  it("extracts tokens from nested response.usage", () => {
+    const state = reduceSdkUiEvent(createInitialSdkUiState(), {
+      channel: "sdk:usage",
+      payload: { runId: "run-1", raw: { response: { usage: { input_tokens: 100, output_tokens: 50 } } } },
+    });
+    expect(state.usage).toEqual({ inputTokens: 100, outputTokens: 50 });
+  });
+
+  it("stores process health on process_health system event", () => {
+    const state = createInitialSdkUiState();
+    const result = reduceSdkUiEvent(state, {
+      channel: "sdk:system-event" as any,
+      payload: {
+        subtype: "process_health",
+        raw: { pid: 123, status: "running", restartCount: 0, message: "" },
+      },
+    });
+    expect(result.processHealth).toBeDefined();
+    expect(result.processHealth!.pid).toBe(123);
+    expect(result.processHealth!.status).toBe("running");
+    expect(result.processHealth!.restartCount).toBe(0);
+  });
+
+  it("stores capability degradations on capability_degraded system event", () => {
+    const state = createInitialSdkUiState();
+    const result = reduceSdkUiEvent(state, {
+      channel: "sdk:system-event" as any,
+      payload: {
+        subtype: "capability_degraded",
+        raw: {
+          model: "test-model",
+          degradations: [{ feature: "thinking", reason: "不支持" }],
+        },
+      },
+    });
+    // Check notification was created
+    expect(result.notifications.length).toBeGreaterThan(0);
+    expect(result.notifications[0].notificationType).toBe("warning");
+    expect(result.notifications[0].message).toContain("thinking");
+  });
+
+  it("handles retry_attempt system event", () => {
+    const state = createInitialSdkUiState();
+    const result = reduceSdkUiEvent(state, {
+      channel: "sdk:system-event" as any,
+      payload: {
+        subtype: "retry_attempt",
+        raw: { attempt: 2, maxRetries: 3 },
+      },
+    });
+    // retry_attempt is stored in systemEvents
+    const retryEvent = result.systemEvents.find(
+      (e) => e.subtype === "retry_attempt",
+    );
+    expect(retryEvent).toBeDefined();
+    expect((retryEvent!.raw as any).attempt).toBe(2);
+  });
+
+  it("sdk:connection-status stores failed state with error detail", () => {
+    const state = createInitialSdkUiState();
+    const next = reduceSdkUiEvent(state, {
+      channel: "sdk:connection-status" as any,
+      payload: {
+        runId: "run-1",
+        state: "failed",
+        baseUrl: "https://api.anthropic.com",
+        model: "claude-sonnet-4-6",
+        error: {
+          code: "ENOTFOUND",
+          message: "无法解析 API 网关地址",
+          suggestion: "检查 baseUrl 配置",
+        },
+        probedAt: 1717171717171,
+      },
+    });
+
+    expect(next.connectionStatus).toEqual({
+      state: "failed",
+      baseUrl: "https://api.anthropic.com",
+      model: "claude-sonnet-4-6",
+      error: {
+        code: "ENOTFOUND",
+        message: "无法解析 API 网关地址",
+        suggestion: "检查 baseUrl 配置",
+      },
+      probedAt: 1717171717171,
+    });
   });
 });

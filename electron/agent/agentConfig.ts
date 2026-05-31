@@ -3,6 +3,10 @@ import path from "node:path";
 import { loadClaudeCodeSettings, loadResolvedSettings } from "./sdkSettings.js";
 // 以下类型按需从 facade 导入；若因版本差异导致导入失败（循环依赖或类型缺失），可降级为 any
 import type { OnElicitation, SpawnOptions, SpawnedProcess } from "./claudeAgentSdkFacade.js";
+import { customTools } from "./customTools.js";
+import { appMcpServer } from "./appMcpServer.js";
+import { detectModelCapabilities } from "./modelCapabilities.js";
+import type { ModelCapabilities } from "./modelCapabilities.js";
 
 export type AgentRuntimeConfig = {
   cwd: string;
@@ -21,6 +25,9 @@ export type { Executable, SessionStoreFlushValue, SettingSourceValue };
 export type UserSdkOptions = {
   permissionMode?: PermissionMode;
   maxTurns?: number;
+  max_budget_usd?: number;
+  enableFileCheckpointing?: boolean;
+  fallback_model?: string;
   additionalDirectories?: string[];
   allowedTools?: string[];
   disallowedTools?: string[];
@@ -65,6 +72,10 @@ export type UserSdkOptions = {
   extraArgs?: Record<string, string | null>;
   executableArgs?: string[];
   resumeSessionAt?: string;
+  outputFormat?: {
+    type: "json_schema";
+    json_schema: { name: string; strict: boolean; schema: Record<string, unknown> };
+  };
 };
 
 const permissionModes = new Set(["default", "acceptEdits", "bypassPermissions", "plan", "dontAsk", "auto"]);
@@ -85,6 +96,9 @@ export function sanitizeUserSdkOptions(input: unknown): UserSdkOptions {
   if (Number.isInteger(source.maxTurns) && (source.maxTurns as number) > 0) {
     options.maxTurns = source.maxTurns as number;
   }
+  if (typeof source.max_budget_usd === "number" && source.max_budget_usd > 0) options.max_budget_usd = source.max_budget_usd;
+  if (typeof source.enableFileCheckpointing === "boolean") options.enableFileCheckpointing = source.enableFileCheckpointing;
+  if (typeof source.fallback_model === "string" && source.fallback_model.length > 0) options.fallback_model = source.fallback_model;
   if (Array.isArray(source.additionalDirectories) && source.additionalDirectories.every((v) => typeof v === "string")) {
     options.additionalDirectories = source.additionalDirectories as string[];
   }
@@ -111,7 +125,7 @@ export function sanitizeUserSdkOptions(input: unknown): UserSdkOptions {
   if (source.outputConfig !== undefined) options.outputConfig = source.outputConfig;
   if (source.contextEditing !== undefined) options.contextEditing = source.contextEditing;
   if (source.compaction !== undefined) options.compaction = source.compaction;
-  if (source.promptCaching !== undefined) options.promptCaching = source.promptCaching;
+  if (typeof source.promptCaching === "boolean") options.promptCaching = source.promptCaching;
   // ===== A 组：白名单 Set 校验 =====
   if (typeof source.effort === "string" && thinkingEfforts.has(source.effort)) {
     options.effort = source.effort as ThinkingEffort;
@@ -178,6 +192,15 @@ export function sanitizeUserSdkOptions(input: unknown): UserSdkOptions {
     options.executableArgs = source.executableArgs as string[];
   }
   if (typeof source.resumeSessionAt === "string") options.resumeSessionAt = source.resumeSessionAt;
+  if (source.outputFormat && typeof source.outputFormat === "object" && !Array.isArray(source.outputFormat)) {
+    const fmt = source.outputFormat as Record<string, unknown>;
+    if (fmt.type === "json_schema" && fmt.json_schema && typeof fmt.json_schema === "object") {
+      const js = fmt.json_schema as Record<string, unknown>;
+      if (typeof js.name === "string" && js.name.length > 0 && js.schema && typeof js.schema === "object") {
+        options.outputFormat = fmt as UserSdkOptions["outputFormat"];
+      }
+    }
+  }
 
   return options;
 }
@@ -227,6 +250,27 @@ function assertThirdPartyBaseUrl(baseUrl: string) {
   }
 }
 
+function degradeOutputFormatToPrompt(of: { type: "json_schema"; json_schema: { name: string; strict: boolean; schema: Record<string, unknown> } }): string {
+  const schema = of.json_schema.schema;
+  const fields = extractFieldNames(schema);
+  const lines = ["请以 JSON 格式输出，必须包含以下字段："];
+  for (const f of fields) lines.push(`- ${f}`);
+  lines.push("", "以 ```json ... ``` 代码块包裹 JSON 输出。");
+  return lines.join("\n");
+}
+
+function extractFieldNames(schema: Record<string, unknown>, prefix = ""): string[] {
+  const result: string[] = [];
+  if (schema.type === "object" && schema.properties && typeof schema.properties === "object") {
+    for (const [key, prop] of Object.entries(schema.properties as Record<string, Record<string, unknown>>)) {
+      const fullPath = prefix ? `${prefix}.${key}` : key;
+      const desc = prop.description ? ` (${prop.description})` : "";
+      result.push(`${fullPath}: ${prop.type ?? "string"}${desc}`);
+    }
+  }
+  return result;
+}
+
 export async function loadAgentRuntimeConfig(input: {
   cwd: string;
   claudeConfigDir?: string | null;
@@ -237,7 +281,7 @@ export async function loadAgentRuntimeConfig(input: {
     stderr?: (data: string) => void;
     abortController?: AbortController;
   };
-}): Promise<AgentRuntimeConfig> {
+}): Promise<AgentRuntimeConfig & { model: string; degradations: Array<{ feature: string; reason: string }> }> {
   const settings = loadClaudeCodeSettings({ cwd: input.cwd });
   const baseUrl = settings.baseUrl.trim();
   const authToken = settings.apiKey.trim();
@@ -293,28 +337,84 @@ export async function loadAgentRuntimeConfig(input: {
     ? resolvedSandboxEnabled
     : settings.sandboxEnabled;
 
+  // === 构建合并后的 sdkOptions ===
+  const mergedOptions: Record<string, unknown> = {
+    ...userSdkOptions,
+    cwd: input.cwd,
+    tools: [...(userSdkOptions.tools ?? []), ...customTools],
+    ...(pathToClaudeCodeExecutable ? { pathToClaudeCodeExecutable } : {}),
+    includePartialMessages: true,
+    permissionMode: userSdkOptions.permissionMode ?? "default",
+    thinking,
+    // 新字段合并（userSdkOptions 已经包含了这些字段，此处用合并后的值覆盖）
+    ...(effort ? { effort } : {}),
+    ...(sandboxEnabled !== undefined
+      ? { sandbox: { ...(userSdkOptions.sandbox ?? {}), enabled: sandboxEnabled } }
+      : userSdkOptions.sandbox
+        ? { sandbox: userSdkOptions.sandbox }
+        : {}),
+    ...(userSdkOptions.max_budget_usd !== undefined ? { max_budget_usd: userSdkOptions.max_budget_usd } : {}),
+    ...(userSdkOptions.enableFileCheckpointing !== undefined ? { enableFileCheckpointing: userSdkOptions.enableFileCheckpointing } : {}),
+    ...(userSdkOptions.fallback_model ? { fallback_model: userSdkOptions.fallback_model } : {}),
+    ...(input.claudeConfigDir ? { env: { CLAUDE_CONFIG_DIR: input.claudeConfigDir } } : {}),
+    // 注入 codeOptions：将回调/实例类型的运行时选项传递到 SDK options
+    ...(input.codeOptions?.onElicitation ? { onElicitation: input.codeOptions.onElicitation } : {}),
+    ...(input.codeOptions?.spawnClaudeCodeProcess ? { spawnClaudeCodeProcess: input.codeOptions.spawnClaudeCodeProcess } : {}),
+    ...(input.codeOptions?.stderr ? { stderr: input.codeOptions.stderr } : {}),
+    ...(input.codeOptions?.abortController ? { abortController: input.codeOptions.abortController } : {}),
+  };
+
+  // === 注册应用级 MCP Server ===
+  if (appMcpServer) {
+    mergedOptions.mcpServers = {
+      ...(mergedOptions.mcpServers ?? {}),
+      "ai-test-assistant": appMcpServer,
+    };
+  }
+
+  // === 模型能力检测 + 自动降级 ===
+  const degradations: Array<{ feature: string; reason: string }> = [];
+  if (model) {
+    let caps: ModelCapabilities | undefined;
+    try {
+      caps = await detectModelCapabilities(
+        { query: /* NOTE: SDK query not available here; use heuristic */ undefined as any },
+        model,
+      );
+    } catch {
+      // caps 保持 undefined，由下方统一回退
+    }
+
+    // 非 probe 结果（含探测失败和 heuristic）统一回退到乐观默认值
+    if (!caps || caps.detectionMethod !== "probe") {
+      caps = { model, supportsThinking: true, supportsJsonSchema: true, supportsPromptCaching: true, maxContextWindow: 200000, supportsToolUse: true, detectedAt: Date.now(), detectionMethod: "heuristic" };
+    }
+
+    if (!caps.supportsThinking) {
+      delete mergedOptions.thinking;
+      delete mergedOptions.effort;
+      degradations.push({ feature: "thinking", reason: "模型不支持" });
+    }
+    if (!caps.supportsJsonSchema && mergedOptions.outputConfig) {
+      const outputConfig = mergedOptions.outputConfig as Record<string, unknown>;
+      const formatObj = outputConfig.format ?? outputConfig;
+      try {
+        const promptInjection = degradeOutputFormatToPrompt(formatObj as any);
+        mergedOptions.systemPrompt = ((mergedOptions.systemPrompt as string) ?? "") + "\n\n" + promptInjection;
+      } catch { /* schema structure unexpected, skip degradation */ }
+      delete mergedOptions.outputConfig;
+      degradations.push({ feature: "jsonSchema", reason: "模型不支持，已降级为自然语言格式要求" });
+    }
+    if (!caps.supportsPromptCaching) {
+      delete mergedOptions.promptCaching;
+      degradations.push({ feature: "promptCaching", reason: "模型不支持" });
+    }
+  }
+
   return {
     cwd: input.cwd,
-    sdkOptions: {
-      ...userSdkOptions,
-      cwd: input.cwd,
-      ...(pathToClaudeCodeExecutable ? { pathToClaudeCodeExecutable } : {}),
-      includePartialMessages: true,
-      permissionMode: userSdkOptions.permissionMode ?? "default",
-      thinking,
-      // 新字段合并（userSdkOptions 已经包含了这些字段，此处用合并后的值覆盖）
-      ...(effort ? { effort } : {}),
-      ...(sandboxEnabled !== undefined
-        ? { sandbox: { ...(userSdkOptions.sandbox ?? {}), enabled: sandboxEnabled } }
-        : userSdkOptions.sandbox
-          ? { sandbox: userSdkOptions.sandbox }
-          : {}),
-      ...(input.claudeConfigDir ? { env: { CLAUDE_CONFIG_DIR: input.claudeConfigDir } } : {}),
-      // 注入 codeOptions：将回调/实例类型的运行时选项传递到 SDK options
-      ...(input.codeOptions?.onElicitation ? { onElicitation: input.codeOptions.onElicitation } : {}),
-      ...(input.codeOptions?.spawnClaudeCodeProcess ? { spawnClaudeCodeProcess: input.codeOptions.spawnClaudeCodeProcess } : {}),
-      ...(input.codeOptions?.stderr ? { stderr: input.codeOptions.stderr } : {}),
-      ...(input.codeOptions?.abortController ? { abortController: input.codeOptions.abortController } : {}),
-    },
+    sdkOptions: mergedOptions,
+    model,
+    degradations,
   };
 }

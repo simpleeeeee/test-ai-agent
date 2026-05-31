@@ -203,6 +203,77 @@ describe("IPC payload schemas", () => {
     })).toThrow();
   });
 
+  it("accepts sdk:connection-status connected payload", () => {
+    expect(parseMainToRendererPayload("sdk:connection-status", {
+      state: "connected",
+      baseUrl: "https://api.anthropic.com",
+      model: "claude-sonnet-4-6",
+      probedAt: 1717171717171,
+    })).toEqual({
+      state: "connected",
+      baseUrl: "https://api.anthropic.com",
+      model: "claude-sonnet-4-6",
+      probedAt: 1717171717171,
+    });
+  });
+
+  it("accepts sdk:connection-status failed payload with error", () => {
+    expect(parseMainToRendererPayload("sdk:connection-status", {
+      state: "failed",
+      baseUrl: "https://api.anthropic.com",
+      model: "claude-sonnet-4-6",
+      error: {
+        code: "ENOTFOUND",
+        message: "无法解析",
+        suggestion: "检查 URL",
+      },
+      probedAt: 1717171717171,
+    })).toEqual({
+      state: "failed",
+      baseUrl: "https://api.anthropic.com",
+      model: "claude-sonnet-4-6",
+      error: {
+        code: "ENOTFOUND",
+        message: "无法解析",
+        suggestion: "检查 URL",
+      },
+      probedAt: 1717171717171,
+    });
+  });
+
+  it("rejects sdk:connection-status with invalid state", () => {
+    expect(() => parseMainToRendererPayload("sdk:connection-status", {
+      state: "invalid",
+      baseUrl: "https://api.anthropic.com",
+      model: "claude-sonnet-4-6",
+      probedAt: 1717171717171,
+    })).toThrow();
+  });
+
+  it("accepts sdk:error with suggestion field", () => {
+    expect(parseMainToRendererPayload("sdk:error", {
+      runId: "run-1",
+      message: "网关认证失败",
+      retryable: true,
+      suggestion: "检查 API Key 配置是否正确",
+    })).toEqual({
+      runId: "run-1",
+      message: "网关认证失败",
+      retryable: true,
+      suggestion: "检查 API Key 配置是否正确",
+    });
+  });
+
+  it("accepts sdk:error without suggestion field (backward compatible)", () => {
+    expect(parseMainToRendererPayload("sdk:error", {
+      message: "网关认证失败",
+      retryable: true,
+    })).toEqual({
+      message: "网关认证失败",
+      retryable: true,
+    });
+  });
+
   it("rejects run:get-subagent-messages with missing required fields", () => {
     expect(() => parseRendererToMainPayload("run:get-subagent-messages" as any, {
       runId: "run-1",
