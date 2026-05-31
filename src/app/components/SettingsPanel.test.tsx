@@ -84,4 +84,58 @@ describe("SettingsPanel", () => {
     fireEvent.click(screen.getByText("开"));
     expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({ sandboxEnabled: true }));
   });
+
+  it("shows 已连接 when connectionStatus state is connected", async () => {
+    const connectionStatus = {
+      state: "connected" as const,
+      baseUrl: "https://api.example.com",
+      model: "claude-sonnet",
+      probedAt: Date.now(),
+    };
+    render(
+      <SettingsPanel
+        bridge={bridge}
+        onClose={vi.fn()}
+        onThemeChange={vi.fn()}
+        theme="light"
+        connectionStatus={connectionStatus}
+      />,
+    );
+    expect(screen.getByText("已连接")).toBeInTheDocument();
+  });
+
+  it("shows 连接失败 and clicking reveals error detail with Chinese message", async () => {
+    const user = userEvent.setup();
+    const connectionStatus = {
+      state: "failed" as const,
+      baseUrl: "https://api.example.com",
+      model: "claude-sonnet",
+      probedAt: Date.now(),
+      error: {
+        code: "AUTH_ERROR",
+        message: "API 密钥无效，请检查后重试",
+        suggestion: "请在 API Key 字段中更新密钥后重新测试连接",
+      },
+    };
+    render(
+      <SettingsPanel
+        bridge={bridge}
+        onClose={vi.fn()}
+        onThemeChange={vi.fn()}
+        theme="light"
+        connectionStatus={connectionStatus}
+      />,
+    );
+    expect(screen.getByText("连接失败")).toBeInTheDocument();
+
+    // Error detail should not be visible initially
+    expect(screen.queryByText("API 密钥无效，请检查后重试")).not.toBeInTheDocument();
+
+    // Click the indicator to reveal error detail
+    const indicator = screen.getByRole("button", { name: /连接失败/ });
+    await user.click(indicator);
+
+    expect(screen.getByText("API 密钥无效，请检查后重试")).toBeInTheDocument();
+    expect(screen.getByText("请在 API Key 字段中更新密钥后重新测试连接")).toBeInTheDocument();
+  });
 });

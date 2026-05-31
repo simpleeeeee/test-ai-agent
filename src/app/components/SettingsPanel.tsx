@@ -13,6 +13,14 @@ type SettingsBridge = {
   saveSettings: (settings: SettingsFormValues) => unknown;
 };
 
+type ConnectionStatus = {
+  state: string;
+  baseUrl: string;
+  model: string;
+  error?: { code: string; message: string; suggestion: string };
+  probedAt: number;
+};
+
 type Props = {
   bridge: SettingsBridge;
   onClose: () => void;
@@ -20,9 +28,10 @@ type Props = {
   theme: "light" | "dark";
   activeRunId?: string;
   onApplySettings?: (runId: string, settings: Record<string, unknown>) => void;
+  connectionStatus?: ConnectionStatus;
 };
 
-export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRunId, onApplySettings }: Props) {
+export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRunId, onApplySettings, connectionStatus }: Props) {
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("");
@@ -31,6 +40,7 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
   const [thinkingDisplay, setThinkingDisplay] = useState("summarized");
   const [effort, setEffort] = useState("high");
   const [sandboxEnabled, setSandboxEnabled] = useState(false);
+  const [showConnectionError, setShowConnectionError] = useState(false);
 
   useEffect(() => {
     bridge.loadSettings().then((s) => {
@@ -55,9 +65,54 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
     }
   }
 
+  function getStatusClass(state: string): string {
+    switch (state) {
+      case "connected": return "done";
+      case "unverified": return "idle";
+      case "connecting": return "active";
+      case "failed": return "error";
+      default: return "idle";
+    }
+  }
+
+  function getStatusLabel(state: string): string {
+    switch (state) {
+      case "connected": return "已连接";
+      case "unverified": return "未验证";
+      case "connecting": return "验证中...";
+      case "failed": return "连接失败";
+      default: return "未验证";
+    }
+  }
+
+  function handleTestConnection() {
+    const b = bridge as SettingsBridge & { testConnection?: () => void };
+    b.testConnection?.();
+  }
+
   return (
     <div className="settings-overlay open" onClick={onClose} role="presentation">
       <div className="settings-panel" onClick={(e) => e.stopPropagation()}>
+        {connectionStatus && (
+          <div className="connection-status-row">
+            <div
+              className={`connection-indicator ${connectionStatus.state}`}
+              onClick={() => connectionStatus.state === "failed" && setShowConnectionError(!showConnectionError)}
+              role="button"
+              aria-expanded={showConnectionError}
+            >
+              <span className={`activity-indicator ${getStatusClass(connectionStatus.state)}`} />
+              <span className="connection-label">{getStatusLabel(connectionStatus.state)}</span>
+            </div>
+            <button className="test-connection-btn" onClick={handleTestConnection}>测试连接</button>
+            {showConnectionError && connectionStatus.error && (
+              <div className="connection-error-detail" role="region" aria-label="连接错误详情">
+                <p>{connectionStatus.error.message}</p>
+                <p className="connection-error-suggestion">{connectionStatus.error.suggestion}</p>
+              </div>
+            )}
+          </div>
+        )}
         <div className="setting-row">
           <div className="setting-label">Base URL</div>
           <input type="text" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} onBlur={() => handleSave()} placeholder="https://api.anthropic.com" />
