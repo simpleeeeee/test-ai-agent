@@ -133,6 +133,9 @@ export function createBackendBridge(api: AiTestAssistantApi) {
         promptCaching?: boolean;
         debug?: boolean;
         debugFile?: string;
+        maxBudgetUsd?: number;
+        maxTurns?: number;
+        outputFormat?: { template?: string; customSchema?: string | null };
       }>;
     },
     saveSettings(settings: {
@@ -144,6 +147,9 @@ export function createBackendBridge(api: AiTestAssistantApi) {
       promptCaching?: boolean;
       debug?: boolean;
       debugFile?: string;
+      maxBudgetUsd?: number;
+      maxTurns?: number;
+      outputFormat?: { template?: string; customSchema?: string | null };
     }) {
       return api.invoke("settings:save", settings);
     },

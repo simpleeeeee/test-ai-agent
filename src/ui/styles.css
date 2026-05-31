@@ -1377,6 +1377,44 @@ input:focus-visible {
 }
 
 /* ============================================================
+   ADVANCED SETTINGS — 高级设置可折叠区块
+   ============================================================ */
+.advanced-settings-section {
+  margin-top: 4px;
+}
+
+.advanced-settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+  cursor: pointer;
+  user-select: none;
+  border-radius: var(--radius-sm);
+}
+
+.advanced-settings-toggle:hover {
+  background: var(--bg-sidebar-active);
+  color: var(--text-primary);
+}
+
+.advanced-settings-toggle .toggle-arrow {
+  font-size: 10px;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.advanced-settings-content {
+  padding-left: 4px;
+}
+
+/* ============================================================
    THINKING BLOCK — LLM 思考过程可折叠区块
    ============================================================ */
 .thinking-block {

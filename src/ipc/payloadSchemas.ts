@@ -12,6 +12,12 @@ const settingsFormValues = z.object({
   promptCaching: z.boolean().optional(),
   debug: z.boolean().optional(),
   debugFile: z.string().optional(),
+  maxBudgetUsd: z.number().optional(),
+  maxTurns: z.number().int().optional(),
+  outputFormat: z.object({
+    template: z.string().optional(),
+    customSchema: z.string().nullable().optional(),
+  }).optional(),
 });
 
 const noPayload = z.undefined().optional();

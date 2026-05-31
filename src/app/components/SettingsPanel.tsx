@@ -11,6 +11,9 @@ type SettingsFormValues = {
   promptCaching?: boolean;
   debug?: boolean;
   debugFile?: string;
+  maxBudgetUsd?: number;
+  maxTurns?: number;
+  outputFormat?: { template?: string; customSchema?: string | null };
 };
 
 type SettingsBridge = {
@@ -53,6 +56,9 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
   const [showConnectionError, setShowConnectionError] = useState(false);
   const [debug, setDebug] = useState(false);
   const [debugFile, setDebugFile] = useState("");
+  const [maxTurns, setMaxTurns] = useState(50);
+  const [maxBudgetUsd, setMaxBudgetUsd] = useState(5);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     bridge.loadSettings().then((s) => {
@@ -64,11 +70,21 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
       setPromptCaching(s.promptCaching ?? false);
       setDebug(s.debug ?? false);
       setDebugFile(s.debugFile ?? "");
+      setMaxTurns(s.maxTurns || 50);
+      setMaxBudgetUsd(s.maxBudgetUsd || 5);
+      if (s.outputFormat) {
+        setOutputFormatEnabled(true);
+        setOutputFormatTemplate(s.outputFormat.template || "test_plan");
+        setCustomSchema(s.outputFormat.customSchema || "");
+      }
     });
   }, [bridge]);
 
   function handleSave(overrides?: Partial<SettingsFormValues>) {
-    bridge.saveSettings({ baseUrl, apiKey, model, effort, sandboxEnabled, promptCaching, debug, debugFile, ...overrides });
+    const outputFormatValue = outputFormatEnabled
+      ? { template: outputFormatTemplate, customSchema: outputFormatTemplate === "custom" ? customSchema : null }
+      : undefined;
+    bridge.saveSettings({ baseUrl, apiKey, model, effort, sandboxEnabled, promptCaching, debug, debugFile, maxBudgetUsd, maxTurns, outputFormat: outputFormatValue, ...overrides });
   }
 
   function handleApplySdkSettings() {
@@ -222,69 +238,96 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
           </div>
         </div>
         <div className="setting-divider" />
-        <div className="setting-row">
-          <div className="setting-label">
-            <span>Prompt 缓存</span>
-            <span className="setting-subtitle">重复上下文可降低 token 消耗</span>
-          </div>
-          <div className="switch-group">
-            <button className={promptCaching ? "active" : ""} onClick={() => { setPromptCaching(true); handleSave({ promptCaching: true }); }}
-                    disabled={!modelCapabilities?.supportsPromptCaching}
-                    title={!modelCapabilities?.supportsPromptCaching ? "当前模型不支持 Prompt Caching" : undefined}>开</button>
-            <button className={!promptCaching ? "active" : ""} onClick={() => { setPromptCaching(false); handleSave({ promptCaching: false }); }}>关</button>
-          </div>
-        </div>
-        <div className="setting-divider" />
-        <div className="setting-row">
-          <div className="setting-label">
-            <span>结构化输出</span>
-            <span className="setting-subtitle">让 AI 按指定 JSON 格式输出</span>
-          </div>
-          <div className="switch-group">
-            <button className={outputFormatEnabled ? "active" : ""} onClick={() => setOutputFormatEnabled(true)}
-                    disabled={!modelCapabilities?.supportsJsonSchema}
-                    title={!modelCapabilities?.supportsJsonSchema ? "当前模型不支持 JSON Schema 输出" : undefined}>开</button>
-            <button className={!outputFormatEnabled ? "active" : ""} onClick={() => setOutputFormatEnabled(false)}>关</button>
-          </div>
-        </div>
-        {outputFormatEnabled && (
-          <>
-            <div className="setting-row">
-              <label className="setting-label" htmlFor="output-template">输出模板</label>
-              <select id="output-template" value={outputFormatTemplate} onChange={(e) => setOutputFormatTemplate(e.target.value)}>
-                {OUTPUT_SCHEMA_TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-              </select>
-            </div>
-            {outputFormatTemplate === "custom" && (
+        <div className="advanced-settings-section">
+          <button
+            type="button"
+            className="advanced-settings-toggle"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            aria-expanded={showAdvanced}
+          >
+            <span className="toggle-arrow">{showAdvanced ? "▼" : "▶"}</span>
+            <span className="setting-label">高级设置</span>
+          </button>
+          {showAdvanced && (
+            <div className="advanced-settings-content">
               <div className="setting-row">
-                <label className="setting-label" htmlFor="custom-schema">自定义 Schema</label>
-                <textarea id="custom-schema" value={customSchema} onChange={(e) => setCustomSchema(e.target.value)}
-                          placeholder='{ "type": "object", "properties": {...} }'
-                          style={{ fontFamily: "var(--font-mono)", minHeight: 120 }} />
+                <div className="setting-label">
+                  <span>Prompt 缓存</span>
+                  <span className="setting-subtitle">重复上下文可降低 token 消耗</span>
+                </div>
+                <div className="switch-group">
+                  <button className={promptCaching ? "active" : ""} onClick={() => { setPromptCaching(true); handleSave({ promptCaching: true }); }}
+                          disabled={!modelCapabilities?.supportsPromptCaching}
+                          title={!modelCapabilities?.supportsPromptCaching ? "当前模型不支持 Prompt Caching" : undefined}>开</button>
+                  <button className={!promptCaching ? "active" : ""} onClick={() => { setPromptCaching(false); handleSave({ promptCaching: false }); }}>关</button>
+                </div>
               </div>
-            )}
-          </>
-        )}
-        <div className="setting-divider" />
-        <div className="setting-row">
-          <div className="setting-label">
-            <span>调试模式</span>
-            <span className="setting-subtitle">记录 SDK 原始消息用于排查问题</span>
-          </div>
-          <div className="switch-group">
-            <button className={debug ? "active" : ""} onClick={() => { setDebug(true); handleSave({ debug: true }); }}>开</button>
-            <button className={!debug ? "active" : ""} onClick={() => { setDebug(false); handleSave({ debug: false }); }}>关</button>
-          </div>
-        </div>
-        {debug && (
-          <div className="setting-row">
-            <label className="setting-label" htmlFor="debug-file">日志文件路径</label>
-            <input id="debug-file" type="text" value={debugFile} onChange={(e) => setDebugFile(e.target.value)} onBlur={() => handleSave()} placeholder=".claude/debug.log" />
-          </div>
-        )}
-        <div className="setting-footer-actions">
-          <button className="setting-action-btn" onClick={handleExportLogs}>导出调试日志</button>
-          <button className="setting-action-btn" onClick={handleCopyRecentLogs}>复制最近日志</button>
+              <div className="setting-divider" />
+              <div className="setting-row">
+                <div className="setting-label">
+                  <span>结构化输出</span>
+                  <span className="setting-subtitle">让 AI 按指定 JSON 格式输出</span>
+                </div>
+                <div className="switch-group">
+                  <button className={outputFormatEnabled ? "active" : ""} onClick={() => setOutputFormatEnabled(true)}
+                          disabled={!modelCapabilities?.supportsJsonSchema}
+                          title={!modelCapabilities?.supportsJsonSchema ? "当前模型不支持 JSON Schema 输出" : undefined}>开</button>
+                  <button className={!outputFormatEnabled ? "active" : ""} onClick={() => setOutputFormatEnabled(false)}>关</button>
+                </div>
+              </div>
+              {outputFormatEnabled && (
+                <>
+                  <div className="setting-row">
+                    <label className="setting-label" htmlFor="output-template">输出模板</label>
+                    <select id="output-template" value={outputFormatTemplate} onChange={(e) => setOutputFormatTemplate(e.target.value)}>
+                      {OUTPUT_SCHEMA_TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                    </select>
+                  </div>
+                  {outputFormatTemplate === "custom" && (
+                    <div className="setting-row">
+                      <label className="setting-label" htmlFor="custom-schema">自定义 Schema</label>
+                      <textarea id="custom-schema" value={customSchema} onChange={(e) => setCustomSchema(e.target.value)}
+                                placeholder='{ "type": "object", "properties": {...} }'
+                                style={{ fontFamily: "var(--font-mono)", minHeight: 120 }} />
+                    </div>
+                  )}
+                </>
+              )}
+              <div className="setting-divider" />
+              <div className="setting-row">
+                <label className="setting-label" htmlFor="max-turns">最大对话轮数</label>
+                <input id="max-turns" type="number" min={1} max={100} value={maxTurns}
+                       onChange={(e) => { const v = Number(e.target.value); setMaxTurns(v); handleSave({ maxTurns: v }); }} />
+              </div>
+              <div className="setting-divider" />
+              <div className="setting-row">
+                <label className="setting-label" htmlFor="max-budget">成本上限 (USD)</label>
+                <input id="max-budget" type="number" min={0.01} step={0.01} value={maxBudgetUsd}
+                       onChange={(e) => { const v = Number(e.target.value); setMaxBudgetUsd(v); handleSave({ maxBudgetUsd: v }); }} />
+              </div>
+              <div className="setting-divider" />
+              <div className="setting-row">
+                <div className="setting-label">
+                  <span>调试模式</span>
+                  <span className="setting-subtitle">记录 SDK 原始消息用于排查问题</span>
+                </div>
+                <div className="switch-group">
+                  <button className={debug ? "active" : ""} onClick={() => { setDebug(true); handleSave({ debug: true }); }}>开</button>
+                  <button className={!debug ? "active" : ""} onClick={() => { setDebug(false); handleSave({ debug: false }); }}>关</button>
+                </div>
+              </div>
+              {debug && (
+                <div className="setting-row">
+                  <label className="setting-label" htmlFor="debug-file">日志文件路径</label>
+                  <input id="debug-file" type="text" value={debugFile} onChange={(e) => setDebugFile(e.target.value)} onBlur={() => handleSave()} placeholder=".claude/debug.log" />
+                </div>
+              )}
+              <div className="setting-footer-actions">
+                <button className="setting-action-btn" onClick={handleExportLogs}>导出调试日志</button>
+                <button className="setting-action-btn" onClick={handleCopyRecentLogs}>复制最近日志</button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

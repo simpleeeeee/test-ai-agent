@@ -25,6 +25,9 @@ export type { Executable, SessionStoreFlushValue, SettingSourceValue };
 export type UserSdkOptions = {
   permissionMode?: PermissionMode;
   maxTurns?: number;
+  max_budget_usd?: number;
+  enableFileCheckpointing?: boolean;
+  fallback_model?: string;
   additionalDirectories?: string[];
   allowedTools?: string[];
   disallowedTools?: string[];
@@ -93,6 +96,9 @@ export function sanitizeUserSdkOptions(input: unknown): UserSdkOptions {
   if (Number.isInteger(source.maxTurns) && (source.maxTurns as number) > 0) {
     options.maxTurns = source.maxTurns as number;
   }
+  if (typeof source.max_budget_usd === "number" && source.max_budget_usd > 0) options.max_budget_usd = source.max_budget_usd;
+  if (typeof source.enableFileCheckpointing === "boolean") options.enableFileCheckpointing = source.enableFileCheckpointing;
+  if (typeof source.fallback_model === "string" && source.fallback_model.length > 0) options.fallback_model = source.fallback_model;
   if (Array.isArray(source.additionalDirectories) && source.additionalDirectories.every((v) => typeof v === "string")) {
     options.additionalDirectories = source.additionalDirectories as string[];
   }
@@ -347,6 +353,9 @@ export async function loadAgentRuntimeConfig(input: {
       : userSdkOptions.sandbox
         ? { sandbox: userSdkOptions.sandbox }
         : {}),
+    ...(userSdkOptions.max_budget_usd !== undefined ? { max_budget_usd: userSdkOptions.max_budget_usd } : {}),
+    ...(userSdkOptions.enableFileCheckpointing !== undefined ? { enableFileCheckpointing: userSdkOptions.enableFileCheckpointing } : {}),
+    ...(userSdkOptions.fallback_model ? { fallback_model: userSdkOptions.fallback_model } : {}),
     ...(input.claudeConfigDir ? { env: { CLAUDE_CONFIG_DIR: input.claudeConfigDir } } : {}),
     // 注入 codeOptions：将回调/实例类型的运行时选项传递到 SDK options
     ...(input.codeOptions?.onElicitation ? { onElicitation: input.codeOptions.onElicitation } : {}),
