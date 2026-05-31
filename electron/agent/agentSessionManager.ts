@@ -20,6 +20,28 @@ import {
 } from "./claudeAgentSdkFacade.js";
 import { loadClaudeCodeSettings } from "./sdkSettings.js";
 import { buildSystemPrompt } from "./systemPromptBuilder.js";
+import { createProcessManager, type ProcessState } from "./processManager.js";
+
+const RETRYABLE_ERRORS = new Set([
+  "ECONNRESET", "ETIMEDOUT", "ENOTFOUND", "ECONNREFUSED",
+  "socket hang up", "network error",
+]);
+
+function isRetryable(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const e = error as Record<string, unknown>;
+  const code = typeof e.code === "string" ? e.code : undefined;
+  if (code && RETRYABLE_ERRORS.has(code)) return true;
+  const msg = typeof e.message === "string" ? e.message : String(e);
+  for (const pattern of RETRYABLE_ERRORS) {
+    if (msg.includes(pattern)) return true;
+  }
+  return false;
+}
+
+function errorMsg(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
 
 type RuntimeSession = ReturnType<ClaudeAgentRuntimeAdapter["start"]>;
 
@@ -35,6 +57,7 @@ type ActiveRun = {
   input: AsyncMessageQueue<unknown>;
   session: RuntimeSession;
   approvalBridge: ApprovalBridge;
+  processManager: ReturnType<typeof createProcessManager>;
 };
 
 export class AgentSessionManager {
@@ -88,13 +111,31 @@ export class AgentSessionManager {
     };
 
     const approvalBridge = new ApprovalBridge(runId, (event) => this.emitRunEvent(runId, event));
+
+    const processManager = createProcessManager({
+      maxRestarts: 3,
+      restartBackoffMs: 1000,
+      onStateChange: (state: ProcessState) => {
+        this.deps.emit("sdk:system-event", {
+          runId,
+          subtype: "process_health",
+          raw: {
+            pid: state.pid,
+            status: state.status,
+            restartCount: state.restartCount,
+            message: state.lastError ?? "",
+          },
+        });
+      },
+    });
+
     const session = this.adapter.start({
       prompt: input,
       options: finalOptions,
       canUseTool: approvalBridge.canUseTool,
     });
 
-    this.runs.set(runId, { input, session, approvalBridge });
+    this.runs.set(runId, { input, session, approvalBridge, processManager });
     await this.drainMessages(runId, session.messages);
   }
 
@@ -113,8 +154,15 @@ export class AgentSessionManager {
   }
 
   stopRun(runId: string) {
-    this.session(runId).close();
+    const run = this.runs.get(runId);
+    if (!run) return;
+    run.session.close();
+    run.processManager.shutdown(5000).catch(() => { /* ignore shutdown errors */ });
     this.runs.delete(runId);
+  }
+
+  activeRunIds(): string[] {
+    return Array.from(this.runs.keys());
   }
 
   approveTool(runId: string, requestId: string, options: { updatedInput?: Record<string, unknown>; applyPermissionSuggestions?: boolean }) {
@@ -279,12 +327,26 @@ export class AgentSessionManager {
     return this.deps.cwd ?? process.cwd();
   }
 
-  private async drainMessages(runId: string, messages: AsyncIterable<unknown>) {
+  private async drainMessages(runId: string, messages: AsyncIterable<unknown>, retries = 3, attempt = 1): Promise<void> {
     const mapper = new SdkRunEventMapperSession(runId);
-    for await (const message of messages) {
-      for (const event of mapper.map(message)) {
-        this.emitRunEvent(runId, event);
+    try {
+      for await (const message of messages) {
+        for (const event of mapper.map(message)) {
+          this.emitRunEvent(runId, event);
+        }
       }
+    } catch (error) {
+      if (isRetryable(error) && attempt <= retries) {
+        this.deps.emit("sdk:system-event", {
+          runId,
+          subtype: "retry_attempt",
+          raw: { attempt, retries, error: errorMsg(error) },
+        });
+        await new Promise<void>((resolve) => setTimeout(resolve, 1000 * attempt));
+        // Re-create the session messages stream via the existing run's session
+        return this.drainMessages(runId, messages, retries, attempt + 1);
+      }
+      throw error;
     }
   }
 

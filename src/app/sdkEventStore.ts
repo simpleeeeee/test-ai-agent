@@ -342,6 +342,20 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
         : [...state.systemEvents, systemEvent],
     };
 
+    // 进程健康状态更新
+    if (String(payload.subtype) === "process_health") {
+      const ph = payload.raw as { pid?: number | null; status?: string; restartCount?: number; message?: string } | undefined;
+      nextState = {
+        ...nextState,
+        processHealth: {
+          pid: typeof ph?.pid === "number" ? ph.pid : null,
+          status: typeof ph?.status === "string" ? ph.status : "unknown",
+          restartCount: typeof ph?.restartCount === "number" ? ph.restartCount : 0,
+          message: typeof ph?.message === "string" ? ph.message : "",
+        },
+      };
+    }
+
     // 能力降级时添加用户通知
     if (String(payload.subtype) === "capability_degraded") {
       const raw = payload.raw as { model?: string; degradations?: Array<{ feature: string; reason: string }> } | undefined;

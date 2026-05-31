@@ -16,6 +16,8 @@ export type SettingsFormValues = {
   effort?: string;          // 推理努力程度: low | medium | high | xhigh | max
   sandboxEnabled?: boolean; // 沙箱是否启用
   promptCaching?: boolean;  // Prompt 缓存开关
+  debug?: boolean;          // 调试模式：记录 SDK 原始消息
+  debugFile?: string;       // 调试日志文件路径
 };
 
 export function settingsPathForCwd(cwd: string) {
@@ -61,6 +63,10 @@ export function loadClaudeCodeSettings({ cwd }: { cwd: string }): SettingsFormVa
     promptCaching: (local.env?.CLAUDE_CODE_PROMPT_CACHING ?? shared.env?.CLAUDE_CODE_PROMPT_CACHING) === "true" ? true
       : (local.env?.CLAUDE_CODE_PROMPT_CACHING ?? shared.env?.CLAUDE_CODE_PROMPT_CACHING) === "false" ? false
       : undefined,
+    debug: (local.env?.CLAUDE_CODE_DEBUG ?? shared.env?.CLAUDE_CODE_DEBUG) === "true" ? true
+      : (local.env?.CLAUDE_CODE_DEBUG ?? shared.env?.CLAUDE_CODE_DEBUG) === "false" ? false
+      : undefined,
+    debugFile: stringValue(local.env?.CLAUDE_CODE_DEBUG_FILE ?? shared.env?.CLAUDE_CODE_DEBUG_FILE) || undefined,
   };
 }
 
@@ -96,6 +102,8 @@ export function saveClaudeCodeSettings(input: SettingsFormValues & { cwd: string
       ...(input.effort ? { CLAUDE_CODE_EFFORT: input.effort } : {}),
       ...(input.sandboxEnabled !== undefined ? { CLAUDE_CODE_SANDBOX_ENABLED: String(input.sandboxEnabled) } : {}),
       ...(input.promptCaching !== undefined ? { CLAUDE_CODE_PROMPT_CACHING: String(input.promptCaching) } : {}),
+      ...(input.debug !== undefined ? { CLAUDE_CODE_DEBUG: String(input.debug) } : {}),
+      ...(input.debugFile ? { CLAUDE_CODE_DEBUG_FILE: input.debugFile } : {}),
     },
   };
 
@@ -127,6 +135,8 @@ export async function loadResolvedSettings(cwd: string): Promise<{
           ...(manual.effort ? { CLAUDE_CODE_EFFORT: manual.effort } : {}),
           ...(manual.sandboxEnabled !== undefined ? { CLAUDE_CODE_SANDBOX_ENABLED: String(manual.sandboxEnabled) } : {}),
           ...(manual.promptCaching !== undefined ? { CLAUDE_CODE_PROMPT_CACHING: String(manual.promptCaching) } : {}),
+          ...(manual.debug !== undefined ? { CLAUDE_CODE_DEBUG: String(manual.debug) } : {}),
+          ...(manual.debugFile ? { CLAUDE_CODE_DEBUG_FILE: manual.debugFile } : {}),
         },
       } as Settings,
       provenance: {},

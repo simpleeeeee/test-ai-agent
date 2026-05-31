@@ -131,6 +131,8 @@ export function createBackendBridge(api: AiTestAssistantApi) {
         effort?: string;
         sandboxEnabled?: boolean;
         promptCaching?: boolean;
+        debug?: boolean;
+        debugFile?: string;
       }>;
     },
     saveSettings(settings: {
@@ -140,6 +142,8 @@ export function createBackendBridge(api: AiTestAssistantApi) {
       effort?: string;
       sandboxEnabled?: boolean;
       promptCaching?: boolean;
+      debug?: boolean;
+      debugFile?: string;
     }) {
       return api.invoke("settings:save", settings);
     },

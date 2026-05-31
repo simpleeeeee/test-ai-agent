@@ -9,6 +9,8 @@ type SettingsFormValues = {
   effort?: string;
   sandboxEnabled?: boolean;
   promptCaching?: boolean;
+  debug?: boolean;
+  debugFile?: string;
 };
 
 type SettingsBridge = {
@@ -49,6 +51,8 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
   const [outputFormatTemplate, setOutputFormatTemplate] = useState("test_plan");
   const [customSchema, setCustomSchema] = useState("");
   const [showConnectionError, setShowConnectionError] = useState(false);
+  const [debug, setDebug] = useState(false);
+  const [debugFile, setDebugFile] = useState("");
 
   useEffect(() => {
     bridge.loadSettings().then((s) => {
@@ -58,11 +62,13 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
       setEffort(s.effort || "high");
       setSandboxEnabled(s.sandboxEnabled ?? false);
       setPromptCaching(s.promptCaching ?? false);
+      setDebug(s.debug ?? false);
+      setDebugFile(s.debugFile ?? "");
     });
   }, [bridge]);
 
   function handleSave(overrides?: Partial<SettingsFormValues>) {
-    bridge.saveSettings({ baseUrl, apiKey, model, effort, sandboxEnabled, promptCaching, ...overrides });
+    bridge.saveSettings({ baseUrl, apiKey, model, effort, sandboxEnabled, promptCaching, debug, debugFile, ...overrides });
   }
 
   function handleApplySdkSettings() {
@@ -97,6 +103,16 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
   function handleTestConnection() {
     const b = bridge as SettingsBridge & { testConnection?: () => void };
     b.testConnection?.();
+  }
+
+  function handleExportLogs() {
+    const b = bridge as SettingsBridge & { exportLogs?: () => void };
+    b.exportLogs?.();
+  }
+
+  function handleCopyRecentLogs() {
+    const b = bridge as SettingsBridge & { copyRecentLogs?: () => void };
+    b.copyRecentLogs?.();
   }
 
   return (
@@ -249,6 +265,27 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
             )}
           </>
         )}
+        <div className="setting-divider" />
+        <div className="setting-row">
+          <div className="setting-label">
+            <span>调试模式</span>
+            <span className="setting-subtitle">记录 SDK 原始消息用于排查问题</span>
+          </div>
+          <div className="switch-group">
+            <button className={debug ? "active" : ""} onClick={() => { setDebug(true); handleSave({ debug: true }); }}>开</button>
+            <button className={!debug ? "active" : ""} onClick={() => { setDebug(false); handleSave({ debug: false }); }}>关</button>
+          </div>
+        </div>
+        {debug && (
+          <div className="setting-row">
+            <label className="setting-label" htmlFor="debug-file">日志文件路径</label>
+            <input id="debug-file" type="text" value={debugFile} onChange={(e) => setDebugFile(e.target.value)} onBlur={() => handleSave()} placeholder=".claude/debug.log" />
+          </div>
+        )}
+        <div className="setting-footer-actions">
+          <button className="setting-action-btn" onClick={handleExportLogs}>导出调试日志</button>
+          <button className="setting-action-btn" onClick={handleCopyRecentLogs}>复制最近日志</button>
+        </div>
       </div>
     </div>
   );

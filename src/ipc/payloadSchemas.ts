@@ -10,6 +10,8 @@ const settingsFormValues = z.object({
   effort: z.string().optional(),
   sandboxEnabled: z.boolean().optional(),
   promptCaching: z.boolean().optional(),
+  debug: z.boolean().optional(),
+  debugFile: z.string().optional(),
 });
 
 const noPayload = z.undefined().optional();
@@ -119,7 +121,7 @@ const mainSchemas = {
   }),
   "sdk:system-event": z.object({
     runId: nonEmptyString,
-    subtype: z.enum(["capability_degraded"]).or(nonEmptyString),
+    subtype: z.enum(["capability_degraded", "process_health", "retry_attempt"]).or(nonEmptyString),
     raw: z.unknown(),
   }),
   "sdk:raw-message": z.object({ runId: nonEmptyString, message: z.unknown() }),

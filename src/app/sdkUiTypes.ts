@@ -142,6 +142,7 @@ export type SdkUiState = {
     probedAt: number;
   };
   modelCapabilities?: ModelCapabilities;
+  processHealth?: { pid: number | null; status: string; restartCount: number; message: string };
 };
 
 export type SdkUiEvent =
