@@ -34,6 +34,15 @@ export const rendererToMainChannels = [
   "window:minimize",
   "window:toggle-maximize",
   "window:close",
+  "run:get-context-usage",
+  "run:interrupt",
+  "run:background-tasks",
+  "run:read-file",
+  "run:reload-plugins",
+  "run:rewind-files",
+  "run:seed-read-state",
+  "run:get-subagent-messages",
+  "run:list-subagents",
 ] as const;
 
 export const mainToRendererChannels = [

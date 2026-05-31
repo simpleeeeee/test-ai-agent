@@ -56,6 +56,15 @@ const rendererSchemas = {
   "window:minimize": noPayload,
   "window:toggle-maximize": noPayload,
   "window:close": noPayload,
+  "run:get-context-usage": z.object({ runId: nonEmptyString }),
+  "run:interrupt": z.object({ runId: nonEmptyString }),
+  "run:background-tasks": z.object({ runId: nonEmptyString, toolUseId: nonEmptyString.optional() }),
+  "run:read-file": z.object({ runId: nonEmptyString, path: nonEmptyString, maxBytes: z.number().optional(), encoding: z.enum(["utf-8", "base64"]).optional() }),
+  "run:reload-plugins": z.object({ runId: nonEmptyString }),
+  "run:rewind-files": z.object({ runId: nonEmptyString, userMessageId: nonEmptyString, dryRun: z.boolean().optional() }),
+  "run:seed-read-state": z.object({ runId: nonEmptyString, path: nonEmptyString, mtime: z.number() }),
+  "run:get-subagent-messages": z.object({ runId: nonEmptyString, sessionId: nonEmptyString, agentId: nonEmptyString, limit: z.number().optional(), offset: z.number().optional() }),
+  "run:list-subagents": z.object({ runId: nonEmptyString, sessionId: nonEmptyString }),
 } satisfies Record<RendererToMainChannel, z.ZodTypeAny>;
 
 const mainSchemas = {
@@ -106,6 +115,16 @@ const mainSchemas = {
   "question:required": z.object({ runId: nonEmptyString, requestId: nonEmptyString, questions: z.array(z.unknown()) }),
   "question:answered": z.object({ runId: nonEmptyString, requestId: nonEmptyString }),
 } satisfies Partial<Record<MainToRendererChannel, z.ZodTypeAny>>;
+
+export const runGetContextUsagePayload = z.object({ runId: nonEmptyString });
+export const runInterruptPayload = z.object({ runId: nonEmptyString });
+export const runBackgroundTasksPayload = z.object({ runId: nonEmptyString, toolUseId: nonEmptyString.optional() });
+export const runReadFilePayload = z.object({ runId: nonEmptyString, path: nonEmptyString, maxBytes: z.number().optional(), encoding: z.enum(["utf-8", "base64"]).optional() });
+export const runReloadPluginsPayload = z.object({ runId: nonEmptyString });
+export const runRewindFilesPayload = z.object({ runId: nonEmptyString, userMessageId: nonEmptyString, dryRun: z.boolean().optional() });
+export const runSeedReadStatePayload = z.object({ runId: nonEmptyString, path: nonEmptyString, mtime: z.number() });
+export const runGetSubagentMessagesPayload = z.object({ runId: nonEmptyString, sessionId: nonEmptyString, agentId: nonEmptyString, limit: z.number().optional(), offset: z.number().optional() });
+export const runListSubagentsPayload = z.object({ runId: nonEmptyString, sessionId: nonEmptyString });
 
 export function parseRendererToMainPayload(channel: RendererToMainChannel, payload: unknown): unknown {
   return rendererSchemas[channel].parse(payload);

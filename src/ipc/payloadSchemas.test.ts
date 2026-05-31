@@ -186,4 +186,38 @@ describe("IPC payload schemas", () => {
       inputTokens: 128,
     })).toEqual({ runId: "run-1", inputTokens: 128 });
   });
+
+  it("accepts valid run:get-context-usage payload", () => {
+    expect(parseRendererToMainPayload("run:get-context-usage" as any, {
+      runId: "run-1",
+    })).toEqual({ runId: "run-1" });
+  });
+
+  it("accepts run:read-file payload with optional fields", () => {
+    expect(parseRendererToMainPayload("run:read-file" as any, {
+      runId: "run-1",
+      path: "/tmp/test.log",
+      maxBytes: 4096,
+      encoding: "utf-8",
+    })).toEqual({ runId: "run-1", path: "/tmp/test.log", maxBytes: 4096, encoding: "utf-8" });
+
+    expect(parseRendererToMainPayload("run:read-file" as any, {
+      runId: "run-1",
+      path: "/tmp/test.log",
+    })).toEqual({ runId: "run-1", path: "/tmp/test.log" });
+  });
+
+  it("rejects run:read-file with invalid encoding", () => {
+    expect(() => parseRendererToMainPayload("run:read-file" as any, {
+      runId: "run-1",
+      path: "/tmp/test.log",
+      encoding: "gbk",
+    })).toThrow();
+  });
+
+  it("rejects run:get-subagent-messages with missing required fields", () => {
+    expect(() => parseRendererToMainPayload("run:get-subagent-messages" as any, {
+      runId: "run-1",
+    })).toThrow();
+  });
 });
