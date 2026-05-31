@@ -49,6 +49,21 @@ describe("SettingsModal", () => {
     });
   });
 
+  describe("output panel", () => {
+    it("shows output template and schema when structured output is enabled", async () => {
+      const user = (await import("@testing-library/user-event")).default.setup();
+      render(<SettingsModal bridge={bridge} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
+
+      await user.click(screen.getByText("输出"));
+      expect(screen.getByText("启用结构化输出")).toBeInTheDocument();
+      expect(screen.queryByLabelText("输出模板")).not.toBeInTheDocument();
+
+      const outputField = screen.getByText("启用结构化输出").closest(".settings-field")!;
+      await user.click(outputField.querySelectorAll("button")[0]); // "开"
+      expect(screen.getByLabelText("输出模板")).toBeInTheDocument();
+    });
+  });
+
   it("shows connection panel by default with Base URL, API Key and model fields", () => {
     render(<SettingsModal bridge={bridge} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
     expect(screen.getByText("API 连接配置")).toBeInTheDocument();

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { OUTPUT_SCHEMA_TEMPLATES } from "../../domain/outputSchemas.js";
 
 type Props = {
   bridge: { loadSettings: () => Promise<unknown>; saveSettings: (s: unknown) => unknown };
@@ -39,6 +40,9 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
   const [maxBudgetUsd, setMaxBudgetUsd] = useState(5);
   const [sandboxEnabled, setSandboxEnabled] = useState(false);
   const [promptCaching, setPromptCaching] = useState(false);
+  const [outputFormatEnabled, setOutputFormatEnabled] = useState(false);
+  const [outputFormatTemplate, setOutputFormatTemplate] = useState("test_plan");
+  const [customSchema, setCustomSchema] = useState("");
 
   function handleSave(overrides?: Record<string, unknown>) {
     bridge.saveSettings({ baseUrl, apiKey, model, effort, ...overrides } as Parameters<typeof bridge.saveSettings>[0]);
@@ -178,6 +182,48 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                       onClick={() => { setPromptCaching(false); handleSave({ promptCaching: false }); }}>关</button>
                   </div>
                 </div>
+              </div>
+            )}
+            {activeNav === "output" && (
+              <div className="settings-section">
+                <div className="settings-section-title">结构化输出</div>
+                <div className="settings-field">
+                  <div className="settings-field-label-group">
+                    <span className="settings-field-label">启用结构化输出</span>
+                    <span className="settings-field-hint">让 AI 按指定 JSON Schema 格式输出</span>
+                  </div>
+                  <div className="settings-toggle">
+                    <button className={`settings-toggle-btn${outputFormatEnabled ? " active" : ""}`}
+                      onClick={() => setOutputFormatEnabled(true)}>开</button>
+                    <button className={`settings-toggle-btn${!outputFormatEnabled ? " active" : ""}`}
+                      onClick={() => setOutputFormatEnabled(false)}>关</button>
+                  </div>
+                </div>
+                {outputFormatEnabled && (
+                  <>
+                    <div className="settings-field">
+                      <div className="settings-field-label-group">
+                        <label className="settings-field-label" htmlFor="output-template">输出模板</label>
+                        <span className="settings-field-hint">选择预设的输出格式模板</span>
+                      </div>
+                      <select id="output-template" className="settings-select" value={outputFormatTemplate}
+                        onChange={(e) => setOutputFormatTemplate(e.target.value)}>
+                        {OUTPUT_SCHEMA_TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                      </select>
+                    </div>
+                    {outputFormatTemplate === "custom" && (
+                      <div className="settings-field-block">
+                        <div className="settings-field-label-group">
+                          <label className="settings-field-label" htmlFor="custom-schema">自定义 Schema</label>
+                          <span className="settings-field-hint">JSON Schema 定义，当模板选择「自定义」时生效</span>
+                        </div>
+                        <textarea id="custom-schema" className="settings-textarea"
+                          value={customSchema} onChange={(e) => setCustomSchema(e.target.value)}
+                          placeholder='{ "type": "object", "properties": {...} }' />
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
             {activeNav === "conversation" && (
