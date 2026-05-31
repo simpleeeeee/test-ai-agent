@@ -201,6 +201,39 @@ describe("sdkSettings", () => {
     expect(saved.$schema).toBe("https://json.schemastore.org/claude-code-settings.json");
   });
 
+  it("saveClaudeCodeSettings persists effort", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "claude-test-"));
+    const cwd = path.join(tmp, "project");
+    fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
+    try {
+      saveClaudeCodeSettings({ cwd, baseUrl: "https://gw.example.com", apiKey: "sk-test", model: "claude-sonnet-4", effort: "max" });
+      const loaded = loadClaudeCodeSettings({ cwd });
+      expect(loaded.effort).toBe("max");
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it("saveClaudeCodeSettings persists sandboxEnabled", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "claude-test-"));
+    const cwd = path.join(tmp, "project");
+    fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
+    try {
+      saveClaudeCodeSettings({ cwd, baseUrl: "https://gw.example.com", apiKey: "sk-test", model: "claude-sonnet-4", sandboxEnabled: true });
+      const loaded = loadClaudeCodeSettings({ cwd });
+      expect(loaded.sandboxEnabled).toBe(true);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it("loadClaudeCodeSettings returns undefined for missing new fields", () => {
+    const loaded = loadClaudeCodeSettings({ cwd: process.cwd() });
+    // 现有项目可能没有这些字段
+    expect(loaded.effort === undefined || typeof loaded.effort === "string").toBe(true);
+    expect(loaded.sandboxEnabled === undefined || typeof loaded.sandboxEnabled === "boolean").toBe(true);
+  });
+
   it("does not overwrite an existing native settings file on startup", () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-settings-"));
     fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });

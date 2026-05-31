@@ -51,6 +51,10 @@ export function loadClaudeCodeSettings({ cwd }: { cwd: string }): SettingsFormVa
     baseUrl: stringValue(local.env?.ANTHROPIC_BASE_URL ?? shared.env?.ANTHROPIC_BASE_URL),
     apiKey: stringValue(local.env?.ANTHROPIC_AUTH_TOKEN ?? shared.env?.ANTHROPIC_AUTH_TOKEN),
     model: stringValue(local.env?.ANTHROPIC_MODEL ?? shared.env?.ANTHROPIC_MODEL),
+    effort: stringValue(local.env?.CLAUDE_CODE_EFFORT ?? shared.env?.CLAUDE_CODE_EFFORT) || undefined,
+    sandboxEnabled: (local.env?.CLAUDE_CODE_SANDBOX_ENABLED ?? shared.env?.CLAUDE_CODE_SANDBOX_ENABLED) === "true" ? true
+      : (local.env?.CLAUDE_CODE_SANDBOX_ENABLED ?? shared.env?.CLAUDE_CODE_SANDBOX_ENABLED) === "false" ? false
+      : undefined,
   };
 }
 
@@ -83,6 +87,8 @@ export function saveClaudeCodeSettings(input: SettingsFormValues & { cwd: string
       ANTHROPIC_BASE_URL: input.baseUrl.trim(),
       ANTHROPIC_AUTH_TOKEN: input.apiKey.trim(),
       ANTHROPIC_MODEL: input.model.trim(),
+      ...(input.effort ? { CLAUDE_CODE_EFFORT: input.effort } : {}),
+      ...(input.sandboxEnabled !== undefined ? { CLAUDE_CODE_SANDBOX_ENABLED: String(input.sandboxEnabled) } : {}),
     },
   };
 
