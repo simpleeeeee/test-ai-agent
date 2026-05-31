@@ -1,12 +1,22 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { foldSessionSummary } from "./claudeAgentSdkFacade.js";
+import { foldSessionSummary, createSdkMcpServer, tool, SYSTEM_PROMPT_DYNAMIC_BOUNDARY } from "./claudeAgentSdkFacade.js";
 
 describe("claudeAgentSdkFacade", () => {
   it("foldSessionSummary is exported and is a function", () => {
     expect(typeof foldSessionSummary).toBe("function");
   });
+  it("createSdkMcpServer is exported as a function", () => {
+    expect(typeof createSdkMcpServer).toBe("function");
+  });
+  it("tool is exported as a function", () => {
+    expect(typeof tool).toBe("function");
+  });
+  it("SYSTEM_PROMPT_DYNAMIC_BOUNDARY is a string", () => {
+    expect(typeof SYSTEM_PROMPT_DYNAMIC_BOUNDARY).toBe("string");
+  });
+
   it("re-exports every public runtime export from the installed Claude Agent SDK", async () => {
     const realSdk = await import("@anthropic-ai/claude-agent-sdk");
     const facade = await import("./claudeAgentSdkFacade.js");
