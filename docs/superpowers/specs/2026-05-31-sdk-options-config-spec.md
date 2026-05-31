@@ -302,7 +302,28 @@ export { foldSessionSummary } from "@anthropic-ai/claude-agent-sdk";
 - `startRun` 时构造的 `sdkOptions` 包含新字段
 - 权限模式 `dontAsk` / `auto` 正确传递到 SDK
 
-## 十、不在范围内
+## 十、跨 Spec 通用约束：IPC 通道同步规则
+
+凡涉及新增或修改 IPC 通道（`rendererToMainChannels` 或 `mainToRendererChannels`）的变更，以下文件必须**同步更新**，禁止漂移：
+
+| 文件 | 职责 | 变更内容 |
+|------|------|---------|
+| `src/ipc/channels.ts` | 共享通道白名单定义 | 新增/修改通道常量 |
+| `src/ipc/payloadSchemas.ts` | Zod 校验 schema | 新增/修改对应 payload 校验 |
+| `src/app/backendBridge.ts` | 渲染进程侧 IPC 封装 | 新增/修改 send/invoke 方法 |
+| `electron/main.ts` | 主进程 IPC 注册 | 注册 on/handle 监听 |
+| `electron/preload.ts` | preload 入口 | 无需改（通过 preloadApi 间接引用） |
+| `electron/preloadApi.ts` | 安全暴露白名单 | 新增通道名 |
+
+**强制验证步骤**：
+
+1. 运行 `npm test -- src/ipc/channels.test.ts src/ipc/payloadSchemas.test.ts electron/preload.test.ts`，确保通道定义和 schema 一致
+2. 运行 `npm run build`（包含 `tsc` 类型检查），确保主进程和 preload 编译通过
+3. 确认 `rendererToMainChannels` 和 `mainToRendererChannels` 两个数组在 `channels.ts` 和 `backendBridge.ts`（`streamChannels` 数组）中保持同步
+
+**本 spec 影响**：本 spec 不涉及新增 IPC 通道，使用现有 `settings:get` / `settings:save` 通道，仅扩展其 payload 类型。不受此约束限制，但后续 Spec 2（Query 方法暴露）将触发。
+
+## 十一、不在范围内
 
 - 不暴露 `sessionStore` / `sessionStoreFlush` / `loadTimeoutMs` / `taskBudget`（用户排除的 alpha options）
 - 不实现 `fallbackModel` / `maxBudgetUsd` / `enableFileCheckpointing`（用户排除）
