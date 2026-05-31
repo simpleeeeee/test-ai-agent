@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadAgentRuntimeConfig, sanitizeProcessEnv } from "./agentConfig.js";
+import { loadAgentRuntimeConfig, sanitizeProcessEnv, sanitizeUserSdkOptions } from "./agentConfig.js";
 import { settingsPathForCwd } from "./sdkSettings.js";
 
 describe("sanitizeProcessEnv", () => {
@@ -196,5 +196,49 @@ describe("loadAgentRuntimeConfig", () => {
     expect(config.sdkOptions).toEqual(expect.objectContaining({
       thinking: { display: "summarized" },
     }));
+  });
+});
+
+describe("sanitizeUserSdkOptions B 组", () => {
+  it("accepts boolean fields", () => {
+    const opts = sanitizeUserSdkOptions({
+      debug: true, strictMcpConfig: false, persistSession: true,
+      includeHookEvents: false, forwardSubagentText: true,
+      promptSuggestions: false, agentProgressSummaries: true,
+      allowDangerouslySkipPermissions: false,
+    });
+    expect(opts.debug).toBe(true);
+    expect(opts.persistSession).toBe(true);
+    expect(opts.agentProgressSummaries).toBe(true);
+  });
+  it("rejects non-boolean values for boolean fields", () => {
+    const opts = sanitizeUserSdkOptions({ debug: "yes" });
+    expect(opts.debug).toBeUndefined();
+  });
+  it("accepts string fields", () => {
+    const opts = sanitizeUserSdkOptions({
+      title: "My Session", debugFile: "/tmp/debug.log",
+      planModeInstructions: "Custom plan", permissionPromptToolName: "mcp__tool",
+    });
+    expect(opts.title).toBe("My Session");
+  });
+});
+
+describe("sanitizeUserSdkOptions C 组", () => {
+  it("accepts valid toolConfig", () => {
+    const opts = sanitizeUserSdkOptions({ toolConfig: { askUserQuestion: { previewFormat: "html" } } });
+    expect(opts.toolConfig).toEqual({ askUserQuestion: { previewFormat: "html" } });
+  });
+  it("accepts valid sandbox", () => {
+    const opts = sanitizeUserSdkOptions({ sandbox: { enabled: true } });
+    expect(opts.sandbox).toEqual({ enabled: true });
+  });
+  it("accepts valid toolAliases", () => {
+    const opts = sanitizeUserSdkOptions({ toolAliases: { Bash: "mcp__workspace__bash" } });
+    expect(opts.toolAliases).toEqual({ Bash: "mcp__workspace__bash" });
+  });
+  it("accepts settings as string or object", () => {
+    expect(sanitizeUserSdkOptions({ settings: "/path.json" }).settings).toBe("/path.json");
+    expect(sanitizeUserSdkOptions({ settings: { model: "test" } }).settings).toEqual({ model: "test" });
   });
 });

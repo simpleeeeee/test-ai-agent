@@ -72,7 +72,7 @@ const executables = new Set(["bun", "deno", "node"]);
 const sessionStoreFlushValues = new Set(["batched", "eager"]);
 const settingSourceValues = new Set(["user", "project", "local"]);
 
-function sanitizeUserSdkOptions(input: unknown): UserSdkOptions {
+export function sanitizeUserSdkOptions(input: unknown): UserSdkOptions {
   if (!input || typeof input !== "object") return {};
   const source = input as Record<string, unknown>;
   const options: UserSdkOptions = {};
@@ -126,6 +126,56 @@ function sanitizeUserSdkOptions(input: unknown): UserSdkOptions {
   if (Array.isArray(source.settingSources) && source.settingSources.every((v) => typeof v === "string" && settingSourceValues.has(v))) {
     options.settingSources = source.settingSources as SettingSourceValue[];
   }
+  // ===== B 组：类型守卫 =====
+  if (typeof source.title === "string") options.title = source.title;
+  if (typeof source.debug === "boolean") options.debug = source.debug;
+  if (typeof source.debugFile === "string") options.debugFile = source.debugFile;
+  if (typeof source.strictMcpConfig === "boolean") options.strictMcpConfig = source.strictMcpConfig;
+  if (typeof source.persistSession === "boolean") options.persistSession = source.persistSession;
+  if (typeof source.includeHookEvents === "boolean") options.includeHookEvents = source.includeHookEvents;
+  if (typeof source.forwardSubagentText === "boolean") options.forwardSubagentText = source.forwardSubagentText;
+  if (typeof source.promptSuggestions === "boolean") options.promptSuggestions = source.promptSuggestions;
+  if (typeof source.agentProgressSummaries === "boolean") options.agentProgressSummaries = source.agentProgressSummaries;
+  if (typeof source.allowDangerouslySkipPermissions === "boolean") options.allowDangerouslySkipPermissions = source.allowDangerouslySkipPermissions;
+  if (typeof source.planModeInstructions === "string") options.planModeInstructions = source.planModeInstructions;
+  if (typeof source.permissionPromptToolName === "string") options.permissionPromptToolName = source.permissionPromptToolName;
+  // ===== C 组：结构校验 =====
+  if (source.toolConfig && typeof source.toolConfig === "object" && !Array.isArray(source.toolConfig)) {
+    options.toolConfig = source.toolConfig as UserSdkOptions["toolConfig"];
+  }
+  if (source.sandbox && typeof source.sandbox === "object" && !Array.isArray(source.sandbox)) {
+    options.sandbox = source.sandbox as UserSdkOptions["sandbox"];
+  }
+  if (Array.isArray(source.plugins)) {
+    options.plugins = source.plugins.filter(
+      (p: unknown) => p && typeof p === "object" && (p as Record<string, unknown>).type === "local" && typeof (p as Record<string, unknown>).path === "string"
+    );
+  }
+  if (source.managedSettings && typeof source.managedSettings === "object" && !Array.isArray(source.managedSettings)) {
+    options.managedSettings = source.managedSettings as Record<string, unknown>;
+  }
+  if (typeof source.settings === "string" || (source.settings && typeof source.settings === "object" && !Array.isArray(source.settings))) {
+    options.settings = source.settings as string | Record<string, unknown>;
+  }
+  if (source.toolAliases && typeof source.toolAliases === "object" && !Array.isArray(source.toolAliases)) {
+    const aliases: Record<string, string> = {};
+    for (const [k, v] of Object.entries(source.toolAliases as Record<string, unknown>)) {
+      if (typeof v === "string") aliases[k] = v;
+    }
+    if (Object.keys(aliases).length > 0) options.toolAliases = aliases;
+  }
+  if (typeof source.agent === "string") options.agent = source.agent;
+  if (source.extraArgs && typeof source.extraArgs === "object" && !Array.isArray(source.extraArgs)) {
+    const args: Record<string, string | null> = {};
+    for (const [k, v] of Object.entries(source.extraArgs as Record<string, unknown>)) {
+      if (typeof v === "string" || v === null) args[k] = v;
+    }
+    if (Object.keys(args).length > 0) options.extraArgs = args;
+  }
+  if (Array.isArray(source.executableArgs) && source.executableArgs.every((v: unknown) => typeof v === "string")) {
+    options.executableArgs = source.executableArgs as string[];
+  }
+  if (typeof source.resumeSessionAt === "string") options.resumeSessionAt = source.resumeSessionAt;
 
   return options;
 }
