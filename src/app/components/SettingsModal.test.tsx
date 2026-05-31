@@ -265,4 +265,32 @@ describe("SettingsModal", () => {
       thinking: { effort: "high", display: "summarized" },
     });
   });
+
+  it("calls saveSettings with theme when switching to dark", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    const saveSettings = vi.fn();
+    const onThemeChange = vi.fn();
+    const b = { loadSettings: () => Promise.resolve({ baseUrl: "", apiKey: "", model: "" }), saveSettings };
+    render(<SettingsModal bridge={b} onClose={vi.fn()} onThemeChange={onThemeChange} theme="light" />);
+
+    await user.click(screen.getByText("外观"));
+    await user.click(screen.getByRole("button", { name: "暗色" }));
+
+    expect(onThemeChange).toHaveBeenCalledWith("dark");
+    expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({ theme: "dark" }));
+  });
+
+  it("calls saveSettings with theme when switching to light", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    const saveSettings = vi.fn();
+    const onThemeChange = vi.fn();
+    const b = { loadSettings: () => Promise.resolve({ baseUrl: "", apiKey: "", model: "" }), saveSettings };
+    render(<SettingsModal bridge={b} onClose={vi.fn()} onThemeChange={onThemeChange} theme="dark" />);
+
+    await user.click(screen.getByText("外观"));
+    await user.click(screen.getByRole("button", { name: "浅色" }));
+
+    expect(onThemeChange).toHaveBeenCalledWith("light");
+    expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({ theme: "light" }));
+  });
 });

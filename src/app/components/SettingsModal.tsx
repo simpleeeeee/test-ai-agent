@@ -185,11 +185,11 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                   <div className="settings-toggle">
                     <button
                       className={`settings-toggle-btn${theme === "light" ? " active" : ""}`}
-                      onClick={() => onThemeChange("light")}
+                      onClick={() => { onThemeChange("light"); handleSave({ theme: "light" }); }}
                     >浅色</button>
                     <button
                       className={`settings-toggle-btn${theme === "dark" ? " active" : ""}`}
-                      onClick={() => onThemeChange("dark")}
+                      onClick={() => { onThemeChange("dark"); handleSave({ theme: "dark" }); }}
                     >暗色</button>
                   </div>
                 </div>
