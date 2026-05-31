@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { OUTPUT_SCHEMA_TEMPLATES } from "../../domain/outputSchemas.js";
 
 type Props = {
@@ -46,8 +46,36 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
   const [debug, setDebug] = useState(false);
   const [debugFile, setDebugFile] = useState("");
 
+  useEffect(() => {
+    bridge.loadSettings().then((s: Record<string, unknown>) => {
+      setBaseUrl((s.baseUrl as string) || "");
+      setApiKey((s.apiKey as string) || "");
+      setModel((s.model as string) || "");
+      setEffort((s.effort as string) || "high");
+      setSandboxEnabled((s.sandboxEnabled as boolean) ?? false);
+      setPromptCaching((s.promptCaching as boolean) ?? false);
+      setDebug((s.debug as boolean) ?? false);
+      setDebugFile((s.debugFile as string) ?? "");
+      setMaxTurns((s.maxTurns as number) || 50);
+      setMaxBudgetUsd((s.maxBudgetUsd as number) || 5);
+      if (s.outputFormat) {
+        setOutputFormatEnabled(true);
+        setOutputFormatTemplate((s.outputFormat as Record<string, string>).template || "test_plan");
+        setCustomSchema((s.outputFormat as Record<string, string>).customSchema || "");
+      }
+    });
+  }, [bridge]);
+
   function handleSave(overrides?: Record<string, unknown>) {
-    bridge.saveSettings({ baseUrl, apiKey, model, effort, ...overrides } as Parameters<typeof bridge.saveSettings>[0]);
+    const outputFormatValue = outputFormatEnabled
+      ? { template: outputFormatTemplate, customSchema: outputFormatTemplate === "custom" ? customSchema : null }
+      : undefined;
+    bridge.saveSettings({
+      baseUrl, apiKey, model, effort, sandboxEnabled, promptCaching,
+      debug, debugFile, maxBudgetUsd, maxTurns,
+      outputFormat: outputFormatValue,
+      ...overrides,
+    } as Parameters<typeof bridge.saveSettings>[0]);
   }
 
   function handleApplySdkSettings() {
@@ -88,21 +116,21 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                     <span className="settings-field-label">Base URL</span>
                     <span className="settings-field-hint">Anthropic API 端点地址</span>
                   </div>
-                  <input className="settings-input" type="text" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://api.anthropic.com" />
+                  <input className="settings-input" type="text" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} onBlur={() => handleSave()} placeholder="https://api.anthropic.com" />
                 </div>
                 <div className="settings-field">
                   <div className="settings-field-label-group">
                     <span className="settings-field-label">API Key</span>
                     <span className="settings-field-hint">用于身份验证的 API 密钥</span>
                   </div>
-                  <input className="settings-input" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk-ant-api-..." />
+                  <input className="settings-input" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} onBlur={() => handleSave()} placeholder="sk-ant-api-..." />
                 </div>
                 <div className="settings-field">
                   <div className="settings-field-label-group">
                     <span className="settings-field-label">模型</span>
                     <span className="settings-field-hint">默认使用的 Claude 模型</span>
                   </div>
-                  <input className="settings-input" type="text" value={model} onChange={(e) => setModel(e.target.value)} placeholder="claude-sonnet-4-6" />
+                  <input className="settings-input" type="text" value={model} onChange={(e) => setModel(e.target.value)} onBlur={() => handleSave()} placeholder="claude-sonnet-4-6" />
                 </div>
               </div>
             )}
@@ -251,7 +279,7 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                         <span className="settings-field-hint">调试日志的保存位置</span>
                       </div>
                       <input id="debug-file" className="settings-input" type="text" value={debugFile}
-                        onChange={(e) => setDebugFile(e.target.value)} placeholder=".claude/debug.log" />
+                        onChange={(e) => setDebugFile(e.target.value)} onBlur={() => handleSave()} placeholder=".claude/debug.log" />
                     </div>
                   )}
                 </div>
@@ -329,7 +357,7 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                       <span className="settings-field-hint">单次会话允许的最大轮数 (1–100)</span>
                     </div>
                     <input id="max-turns" className="settings-input-number" type="number" min={1} max={100}
-                      value={maxTurns} onChange={(e) => setMaxTurns(Number(e.target.value))} />
+                      value={maxTurns} onChange={(e) => { const v = Number(e.target.value); setMaxTurns(v); handleSave({ maxTurns: v }); }} />
                   </div>
                   <div className="settings-field">
                     <div className="settings-field-label-group">
@@ -337,7 +365,7 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                       <span className="settings-field-hint">单次会话的费用上限</span>
                     </div>
                     <input id="max-budget" className="settings-input-number" type="number" min={0.01} step={0.01}
-                      value={maxBudgetUsd} onChange={(e) => setMaxBudgetUsd(Number(e.target.value))} />
+                      value={maxBudgetUsd} onChange={(e) => { const v = Number(e.target.value); setMaxBudgetUsd(v); handleSave({ maxBudgetUsd: v }); }} />
                   </div>
                 </div>
                 <div className="settings-actions">
