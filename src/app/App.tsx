@@ -4,7 +4,7 @@ import { createInitialSdkUiState, reduceSdkUiEvent } from "./sdkEventStore";
 import { ClaudeSidebar } from "./components/ClaudeSidebar";
 import { ConversationPane } from "./components/ConversationPane";
 import { TestConsole } from "./components/TestConsole";
-import { SettingsPanel } from "./components/SettingsPanel";
+import { SettingsModal } from "./components/SettingsModal";
 import type { Evidence } from "../domain/testRun";
 import type { SdkMessage, SessionSummary } from "./sdkUiTypes";
 import { isExplicitTestExecutionRequest } from "./testIntent";
@@ -312,7 +312,7 @@ export function App() {
       ) : null}
       {composerNotice ? <div className="composer-notice" role="status">{composerNotice}</div> : null}
       {settingsOpen ? (
-        <SettingsPanel
+        <SettingsModal
           bridge={bridge}
           onClose={() => setSettingsOpen(false)}
           onThemeChange={(mode) => setTheme(mode)}
