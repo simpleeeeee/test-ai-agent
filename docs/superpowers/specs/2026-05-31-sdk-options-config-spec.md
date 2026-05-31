@@ -228,10 +228,89 @@ SDK query({ options: sdkOptions })
 ### 6.3 SettingsPanel.tsx 改动点
 
 - `SettingsFormValues` 本地类型扩展（新增 `effort`、`sandboxEnabled`）
-- 新增 `effort` 状态 + 下拉选择组件（参考现有的 "思考强度" select 模式）
-- 新增 `sandboxEnabled` 状态 + 开关按钮组件（参考现有的 "主题" 切换按钮模式）
-- `handleSave()` 中传入新字段
 - 所有标签使用中文
+
+#### 6.3.1 推理努力程度 — 下拉选择
+
+**控件类型**: `<select>` 下拉框，复用现有 `.setting-row` + `.setting-label` 模式
+
+**JSX 结构**（参考现有"思考强度"）:
+```tsx
+<div className="setting-row">
+  <label className="setting-label" htmlFor="sdk-effort">推理努力程度</label>
+  <select id="sdk-effort" aria-label="推理努力程度"
+    value={effort} onChange={(e) => { setEffort(e.target.value); handleSave(); }}>
+    <option value="low">低</option>
+    <option value="medium">中</option>
+    <option value="high">高</option>
+    <option value="xhigh">极高</option>
+    <option value="max">最大</option>
+  </select>
+</div>
+```
+
+**交互行为**:
+- `onChange` 时**立即调用 `handleSave()`**（与现有 `onBlur` 模式不同——下拉选择是离散值，选完即生效）
+- 选项显示中文标签（低/中/高/极高/最大），`value` 属性为 SDK 原始值（low/medium/high/xhigh/max）
+- 不使用 `onBlur`：select 元素在选项变更时天然失焦，不用额外的 blur 事件
+
+**CSS**: 复用现有 `.settings-panel .setting-row` 和 `.settings-panel .setting-label` 样式，无新增 CSS 类。
+
+#### 6.3.2 沙箱保护 — 开关按钮
+
+**控件类型**: 双按钮切换，复用现有 `.theme-switch` 模式（一个 active + 一个 inactive）
+
+**JSX 结构**（参考现有"主题"切换）:
+```tsx
+<div className="setting-row-inline">
+  <span className="setting-label">沙箱保护</span>
+  <div className="sandbox-switch">
+    <button
+      className={sandboxEnabled ? "active" : ""}
+      onClick={() => { setSandboxEnabled(true); handleSave(); }}>
+      开
+    </button>
+    <button
+      className={!sandboxEnabled ? "active" : ""}
+      onClick={() => { setSandboxEnabled(false); handleSave(); }}>
+      关
+    </button>
+  </div>
+</div>
+```
+
+**CSS 新增类名**: `.sandbox-switch`（复用 `.theme-switch` 的全部样式规则）
+
+```css
+/* 与 .theme-switch 完全一致的布局和交互 */
+.sandbox-switch {
+  display: flex;
+  gap: 1px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.sandbox-switch button {
+  padding: 4px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-xs);
+  cursor: pointer;
+}
+
+.sandbox-switch button.active {
+  background: var(--bg-sidebar-active);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+```
+
+**交互行为**:
+- `onClick` 时**立即调用 `handleSave()`**（与主题切换的立即生效模式一致）
+- 当前选中按钮 `.active`，未选中按钮无样式
+- 两个按钮互斥——"开" active 时"关" inactive，反之亦然
 
 ## 七、三个 Alpha 函数集成
 
