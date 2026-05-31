@@ -121,7 +121,7 @@ const mainSchemas = {
     numTurns: z.number().int().nonnegative().optional(),
     model: z.string().optional(),
   }),
-  "sdk:error": z.object({ runId: nonEmptyString.optional(), message: nonEmptyString, retryable: z.boolean() }),
+  "sdk:error": z.object({ runId: nonEmptyString.optional(), message: nonEmptyString, retryable: z.boolean(), suggestion: z.string().optional() }),
   "sdk:permission-denied": z.object({ runId: nonEmptyString, toolName: nonEmptyString, raw: z.unknown().optional() }),
   "sdk:mcp-status": z.object({ runId: nonEmptyString, servers: z.array(z.unknown()) }),
   "sdk:task-progress": z.object({ runId: nonEmptyString, taskId: nonEmptyString, summary: z.string().optional(), raw: z.unknown().optional() }),

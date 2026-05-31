@@ -386,4 +386,56 @@ describe("sdkEventStore", () => {
     expect(state.permissionDenials).toEqual([{ toolName: "Write", raw: { reason: "blocked" } }]);
     expect(state.systemEvents).toEqual([{ subtype: "compact", raw: { type: "system", subtype: "compact" } }]);
   });
+
+  it("sdk:connection-status stores connected state", () => {
+    const state = createInitialSdkUiState();
+    const next = reduceSdkUiEvent(state, {
+      channel: "sdk:connection-status" as any,
+      payload: {
+        runId: "run-1",
+        state: "connected",
+        baseUrl: "https://api.anthropic.com",
+        model: "claude-sonnet-4-6",
+        probedAt: 1717171717171,
+      },
+    });
+
+    expect(next.connectionStatus).toEqual({
+      state: "connected",
+      baseUrl: "https://api.anthropic.com",
+      model: "claude-sonnet-4-6",
+      probedAt: 1717171717171,
+    });
+  });
+
+  it("sdk:connection-status stores failed state with error detail", () => {
+    const state = createInitialSdkUiState();
+    const next = reduceSdkUiEvent(state, {
+      channel: "sdk:connection-status" as any,
+      payload: {
+        runId: "run-1",
+        state: "failed",
+        baseUrl: "https://api.anthropic.com",
+        model: "claude-sonnet-4-6",
+        error: {
+          code: "ENOTFOUND",
+          message: "无法解析 API 网关地址",
+          suggestion: "检查 baseUrl 配置",
+        },
+        probedAt: 1717171717171,
+      },
+    });
+
+    expect(next.connectionStatus).toEqual({
+      state: "failed",
+      baseUrl: "https://api.anthropic.com",
+      model: "claude-sonnet-4-6",
+      error: {
+        code: "ENOTFOUND",
+        message: "无法解析 API 网关地址",
+        suggestion: "检查 baseUrl 配置",
+      },
+      probedAt: 1717171717171,
+    });
+  });
 });

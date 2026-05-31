@@ -250,6 +250,30 @@ describe("IPC payload schemas", () => {
     })).toThrow();
   });
 
+  it("accepts sdk:error with suggestion field", () => {
+    expect(parseMainToRendererPayload("sdk:error", {
+      runId: "run-1",
+      message: "网关认证失败",
+      retryable: true,
+      suggestion: "检查 API Key 配置是否正确",
+    })).toEqual({
+      runId: "run-1",
+      message: "网关认证失败",
+      retryable: true,
+      suggestion: "检查 API Key 配置是否正确",
+    });
+  });
+
+  it("accepts sdk:error without suggestion field (backward compatible)", () => {
+    expect(parseMainToRendererPayload("sdk:error", {
+      message: "网关认证失败",
+      retryable: true,
+    })).toEqual({
+      message: "网关认证失败",
+      retryable: true,
+    });
+  });
+
   it("rejects run:get-subagent-messages with missing required fields", () => {
     expect(() => parseRendererToMainPayload("run:get-subagent-messages" as any, {
       runId: "run-1",

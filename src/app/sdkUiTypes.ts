@@ -121,6 +121,13 @@ export type SdkUiState = {
   notifications: Array<{ message: string; title?: string; notificationType: string }>;
   rateLimitInfo: unknown | undefined;
   mirrorErrors: Array<{ message: string }>;
+  connectionStatus?: {
+    state: "connected" | "unverified" | "connecting" | "failed";
+    baseUrl: string;
+    model: string;
+    error?: { code: string; message: string; suggestion: string };
+    probedAt: number;
+  };
 };
 
 export type SdkUiEvent =

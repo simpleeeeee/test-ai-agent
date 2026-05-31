@@ -313,5 +313,14 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
     };
   }
 
+  if (event.channel === "sdk:connection-status") {
+    const { runId: _runId, ...status } = payload;
+    return {
+      ...state,
+      activeRunId,
+      connectionStatus: status as SdkUiState["connectionStatus"],
+    };
+  }
+
   return { ...state, activeRunId };
 }
