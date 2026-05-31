@@ -106,7 +106,7 @@ function registerBackendIpc(window: BrowserWindow, cwd: string, configDir: strin
   handleRequest("sdk:account-info", ({ runId }) => manager.accountInfo(runId));
   handleRequest("sdk:initialization-result", ({ runId }) => manager.initializationResult(runId));
   handleRequest("settings:get", () => loadClaudeCodeSettings({ cwd }));
-  handleRequest("settings:save", ({ baseUrl, apiKey, model, effort, sandboxEnabled, promptCaching, debug, debugFile, maxBudgetUsd, maxTurns, outputFormat, permissionMode, thinkingEffort, thinkingDisplay }) => {
+  handleRequest("settings:save", ({ baseUrl, apiKey, model, effort, sandboxEnabled, promptCaching, debug, debugFile, maxBudgetUsd, maxTurns, outputFormat, permissionMode, thinkingEffort, thinkingDisplay, theme }) => {
     saveClaudeCodeSettings({ cwd, baseUrl, apiKey, model, effort, sandboxEnabled, promptCaching, debug, debugFile, maxBudgetUsd, maxTurns });
     const appSettings = loadAppSettings(cwd);
     let appChanged = false;
@@ -124,6 +124,10 @@ function registerBackendIpc(window: BrowserWindow, cwd: string, configDir: strin
     }
     if (thinkingDisplay !== undefined) {
       appSettings.thinkingDisplay = typeof thinkingDisplay === "string" ? thinkingDisplay : undefined;
+      appChanged = true;
+    }
+    if (theme) {
+      appSettings.theme = theme;
       appChanged = true;
     }
     if (appChanged) {

@@ -279,4 +279,22 @@ describe("electron main IPC registration", () => {
       retryable: true,
     }));
   });
+
+  it("saves theme to appSettings on settings:save", async () => {
+    await import("./main.js");
+    await flushMicrotasks();
+    const [, saveHandler] = handle.mock.calls.find(([channel]) => channel === "settings:save")!;
+
+    saveHandler({}, {
+      baseUrl: "https://api.example.com",
+      apiKey: "sk-test",
+      model: "claude-sonnet",
+      theme: "dark",
+    });
+
+    expect(saveAppSettings).toHaveBeenCalledWith(
+      appDir,
+      expect.objectContaining({ theme: "dark" }),
+    );
+  });
 });
