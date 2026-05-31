@@ -1,4 +1,4 @@
-import { Copy, RefreshCcw, Sparkles } from "lucide-react";
+import { Copy, RefreshCcw, Sparkles, AlertTriangle } from "lucide-react";
 import type { SdkUiState } from "../sdkUiTypes";
 import { AskUserQuestionCard } from "./AskUserQuestionCard";
 import { ThinkingBlock } from "./ThinkingBlock";
@@ -16,6 +16,19 @@ type Props = {
 export function MessageStream({ state, onApprove, onDeny, onAnswer, onCopyMessage, onRetryMessage }: Props) {
   return (
     <div className="message-column">
+      {state.rateLimitInfo ? (
+        <div className="rate-limit-banner" role="alert">
+          <AlertTriangle aria-hidden="true" className="rate-limit-icon" size={18} />
+          <div className="rate-limit-text">
+            <span className="rate-limit-title">API 速率限制</span>
+            <span className="rate-limit-detail">
+              {(state.rateLimitInfo as Record<string, unknown>).tokensRemaining != null
+                ? `剩余 token: ${(state.rateLimitInfo as Record<string, unknown>).tokensRemaining}`
+                : "请求频率过高，请稍后重试"}
+            </span>
+          </div>
+        </div>
+      ) : null}
       {state.messages.map((message) => (
         <article className={`message ${message.role}-message`} key={message.id}>
           {message.role === "assistant" ? (
@@ -44,6 +57,11 @@ export function MessageStream({ state, onApprove, onDeny, onAnswer, onCopyMessag
       ))}
       {state.questions.map((request) => (
         <AskUserQuestionCard key={request.requestId} request={request} onAnswer={onAnswer} />
+      ))}
+      {state.notifications.map((n, i) => (
+        <div className="system-notification" key={`notif-${i}`} data-notification-type={n.notificationType}>
+          {n.title ? <strong>{n.title}: </strong> : null}{n.message}
+        </div>
       ))}
       {state.errors.map((error, index) => <p className="sdk-error" key={`${error.message}-${index}`}>{error.message}</p>)}
       {state.tasks.map((task) => <p className="sdk-task" key={task.taskId}>{task.summary ?? task.taskId}</p>)}

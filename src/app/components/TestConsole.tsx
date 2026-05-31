@@ -5,6 +5,7 @@ type Props = {
   activeTaskId?: string;
   mcpServers: McpServerUiStatus[];
   tasks: SdkTaskProgress[];
+  taskNotifications: Array<{ taskId: string; status: string; description?: string }>;
   evidence: Evidence[];
   bugDraft?: BugDraft;
   onApprovePlan: () => void;
@@ -49,6 +50,7 @@ export function TestConsole({
   activeTaskId,
   mcpServers,
   tasks,
+  taskNotifications,
   evidence,
   bugDraft,
   onApprovePlan,
@@ -85,6 +87,33 @@ export function TestConsole({
       <section className="monitor-card">
         <h3>证据</h3>
         <p>{evidenceSummary(evidence)}</p>
+      </section>
+
+      <section className="monitor-card">
+        <h3>任务</h3>
+        {tasks.map((task) => (
+          <p className="sdk-task" key={task.taskId}>
+            {task.summary ?? task.taskId}
+            {task.status ? (
+              <span className={`task-status-label status-${task.status}`}>
+                {task.status === "started" ? "启动" : task.status === "updated" ? "更新中" : task.status}
+              </span>
+            ) : null}
+          </p>
+        ))}
+        {taskNotifications.map((n, i) => (
+          <div className="task-notification-item" key={`tn-${i}`}>
+            <div className="task-notification-header">
+              <span>{n.taskId}</span>
+              <span className="task-notification-status" style={{
+                color: n.status === "completed" ? "var(--green)" : n.status === "failed" ? "var(--red)" : "var(--text-secondary)"
+              }}>
+                {n.status}
+              </span>
+            </div>
+            {n.description ? <p className="monitor-row">{n.description}</p> : null}
+          </div>
+        ))}
       </section>
 
       {bugDraft ? (

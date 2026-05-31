@@ -22,6 +22,7 @@ describe("TestConsole", () => {
           { taskId: "task-2", summary: "筛选待支付订单" },
           { taskId: "task-3", summary: "执行订单状态检查" },
         ]}
+        taskNotifications={[]}
         evidence={[
           { id: "evidence-1", type: "screenshot", title: "订单截图", summary: "订单状态显示异常" },
           { id: "evidence-2", type: "log", title: "接口日志", summary: "重复回调" },
@@ -57,5 +58,50 @@ describe("TestConsole", () => {
 
     expect(onApprovePlan).toHaveBeenCalledTimes(1);
     expect(onStopTask).toHaveBeenCalledWith("task-3");
+  });
+
+  it("renders task status labels", () => {
+    render(
+      <TestConsole
+        activeTaskId="task-1"
+        mcpServers={[]}
+        tasks={[
+          { taskId: "task-1", summary: "打开订单列表", status: "started" },
+          { taskId: "task-2", summary: "筛选待支付订单", status: "updated" },
+        ]}
+        taskNotifications={[]}
+        evidence={[]}
+        onApprovePlan={vi.fn()}
+        onStopTask={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("启动")).toBeInTheDocument();
+    expect(screen.getByText("更新中")).toBeInTheDocument();
+    expect(screen.getByText("打开订单列表")).toBeInTheDocument();
+    expect(screen.getByText("筛选待支付订单")).toBeInTheDocument();
+  });
+
+  it("renders task notifications", () => {
+    render(
+      <TestConsole
+        mcpServers={[]}
+        tasks={[]}
+        taskNotifications={[
+          { taskId: "task-1", status: "completed", description: "执行完成" },
+          { taskId: "task-2", status: "failed", description: "执行失败" },
+        ]}
+        evidence={[]}
+        onApprovePlan={vi.fn()}
+        onStopTask={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("task-1")).toBeInTheDocument();
+    expect(screen.getByText("completed")).toBeInTheDocument();
+    expect(screen.getByText("执行完成")).toBeInTheDocument();
+    expect(screen.getByText("task-2")).toBeInTheDocument();
+    expect(screen.getByText("failed")).toBeInTheDocument();
+    expect(screen.getByText("执行失败")).toBeInTheDocument();
   });
 });

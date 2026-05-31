@@ -33,6 +33,11 @@ describe("MessageStream", () => {
       sessions: [],
       permissionDenials: [],
       systemEvents: [],
+      notifications: [],
+      taskNotifications: [],
+      rateLimitInfo: undefined,
+      toolProgress: new Map(),
+      mirrorErrors: [],
     }} onApprove={vi.fn()} onDeny={vi.fn()} onAnswer={vi.fn()} onCopyMessage={vi.fn()} onRetryMessage={vi.fn()} />);
 
     const column = document.querySelector(".message-column");
@@ -72,6 +77,11 @@ describe("MessageStream", () => {
       sessions: [],
       permissionDenials: [],
       systemEvents: [],
+      notifications: [],
+      taskNotifications: [],
+      rateLimitInfo: undefined,
+      toolProgress: new Map(),
+      mirrorErrors: [],
     }} onApprove={vi.fn()} onDeny={vi.fn()} onAnswer={vi.fn()} onCopyMessage={vi.fn()} onRetryMessage={vi.fn()} />);
 
     expect(screen.getByText("思考中…")).toBeInTheDocument();
@@ -97,9 +107,73 @@ describe("MessageStream", () => {
       sessions: [],
       permissionDenials: [],
       systemEvents: [],
+      notifications: [],
+      taskNotifications: [],
+      rateLimitInfo: undefined,
+      toolProgress: new Map(),
+      mirrorErrors: [],
     }} onApprove={vi.fn()} onDeny={vi.fn()} onAnswer={vi.fn()} onCopyMessage={vi.fn()} onRetryMessage={vi.fn()} />);
 
     expect(screen.getByText("思考已完成")).toBeInTheDocument();
     expect(screen.getByText("完成")).toBeInTheDocument();
+  });
+
+  it("renders rate-limit banner when rateLimitInfo is present", () => {
+    render(<MessageStream state={{
+      activeRunId: "run-1",
+      workspaceModes: {},
+      messages: [],
+      approvals: [],
+      questions: [],
+      mcpServers: [],
+      evidence: [],
+      rawMessages: [],
+      usage: { inputTokens: 10, outputTokens: 20 },
+      errors: [],
+      tasks: [],
+      sessions: [],
+      permissionDenials: [],
+      systemEvents: [],
+      notifications: [],
+      taskNotifications: [],
+      rateLimitInfo: { tokensRemaining: 42 },
+      toolProgress: new Map(),
+      mirrorErrors: [],
+    }} onApprove={vi.fn()} onDeny={vi.fn()} onAnswer={vi.fn()} onCopyMessage={vi.fn()} onRetryMessage={vi.fn()} />);
+
+    const banner = screen.getByRole("alert");
+    expect(banner).toBeInTheDocument();
+    expect(screen.getByText(/剩余 token: 42/)).toBeInTheDocument();
+  });
+
+  it("renders system notifications", () => {
+    render(<MessageStream state={{
+      activeRunId: "run-1",
+      workspaceModes: {},
+      messages: [],
+      approvals: [],
+      questions: [],
+      mcpServers: [],
+      evidence: [],
+      rawMessages: [],
+      usage: { inputTokens: 10, outputTokens: 20 },
+      errors: [],
+      tasks: [],
+      sessions: [],
+      permissionDenials: [],
+      systemEvents: [],
+      notifications: [
+        { notificationType: "warning", title: "提示", message: "已到达速率上限" },
+      ],
+      taskNotifications: [],
+      rateLimitInfo: undefined,
+      toolProgress: new Map(),
+      mirrorErrors: [],
+    }} onApprove={vi.fn()} onDeny={vi.fn()} onAnswer={vi.fn()} onCopyMessage={vi.fn()} onRetryMessage={vi.fn()} />);
+
+    expect(screen.getByText("已到达速率上限")).toBeInTheDocument();
+    const notif = document.querySelector(".system-notification");
+    expect(notif).toBeInTheDocument();
+    expect(notif?.getAttribute("data-notification-type")).toBe("warning");
   });
 });

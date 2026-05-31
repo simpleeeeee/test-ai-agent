@@ -1538,3 +1538,113 @@ input:focus-visible {
     display: none;
   }
 }
+
+/* ============================================================
+   RATE-LIMIT BANNER — API 速率限制警告横幅
+   ============================================================ */
+.rate-limit-banner {
+  align-items: center;
+  background: #fff9ef;
+  border: 1px solid #ead9c7;
+  border-radius: var(--radius-xl);
+  color: #70584d;
+  display: inline-flex;
+  gap: 10px;
+  justify-content: center;
+  min-height: 46px;
+  padding: 10px 14px;
+  width: min(520px, calc(100% - 72px));
+  font-size: var(--font-sm);
+  box-shadow: var(--shadow-sm);
+}
+.rate-limit-banner .rate-limit-icon {
+  color: var(--accent);
+  flex: none;
+}
+.rate-limit-banner .rate-limit-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rate-limit-banner .rate-limit-title {
+  font-weight: 600;
+  color: #70584d;
+}
+.rate-limit-banner .rate-limit-detail {
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+   SYSTEM NOTIFICATION — 灰色小字居中系统通知
+   ============================================================ */
+.system-notification {
+  color: var(--text-tertiary);
+  font-size: var(--font-xs);
+  text-align: center;
+  padding: 4px 14px;
+  line-height: 1.4;
+  max-width: var(--message-max-width);
+  margin: 0 auto;
+  user-select: none;
+}
+
+/* ============================================================
+   TOOL CALL PROGRESS — 工具执行实时进度
+   ============================================================ */
+.tool-call-progress {
+  font-family: var(--font-mono);
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  padding: 4px 12px;
+  background: var(--bg-sidebar);
+  border-radius: var(--radius-md);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  max-height: 80px;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+/* ============================================================
+   TASK STATUS LABEL — 任务状态内联标签
+   ============================================================ */
+.task-status-label {
+  display: inline-block;
+  font-size: var(--font-xs);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  margin-left: 6px;
+  font-weight: 520;
+}
+.task-status-label.status-started {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.task-status-label.status-updated {
+  background: var(--bg-pill);
+  color: #465369;
+}
+
+/* ============================================================
+   TASK NOTIFICATION ITEM — 后台任务完成/失败通知卡
+   ============================================================ */
+.task-notification-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+}
+.task-notification-item .task-notification-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  font-weight: 520;
+}
+.task-notification-item .task-notification-status {
+  font-size: var(--font-xs);
+}

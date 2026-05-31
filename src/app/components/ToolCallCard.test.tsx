@@ -28,6 +28,47 @@ describe("ToolCallCard", () => {
     expect(screen.queryByText("查看输出")).not.toBeInTheDocument();
   });
 
+  it("renders tool progress when status is running", () => {
+    render(
+      <ToolCallCard
+        toolName="Bash"
+        summary="npm install"
+        status="active"
+        statusText="执行中…"
+        toolProgress={{ status: "running", progress: "Installing packages... 45%" }}
+      />,
+    );
+    expect(screen.getByText("Installing packages... 45%")).toBeInTheDocument();
+  });
+
+  it("renders default progress text when progress is not a string", () => {
+    render(
+      <ToolCallCard
+        toolName="Read"
+        summary="test.ts"
+        status="active"
+        statusText="执行中…"
+        toolProgress={{ status: "running", progress: { percent: 80 } }}
+      />,
+    );
+    const progressEl = document.querySelector(".tool-call-progress");
+    expect(progressEl).toBeInTheDocument();
+    expect(progressEl?.textContent).toBe("执行中…");
+  });
+
+  it("does not render progress when status is not running", () => {
+    render(
+      <ToolCallCard
+        toolName="Bash"
+        summary="npm test"
+        status="done"
+        statusText="42ms"
+        toolProgress={{ status: "completed", progress: "Done" }}
+      />,
+    );
+    expect(screen.queryByText("Done")).not.toBeInTheDocument();
+  });
+
   it("shows streamed tool input when available", () => {
     render(
       <ToolCallCard

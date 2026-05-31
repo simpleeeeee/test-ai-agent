@@ -326,6 +326,7 @@ export function App() {
           activeTaskId={activeTaskId}
           mcpServers={state.mcpServers}
           tasks={state.tasks}
+          taskNotifications={state.taskNotifications}
           evidence={(state.evidence ?? []) as Evidence[]}
           bugDraft={undefined}
           onApprovePlan={handleApprovePlan}

@@ -9,9 +9,10 @@ type Props = {
   output?: string;
   outputLabel?: string;
   streamedInput?: string;
+  toolProgress?: { status: string; progress?: unknown } | undefined;
 };
 
-export function ToolCallCard({ toolName, summary, status, statusText, output, outputLabel = "查看输出", streamedInput }: Props) {
+export function ToolCallCard({ toolName, summary, status, statusText, output, outputLabel = "查看输出", streamedInput, toolProgress }: Props) {
   const [open, setOpen] = useState(false);
   const inputPreview = streamedInput ?? summary;
 
@@ -24,6 +25,11 @@ export function ToolCallCard({ toolName, summary, status, statusText, output, ou
           <span className="tool-call-summary">{inputPreview}</span>
           <span className="tool-call-status">{statusText}</span>
         </div>
+        {toolProgress && toolProgress.status === "running" ? (
+          <div className="tool-call-progress">
+            {typeof toolProgress.progress === "string" ? toolProgress.progress : "执行中…"}
+          </div>
+        ) : null}
         {output ? (
           <>
             <button

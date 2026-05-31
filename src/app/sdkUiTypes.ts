@@ -63,6 +63,7 @@ export type SessionSummary = {
 export type SdkTaskProgress = {
   taskId: string;
   summary?: string;
+  status?: string;
 };
 
 export type SessionWorkspaceMode = {
