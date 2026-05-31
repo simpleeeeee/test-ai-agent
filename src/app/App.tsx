@@ -130,6 +130,13 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [settingsModel, setSettingsModel] = useState("");
+  const [connectionStatus, setConnectionStatus] = useState<{
+    state: string;
+    baseUrl: string;
+    model: string;
+    error?: { code: string; message: string; suggestion: string };
+    probedAt: number;
+  } | undefined>();
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
@@ -155,6 +162,12 @@ export function App() {
   useEffect(() => {
     bridge.loadSettings().then((s) => {
       setSettingsModel(s.model || "");
+      setConnectionStatus({
+        state: "unverified",
+        baseUrl: s.baseUrl || "",
+        model: s.model || "",
+        probedAt: Date.now(),
+      });
     }).catch(() => {});
   }, [bridge]);
 
@@ -319,6 +332,7 @@ export function App() {
           theme={theme}
           activeRunId={state.activeRunId}
           onApplySettings={handleApplySdkSettings}
+          connectionStatus={connectionStatus}
         />
       ) : null}
       {shouldShowTestConsole ? (
