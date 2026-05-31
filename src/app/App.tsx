@@ -162,6 +162,7 @@ export function App() {
   useEffect(() => {
     bridge.loadSettings().then((s) => {
       setSettingsModel((s.model as string) || "");
+      setTheme((s.theme as "light" | "dark") || "light");
       setConnectionStatus({
         state: "unverified",
         baseUrl: (s.baseUrl as string) || "",

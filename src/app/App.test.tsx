@@ -323,4 +323,40 @@ describe("App backend integration", () => {
     expect(await screen.findByText("历史问题")).toBeInTheDocument();
     expect(screen.queryByRole("status", { name: "正在加载历史会话" })).not.toBeInTheDocument();
   });
+
+  it("applies dark theme from settings on startup", async () => {
+    invoke.mockImplementation((channel: string) => {
+      if (channel === "run:list-sessions") return Promise.resolve([]);
+      if (channel === "settings:get") {
+        return Promise.resolve({ baseUrl: "", apiKey: "", model: "", theme: "dark" });
+      }
+      return Promise.resolve(undefined);
+    });
+
+    render(<App />);
+
+    await act(async () => {
+      await new Promise(r => setTimeout(r, 50));
+    });
+
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+  });
+
+  it("defaults to light theme when settings has no theme", async () => {
+    invoke.mockImplementation((channel: string) => {
+      if (channel === "run:list-sessions") return Promise.resolve([]);
+      if (channel === "settings:get") {
+        return Promise.resolve({ baseUrl: "", apiKey: "", model: "" });
+      }
+      return Promise.resolve(undefined);
+    });
+
+    render(<App />);
+
+    await act(async () => {
+      await new Promise(r => setTimeout(r, 50));
+    });
+
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+  });
 });
