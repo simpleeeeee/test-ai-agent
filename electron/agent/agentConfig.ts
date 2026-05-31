@@ -3,6 +3,8 @@ import path from "node:path";
 import { loadClaudeCodeSettings, loadResolvedSettings } from "./sdkSettings.js";
 // 以下类型按需从 facade 导入；若因版本差异导致导入失败（循环依赖或类型缺失），可降级为 any
 import type { OnElicitation, SpawnOptions, SpawnedProcess } from "./claudeAgentSdkFacade.js";
+import { customTools } from "./customTools.js";
+import { appMcpServer } from "./appMcpServer.js";
 import { detectModelCapabilities } from "./modelCapabilities.js";
 import type { ModelCapabilities } from "./modelCapabilities.js";
 
@@ -333,6 +335,7 @@ export async function loadAgentRuntimeConfig(input: {
   const mergedOptions: Record<string, unknown> = {
     ...userSdkOptions,
     cwd: input.cwd,
+    tools: [...(userSdkOptions.tools ?? []), ...customTools],
     ...(pathToClaudeCodeExecutable ? { pathToClaudeCodeExecutable } : {}),
     includePartialMessages: true,
     permissionMode: userSdkOptions.permissionMode ?? "default",
@@ -351,6 +354,14 @@ export async function loadAgentRuntimeConfig(input: {
     ...(input.codeOptions?.stderr ? { stderr: input.codeOptions.stderr } : {}),
     ...(input.codeOptions?.abortController ? { abortController: input.codeOptions.abortController } : {}),
   };
+
+  // === 注册应用级 MCP Server ===
+  if (appMcpServer) {
+    mergedOptions.mcpServers = {
+      ...(mergedOptions.mcpServers ?? {}),
+      "ai-test-assistant": appMcpServer,
+    };
+  }
 
   // === 模型能力检测 + 自动降级 ===
   const degradations: Array<{ feature: string; reason: string }> = [];
