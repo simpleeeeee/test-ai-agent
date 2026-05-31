@@ -279,4 +279,20 @@ describe("IPC payload schemas", () => {
       runId: "run-1",
     })).toThrow();
   });
+
+  it("accepts settings:save payload with permissionMode, thinkingEffort, thinkingDisplay, and theme", () => {
+    const parsed = parseRendererToMainPayload("settings:save", {
+      baseUrl: "https://api.example.com",
+      apiKey: "sk-test",
+      model: "claude-sonnet",
+      permissionMode: "plan",
+      thinkingEffort: "high",
+      thinkingDisplay: "summarized",
+      theme: "dark",
+    });
+    expect(parsed).toHaveProperty("permissionMode", "plan");
+    expect(parsed).toHaveProperty("thinkingEffort", "high");
+    expect(parsed).toHaveProperty("thinkingDisplay", "summarized");
+    expect(parsed).toHaveProperty("theme", "dark");
+  });
 });

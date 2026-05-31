@@ -18,6 +18,10 @@ const settingsFormValues = z.object({
     template: z.string().optional(),
     customSchema: z.string().nullable().optional(),
   }).optional(),
+  permissionMode: z.string().optional(),
+  thinkingEffort: z.string().optional(),
+  thinkingDisplay: z.string().optional(),
+  theme: z.enum(["light", "dark"]).optional(),
 });
 
 const noPayload = z.undefined().optional();
