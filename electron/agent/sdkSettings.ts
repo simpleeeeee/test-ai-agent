@@ -11,7 +11,7 @@ export type SettingsFormValues = {
   baseUrl: string;
   apiKey: string;
   model: string;
-  effort?: string;          // low | medium | high | xhigh | max
+  effort?: string;          // 推理努力程度: low | medium | high | xhigh | max
   sandboxEnabled?: boolean; // 沙箱是否启用
 };
 
