@@ -7,9 +7,14 @@ export type AgentRuntimeConfig = {
   sdkOptions: Record<string, unknown>;
 };
 
-type PermissionMode = "default" | "acceptEdits" | "bypassPermissions" | "plan";
+type PermissionMode = "default" | "acceptEdits" | "bypassPermissions" | "plan" | "dontAsk" | "auto";
 type ThinkingEffort = "low" | "medium" | "high" | "xhigh" | "max";
 type ThinkingDisplay = "summarized" | "omitted";
+type Executable = "bun" | "deno" | "node";
+type SessionStoreFlushValue = "batched" | "eager";
+type SettingSourceValue = "user" | "project" | "local";
+
+export type { Executable, SessionStoreFlushValue, SettingSourceValue };
 
 export type UserSdkOptions = {
   permissionMode?: PermissionMode;
@@ -29,11 +34,43 @@ export type UserSdkOptions = {
   contextEditing?: unknown;
   compaction?: unknown;
   promptCaching?: unknown;
+  // ===== A 组：白名单 Set 校验（新增）=====
+  effort?: ThinkingEffort;
+  executable?: Executable;
+  sessionStoreFlush?: SessionStoreFlushValue;
+  betas?: string[];
+  settingSources?: SettingSourceValue[];
+  // ===== B 组和 C 组字段先声明类型但暂不实现校验 =====
+  title?: string;
+  debug?: boolean;
+  debugFile?: string;
+  strictMcpConfig?: boolean;
+  persistSession?: boolean;
+  includeHookEvents?: boolean;
+  forwardSubagentText?: boolean;
+  promptSuggestions?: boolean;
+  agentProgressSummaries?: boolean;
+  allowDangerouslySkipPermissions?: boolean;
+  planModeInstructions?: string;
+  permissionPromptToolName?: string;
+  toolConfig?: { askUserQuestion?: { previewFormat?: "markdown" | "html" } };
+  sandbox?: { enabled?: boolean; network?: unknown; filesystem?: unknown; [k: string]: unknown };
+  plugins?: Array<{ type: "local"; path: string; [k: string]: unknown }>;
+  managedSettings?: Record<string, unknown>;
+  settings?: string | Record<string, unknown>;
+  toolAliases?: Record<string, string>;
+  agent?: string;
+  extraArgs?: Record<string, string | null>;
+  executableArgs?: string[];
+  resumeSessionAt?: string;
 };
 
-const permissionModes = new Set(["default", "acceptEdits", "bypassPermissions", "plan"]);
+const permissionModes = new Set(["default", "acceptEdits", "bypassPermissions", "plan", "dontAsk", "auto"]);
 const thinkingEfforts = new Set(["low", "medium", "high", "xhigh", "max"]);
 const thinkingDisplays = new Set(["summarized", "omitted"]);
+const executables = new Set(["bun", "deno", "node"]);
+const sessionStoreFlushValues = new Set(["batched", "eager"]);
+const settingSourceValues = new Set(["user", "project", "local"]);
 
 function sanitizeUserSdkOptions(input: unknown): UserSdkOptions {
   if (!input || typeof input !== "object") return {};
@@ -73,6 +110,22 @@ function sanitizeUserSdkOptions(input: unknown): UserSdkOptions {
   if (source.contextEditing !== undefined) options.contextEditing = source.contextEditing;
   if (source.compaction !== undefined) options.compaction = source.compaction;
   if (source.promptCaching !== undefined) options.promptCaching = source.promptCaching;
+  // ===== A 组：白名单 Set 校验 =====
+  if (typeof source.effort === "string" && thinkingEfforts.has(source.effort)) {
+    options.effort = source.effort as ThinkingEffort;
+  }
+  if (typeof source.executable === "string" && executables.has(source.executable)) {
+    options.executable = source.executable as Executable;
+  }
+  if (typeof source.sessionStoreFlush === "string" && sessionStoreFlushValues.has(source.sessionStoreFlush)) {
+    options.sessionStoreFlush = source.sessionStoreFlush as SessionStoreFlushValue;
+  }
+  if (Array.isArray(source.betas) && source.betas.every((v) => typeof v === "string")) {
+    options.betas = source.betas as string[];
+  }
+  if (Array.isArray(source.settingSources) && source.settingSources.every((v) => typeof v === "string" && settingSourceValues.has(v))) {
+    options.settingSources = source.settingSources as SettingSourceValue[];
+  }
 
   return options;
 }
