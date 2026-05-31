@@ -105,9 +105,21 @@ export function createBackendBridge(api: AiTestAssistantApi) {
       return api.invoke("task:stop", { runId, taskId });
     },
     loadSettings() {
-      return api.invoke("settings:get", undefined) as Promise<{ baseUrl: string; apiKey: string; model: string }>;
+      return api.invoke("settings:get", undefined) as Promise<{
+        baseUrl: string;
+        apiKey: string;
+        model: string;
+        effort?: string;
+        sandboxEnabled?: boolean;
+      }>;
     },
-    saveSettings(settings: { baseUrl: string; apiKey: string; model: string }) {
+    saveSettings(settings: {
+      baseUrl: string;
+      apiKey: string;
+      model: string;
+      effort?: string;
+      sandboxEnabled?: boolean;
+    }) {
       return api.invoke("settings:save", settings);
     },
     listSessions() {
