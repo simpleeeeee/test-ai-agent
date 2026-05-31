@@ -46,4 +46,30 @@ describe("SettingsModal", () => {
     await user.click(screen.getByText("连接"));
     expect(screen.getByText("API 连接配置")).toBeInTheDocument();
   });
+
+  it("calls onClose when clicking overlay", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    const onClose = vi.fn();
+    render(<SettingsModal bridge={bridge} onClose={onClose} onThemeChange={vi.fn()} theme="light" />);
+    await user.click(document.querySelector(".settings-modal-overlay")!);
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("calls onClose when clicking close button", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    const onClose = vi.fn();
+    render(<SettingsModal bridge={bridge} onClose={onClose} onThemeChange={vi.fn()} theme="light" />);
+    await user.click(screen.getByTitle("关闭"));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("calls onThemeChange when switching theme", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    const onThemeChange = vi.fn();
+    render(<SettingsModal bridge={bridge} onClose={vi.fn()} onThemeChange={onThemeChange} theme="light" />);
+
+    await user.click(screen.getByText("外观"));
+    await user.click(screen.getByRole("button", { name: "暗色" }));
+    expect(onThemeChange).toHaveBeenCalledWith("dark");
+  });
 });
