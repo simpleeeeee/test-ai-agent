@@ -34,7 +34,7 @@ const mainToRendererChannels = [
   "sdk:notification", "sdk:local-command-output", "sdk:plugin-install",
   "sdk:rate-limit", "sdk:files-persisted", "sdk:memory-recall",
   "sdk:mirror-error", "sdk:elicitation-complete", "sdk:user-message-replay",
-  "sdk:compact-boundary", "sdk:deferred-tool-use",
+  "sdk:compact-boundary", "sdk:connection-status", "sdk:deferred-tool-use",
   "question:required", "question:answered",
 ];
 

@@ -23,6 +23,10 @@ describe("IPC channels", () => {
     expect(isMainToRendererChannel("sdk:system-event")).toBe(true);
   });
 
+  it("includes sdk:connection-status in mainToRendererChannels", () => {
+    expect(mainToRendererChannels).toContain("sdk:connection-status");
+  });
+
   it("rejects malformed or empty channel names", () => {
     expect(isRendererToMainChannel("")).toBe(false);
     expect(isRendererToMainChannel("random-string")).toBe(false);
@@ -122,6 +126,7 @@ describe("IPC channels", () => {
       "sdk:elicitation-complete",
       "sdk:user-message-replay",
       "sdk:compact-boundary",
+      "sdk:connection-status",
       "sdk:deferred-tool-use",
       "question:required",
       "question:answered",

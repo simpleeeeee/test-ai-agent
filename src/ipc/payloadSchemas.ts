@@ -68,6 +68,20 @@ const rendererSchemas = {
   "run:list-subagents": z.object({ runId: nonEmptyString, sessionId: nonEmptyString }),
 } satisfies Record<RendererToMainChannel, z.ZodTypeAny>;
 
+const connectionStatusErrorSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  suggestion: z.string(),
+});
+
+const connectionStatusSchema = z.object({
+  state: z.enum(["connected", "unverified", "connecting", "failed"]),
+  baseUrl: z.string(),
+  model: z.string(),
+  error: connectionStatusErrorSchema.optional(),
+  probedAt: z.number(),
+});
+
 const mainSchemas = {
   "assistant:text-delta": z.object({ runId: nonEmptyString, messageId: nonEmptyString, delta: z.string() }),
   "assistant:thinking-delta": z.object({ runId: nonEmptyString, messageId: nonEmptyString, delta: z.string() }),
@@ -112,6 +126,7 @@ const mainSchemas = {
   "sdk:mcp-status": z.object({ runId: nonEmptyString, servers: z.array(z.unknown()) }),
   "sdk:task-progress": z.object({ runId: nonEmptyString, taskId: nonEmptyString, summary: z.string().optional(), raw: z.unknown().optional() }),
   "sdk:hook-event": z.object({ runId: nonEmptyString, hookName: nonEmptyString, raw: z.unknown() }),
+  "sdk:connection-status": connectionStatusSchema,
   "question:required": z.object({ runId: nonEmptyString, requestId: nonEmptyString, questions: z.array(z.unknown()) }),
   "question:answered": z.object({ runId: nonEmptyString, requestId: nonEmptyString }),
 } satisfies Partial<Record<MainToRendererChannel, z.ZodTypeAny>>;
