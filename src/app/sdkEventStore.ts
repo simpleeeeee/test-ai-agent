@@ -63,6 +63,11 @@ export function createInitialSdkUiState(): SdkUiState {
     permissionDenials: [],
     systemEvents: [],
     runStats: undefined,
+    toolProgress: new Map(),
+    taskNotifications: [],
+    notifications: [],
+    rateLimitInfo: undefined,
+    mirrorErrors: [],
   };
 }
 
@@ -263,6 +268,35 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
         ? [...state.errors.slice(-199), { message: `权限被拒绝：${denial.toolName}`, retryable: false }]
         : [...state.errors, { message: `权限被拒绝：${denial.toolName}`, retryable: false }],
     };
+  }
+
+  if (event.channel === "sdk:tool-progress") {
+    const next = new Map(state.toolProgress);
+    next.set(String(payload.toolUseId), {
+      toolUseId: String(payload.toolUseId),
+      status: String(payload.status ?? "running"),
+      ...(payload.progress !== undefined ? { progress: payload.progress } : {}),
+    });
+    return { ...state, activeRunId, toolProgress: next };
+  }
+
+  if (event.channel === "sdk:task-notification") {
+    const entry = { taskId: String(payload.taskId), status: String(payload.status), description: typeof payload.description === "string" ? payload.description : undefined };
+    return { ...state, activeRunId, taskNotifications: state.taskNotifications.length >= 200 ? [...state.taskNotifications.slice(-199), entry] : [...state.taskNotifications, entry] };
+  }
+
+  if (event.channel === "sdk:notification") {
+    const entry = { message: String(payload.message), title: typeof payload.title === "string" ? payload.title : undefined, notificationType: String(payload.notificationType) };
+    return { ...state, activeRunId, notifications: state.notifications.length >= 200 ? [...state.notifications.slice(-199), entry] : [...state.notifications, entry] };
+  }
+
+  if (event.channel === "sdk:rate-limit") {
+    return { ...state, activeRunId, rateLimitInfo: payload.info };
+  }
+
+  if (event.channel === "sdk:mirror-error") {
+    const entry = { message: String(payload.message) };
+    return { ...state, activeRunId, mirrorErrors: state.mirrorErrors.length >= 200 ? [...state.mirrorErrors.slice(-199), entry] : [...state.mirrorErrors, entry] };
   }
 
   if (event.channel === "sdk:system-event") {

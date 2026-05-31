@@ -115,6 +115,11 @@ export type SdkUiState = {
   runStats?: RunStats;
   permissionDenials: PermissionDenial[];
   systemEvents: SdkSystemEvent[];
+  toolProgress: Map<string, { toolUseId: string; status: string; progress?: unknown }>;
+  taskNotifications: Array<{ taskId: string; status: string; description?: string }>;
+  notifications: Array<{ message: string; title?: string; notificationType: string }>;
+  rateLimitInfo: unknown | undefined;
+  mirrorErrors: Array<{ message: string }>;
 };
 
 export type SdkUiEvent =

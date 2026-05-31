@@ -329,6 +329,25 @@ describe("sdkEventStore", () => {
     expect(state.runStats?.stopReason).toBe("end_turn");
   });
 
+  it("sdk:tool-progress updates map", () => {
+    const state = createInitialSdkUiState();
+    const next = reduceSdkUiEvent(state, { channel: "sdk:tool-progress", payload: { toolUseId: "t1", status: "running", progress: "50%" } });
+    expect(next.toolProgress.get("t1")).toEqual({ toolUseId: "t1", status: "running", progress: "50%" });
+  });
+
+  it("sdk:rate-limit sets rateLimitInfo", () => {
+    const state = createInitialSdkUiState();
+    const next = reduceSdkUiEvent(state, { channel: "sdk:rate-limit", payload: { info: { tokensRemaining: 100 } } });
+    expect(next.rateLimitInfo).toEqual({ tokensRemaining: 100 });
+  });
+
+  it("sdk:notification appends with 200 cap", () => {
+    const state = createInitialSdkUiState();
+    const next = reduceSdkUiEvent(state, { channel: "sdk:notification", payload: { message: "test", notificationType: "info" } });
+    expect(next.notifications).toHaveLength(1);
+    expect(next.notifications[0].message).toBe("test");
+  });
+
   it("stores streamed tool input, enriched usage, permission denials, and system events", () => {
     let state = createInitialSdkUiState();
     state = reduceSdkUiEvent(state, {
