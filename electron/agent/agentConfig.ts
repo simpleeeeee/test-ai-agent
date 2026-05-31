@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { loadClaudeCodeSettings } from "./sdkSettings.js";
+import { loadClaudeCodeSettings, loadResolvedSettings } from "./sdkSettings.js";
 // 以下类型按需从 facade 导入；若因版本差异导致导入失败（循环依赖或类型缺失），可降级为 any
 import type { OnElicitation, SpawnOptions, SpawnedProcess } from "./claudeAgentSdkFacade.js";
 
@@ -227,7 +227,7 @@ function assertThirdPartyBaseUrl(baseUrl: string) {
   }
 }
 
-export function loadAgentRuntimeConfig(input: {
+export async function loadAgentRuntimeConfig(input: {
   cwd: string;
   claudeConfigDir?: string | null;
   userSdkOptions?: unknown;
@@ -237,7 +237,7 @@ export function loadAgentRuntimeConfig(input: {
     stderr?: (data: string) => void;
     abortController?: AbortController;
   };
-}): AgentRuntimeConfig {
+}): Promise<AgentRuntimeConfig> {
   const settings = loadClaudeCodeSettings({ cwd: input.cwd });
   const baseUrl = settings.baseUrl.trim();
   const authToken = settings.apiKey.trim();
@@ -263,6 +263,22 @@ export function loadAgentRuntimeConfig(input: {
   const pathToClaudeCodeExecutable = pathToClaudeCodeExecutableForCwd(input.cwd);
   const userSdkOptions = sanitizeUserSdkOptions(input.userSdkOptions);
 
+  // Load SDK-resolved settings for proper multi-tier merge
+  let resolvedEffort: string | undefined;
+  let resolvedSandboxEnabled: boolean | undefined;
+  try {
+    const resolved = await loadResolvedSettings(input.cwd);
+    const env = (resolved.effective as Record<string, unknown>).env as Record<string, string> | undefined;
+    if (!userSdkOptions.effort && env?.CLAUDE_CODE_EFFORT) {
+      resolvedEffort = env.CLAUDE_CODE_EFFORT;
+    }
+    if (userSdkOptions.sandbox?.enabled === undefined && env?.CLAUDE_CODE_SANDBOX_ENABLED) {
+      resolvedSandboxEnabled = env.CLAUDE_CODE_SANDBOX_ENABLED === "true";
+    }
+  } catch {
+    // Fallback to manual settings only (already loaded)
+  }
+
   // Thinking 配置：userSdkOptions 优先，兜底 display 为 summarized
   const thinking = {
     display: "summarized" as ThinkingDisplay,
@@ -270,9 +286,11 @@ export function loadAgentRuntimeConfig(input: {
   };
 
   // === 合并 settings 中的新字段：userSdkOptions 优先，settings 作为默认值 ===
-  const effort = userSdkOptions.effort ?? settings.effort;
+  const effort = userSdkOptions.effort ?? resolvedEffort ?? settings.effort;
   const sandboxEnabled = userSdkOptions.sandbox?.enabled !== undefined
     ? userSdkOptions.sandbox.enabled
+    : resolvedSandboxEnabled !== undefined
+    ? resolvedSandboxEnabled
     : settings.sandboxEnabled;
 
   return {

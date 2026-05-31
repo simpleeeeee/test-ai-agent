@@ -50,7 +50,7 @@ export class AgentSessionManager {
     prompt: string,
     runOptions?: { resume?: string; continue?: boolean },
   ) {
-    const config = this.loadConfig({ cwd: this.deps.cwd ?? process.cwd(), claudeConfigDir: this.deps.configDir });
+    const config = await this.loadConfig({ cwd: this.deps.cwd ?? process.cwd(), claudeConfigDir: this.deps.configDir });
     const input = new AsyncMessageQueue<unknown>();
     const isResuming = !!(runOptions?.resume || runOptions?.continue);
     if (!isResuming) {

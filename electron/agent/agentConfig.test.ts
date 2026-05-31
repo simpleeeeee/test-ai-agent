@@ -25,7 +25,7 @@ describe("sanitizeProcessEnv", () => {
 });
 
 describe("loadAgentRuntimeConfig", () => {
-  it("uses app base directory as cwd and does not force settings path", () => {
+  it("uses app base directory as cwd and does not force settings path", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
     fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
     const unpackedClaudeExe = path.join(
@@ -47,7 +47,7 @@ describe("loadAgentRuntimeConfig", () => {
       },
     }, null, 2));
 
-    const config = loadAgentRuntimeConfig({ cwd });
+    const config = await loadAgentRuntimeConfig({ cwd });
 
     expect(config.sdkOptions).toEqual(expect.objectContaining({
       cwd,
@@ -58,14 +58,14 @@ describe("loadAgentRuntimeConfig", () => {
     expect(config.sdkOptions).not.toHaveProperty("model");
   });
 
-  it("fails fast when required env fields are missing from both settings files", () => {
+  it("fails fast when required env fields are missing from both settings files", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
 
-    expect(() => loadAgentRuntimeConfig({ cwd }))
-      .toThrow(/\.claude\/settings\.json.*\.claude\/settings\.local\.json/);
+    await expect(loadAgentRuntimeConfig({ cwd }))
+      .rejects.toThrow(/\.claude\/settings\.json.*\.claude\/settings\.local\.json/);
   });
 
-  it("rejects official Anthropic endpoints", () => {
+  it("rejects official Anthropic endpoints", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
     fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
     fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
@@ -76,12 +76,12 @@ describe("loadAgentRuntimeConfig", () => {
       },
     }, null, 2));
 
-    expect(() => loadAgentRuntimeConfig({
+    await expect(loadAgentRuntimeConfig({
       cwd,
-    })).toThrow("请使用第三方 API 网关地址，不支持 Anthropic 官方端点");
+    })).rejects.toThrow("请使用第三方 API 网关地址，不支持 Anthropic 官方端点");
   });
 
-  it("passes CLAUDE_CONFIG_DIR in sdkOptions.env when claudeConfigDir is provided", () => {
+  it("passes CLAUDE_CONFIG_DIR in sdkOptions.env when claudeConfigDir is provided", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
     fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
     fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
@@ -92,7 +92,7 @@ describe("loadAgentRuntimeConfig", () => {
       },
     }, null, 2));
 
-    const config = loadAgentRuntimeConfig({ cwd, claudeConfigDir: "D:/app/.claude" });
+    const config = await loadAgentRuntimeConfig({ cwd, claudeConfigDir: "D:/app/.claude" });
 
     expect(config.sdkOptions).toEqual(expect.objectContaining({
       cwd,
@@ -103,7 +103,7 @@ describe("loadAgentRuntimeConfig", () => {
     expect(config.sdkOptions).not.toHaveProperty("settings");
   });
 
-  it("does not set CLAUDE_CONFIG_DIR when claudeConfigDir is null", () => {
+  it("does not set CLAUDE_CONFIG_DIR when claudeConfigDir is null", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
     fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
     fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
@@ -114,12 +114,12 @@ describe("loadAgentRuntimeConfig", () => {
       },
     }, null, 2));
 
-    const config = loadAgentRuntimeConfig({ cwd, claudeConfigDir: null });
+    const config = await loadAgentRuntimeConfig({ cwd, claudeConfigDir: null });
 
     expect(config.sdkOptions.env).toBeUndefined();
   });
 
-  it("does not set CLAUDE_CONFIG_DIR when claudeConfigDir is undefined (backward compat)", () => {
+  it("does not set CLAUDE_CONFIG_DIR when claudeConfigDir is undefined (backward compat)", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
     fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
     fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
@@ -130,12 +130,12 @@ describe("loadAgentRuntimeConfig", () => {
       },
     }, null, 2));
 
-    const config = loadAgentRuntimeConfig({ cwd });
+    const config = await loadAgentRuntimeConfig({ cwd });
 
     expect(config.sdkOptions.env).toBeUndefined();
   });
 
-  it("merges supported SDK options while preserving required safety options", () => {
+  it("merges supported SDK options while preserving required safety options", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
     fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
     fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
@@ -146,7 +146,7 @@ describe("loadAgentRuntimeConfig", () => {
       },
     }, null, 2));
 
-    const config = loadAgentRuntimeConfig({
+    const config = await loadAgentRuntimeConfig({
       cwd,
       userSdkOptions: {
         permissionMode: "plan",
@@ -180,7 +180,7 @@ describe("loadAgentRuntimeConfig", () => {
     expect(config.sdkOptions).not.toHaveProperty("cwd", "D:/malicious");
   });
 
-  it("defaults thinking display to summarized", () => {
+  it("defaults thinking display to summarized", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
     fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
     fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
@@ -191,7 +191,7 @@ describe("loadAgentRuntimeConfig", () => {
       },
     }, null, 2));
 
-    const config = loadAgentRuntimeConfig({ cwd });
+    const config = await loadAgentRuntimeConfig({ cwd });
 
     expect(config.sdkOptions).toEqual(expect.objectContaining({
       thinking: { display: "summarized" },
@@ -225,7 +225,7 @@ describe("sanitizeUserSdkOptions B 组", () => {
 });
 
 describe("loadAgentRuntimeConfig codeOptions", () => {
-  it("accepts codeOptions parameter and passes onElicitation to sdkOptions", () => {
+  it("accepts codeOptions parameter and passes onElicitation to sdkOptions", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
     fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
     fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
@@ -237,7 +237,7 @@ describe("loadAgentRuntimeConfig codeOptions", () => {
     }, null, 2));
 
     const onElicitation = async () => ({ action: "decline" as const });
-    const config = loadAgentRuntimeConfig({
+    const config = await loadAgentRuntimeConfig({
       cwd,
       codeOptions: { onElicitation },
     });
@@ -251,7 +251,7 @@ describe("loadAgentRuntimeConfig codeOptions", () => {
     }));
   });
 
-  it("accepts spawnClaudeCodeProcess and abortController in codeOptions", () => {
+  it("accepts spawnClaudeCodeProcess and abortController in codeOptions", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
     fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
     fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
@@ -266,7 +266,7 @@ describe("loadAgentRuntimeConfig codeOptions", () => {
     const abortController = new AbortController();
     const stderr = (data: string) => { void data; };
 
-    const config = loadAgentRuntimeConfig({
+    const config = await loadAgentRuntimeConfig({
       cwd,
       codeOptions: { spawnClaudeCodeProcess, abortController, stderr },
     });
@@ -276,7 +276,7 @@ describe("loadAgentRuntimeConfig codeOptions", () => {
     expect(config.sdkOptions).toHaveProperty("stderr", stderr);
   });
 
-  it("merges effort from settings into sdkOptions when userSdkOptions has no effort", () => {
+  it("merges effort from settings into sdkOptions when userSdkOptions has no effort", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
     fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
     fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
@@ -288,12 +288,12 @@ describe("loadAgentRuntimeConfig codeOptions", () => {
       },
     }, null, 2));
 
-    const config = loadAgentRuntimeConfig({ cwd });
+    const config = await loadAgentRuntimeConfig({ cwd });
 
     expect(config.sdkOptions).toHaveProperty("effort", "high");
   });
 
-  it("userSdkOptions effort overrides settings effort", () => {
+  it("userSdkOptions effort overrides settings effort", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
     fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
     fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
@@ -305,7 +305,7 @@ describe("loadAgentRuntimeConfig codeOptions", () => {
       },
     }, null, 2));
 
-    const config = loadAgentRuntimeConfig({
+    const config = await loadAgentRuntimeConfig({
       cwd,
       userSdkOptions: { effort: "max" },
     });
@@ -313,7 +313,7 @@ describe("loadAgentRuntimeConfig codeOptions", () => {
     expect(config.sdkOptions).toHaveProperty("effort", "max");
   });
 
-  it("merges sandboxEnabled from settings into sdkOptions.sandbox", () => {
+  it("merges sandboxEnabled from settings into sdkOptions.sandbox", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
     fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
     fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
@@ -325,13 +325,13 @@ describe("loadAgentRuntimeConfig codeOptions", () => {
       },
     }, null, 2));
 
-    const config = loadAgentRuntimeConfig({ cwd });
+    const config = await loadAgentRuntimeConfig({ cwd });
 
     expect(config.sdkOptions).toHaveProperty("sandbox");
     expect((config.sdkOptions as any).sandbox).toEqual({ enabled: true });
   });
 
-  it("userSdkOptions sandbox.enabled overrides settings sandboxEnabled", () => {
+  it("userSdkOptions sandbox.enabled overrides settings sandboxEnabled", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
     fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
     fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
@@ -343,7 +343,7 @@ describe("loadAgentRuntimeConfig codeOptions", () => {
       },
     }, null, 2));
 
-    const config = loadAgentRuntimeConfig({
+    const config = await loadAgentRuntimeConfig({
       cwd,
       userSdkOptions: { sandbox: { enabled: false } },
     });
@@ -352,7 +352,7 @@ describe("loadAgentRuntimeConfig codeOptions", () => {
     expect((config.sdkOptions as any).sandbox).toEqual({ enabled: false });
   });
 
-  it("does not set effort in sdkOptions when neither settings nor userSdkOptions have it", () => {
+  it("does not set effort in sdkOptions when neither settings nor userSdkOptions have it", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
     fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
     fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
@@ -363,12 +363,12 @@ describe("loadAgentRuntimeConfig codeOptions", () => {
       },
     }, null, 2));
 
-    const config = loadAgentRuntimeConfig({ cwd });
+    const config = await loadAgentRuntimeConfig({ cwd });
 
     expect(config.sdkOptions).not.toHaveProperty("effort");
   });
 
-  it("codeOptions is optional (backward compatible)", () => {
+  it("codeOptions is optional (backward compatible)", async () => {
     const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-agent-config-"));
     fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
     fs.writeFileSync(settingsPathForCwd(cwd), JSON.stringify({
@@ -380,7 +380,7 @@ describe("loadAgentRuntimeConfig codeOptions", () => {
     }, null, 2));
 
     // 不传 codeOptions — 应正常工作
-    const config = loadAgentRuntimeConfig({ cwd });
+    const config = await loadAgentRuntimeConfig({ cwd });
 
     expect(config.sdkOptions).toEqual(expect.objectContaining({
       cwd,
