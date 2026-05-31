@@ -17,6 +17,10 @@ const NAV_ITEMS = [
 ] as const;
 
 export function SettingsModal({ onClose }: Props) {
+  const [baseUrl, setBaseUrl] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [model, setModel] = useState("");
+
   return (
     <div className="settings-modal-overlay" role="presentation">
       <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
@@ -33,6 +37,32 @@ export function SettingsModal({ onClose }: Props) {
               </button>
             ))}
           </nav>
+          <div className="settings-content">
+            <div className="settings-section">
+              <div className="settings-section-title">API 连接配置</div>
+              <div className="settings-field">
+                <div className="settings-field-label-group">
+                  <span className="settings-field-label">Base URL</span>
+                  <span className="settings-field-hint">Anthropic API 端点地址</span>
+                </div>
+                <input className="settings-input" type="text" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://api.anthropic.com" />
+              </div>
+              <div className="settings-field">
+                <div className="settings-field-label-group">
+                  <span className="settings-field-label">API Key</span>
+                  <span className="settings-field-hint">用于身份验证的 API 密钥</span>
+                </div>
+                <input className="settings-input" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk-ant-api-..." />
+              </div>
+              <div className="settings-field">
+                <div className="settings-field-label-group">
+                  <span className="settings-field-label">模型</span>
+                  <span className="settings-field-hint">默认使用的 Claude 模型</span>
+                </div>
+                <input className="settings-input" type="text" value={model} onChange={(e) => setModel(e.target.value)} placeholder="claude-sonnet-4-6" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

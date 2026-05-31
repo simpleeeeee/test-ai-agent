@@ -23,4 +23,12 @@ describe("SettingsModal", () => {
     expect(screen.getByText("输出")).toBeInTheDocument();
     expect(screen.getByText("调试")).toBeInTheDocument();
   });
+
+  it("shows connection panel by default with Base URL, API Key and model fields", () => {
+    render(<SettingsModal bridge={bridge} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
+    expect(screen.getByText("API 连接配置")).toBeInTheDocument();
+    expect(screen.getByText("Base URL")).toBeInTheDocument();
+    expect(screen.getByText("API Key")).toBeInTheDocument();
+    expect(screen.getByText("模型")).toBeInTheDocument();
+  });
 });
