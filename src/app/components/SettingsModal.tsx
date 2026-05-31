@@ -61,6 +61,9 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
       setDebugFile((s.debugFile as string) ?? "");
       setMaxTurns((s.maxTurns as number) || 50);
       setMaxBudgetUsd((s.maxBudgetUsd as number) || 5);
+      setPermissionMode((s.permissionMode as string) || "default");
+      setThinkingEffort((s.thinkingEffort as string) || "medium");
+      setThinkingDisplay((s.thinkingDisplay as string) || "summarized");
       if (s.outputFormat) {
         setOutputFormatEnabled(true);
         setOutputFormatTemplate((s.outputFormat as Record<string, string>).template || "test_plan");
@@ -78,6 +81,9 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
       baseUrl, apiKey, model, effort, sandboxEnabled, promptCaching,
       debug, debugFile, maxBudgetUsd, maxTurns,
       outputFormat: outputFormatValue,
+      permissionMode,
+      thinkingEffort,
+      thinkingDisplay,
       ...overrides,
     });
   }
@@ -306,7 +312,7 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                       <span className="settings-field-hint">控制工具调用的授权行为</span>
                     </div>
                     <select id="sdk-permission-mode" className="settings-select" aria-label="权限模式"
-                      value={permissionMode} onChange={(e) => setPermissionMode(e.target.value)}>
+                      value={permissionMode} onChange={(e) => { setPermissionMode(e.target.value); handleSave({ permissionMode: e.target.value }); }}>
                       <option value="default">default</option>
                       <option value="acceptEdits">acceptEdits</option>
                       <option value="bypassPermissions">bypassPermissions</option>
@@ -319,7 +325,7 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                       <span className="settings-field-hint">扩展思考的深度级别</span>
                     </div>
                     <select id="sdk-thinking-effort" className="settings-select" aria-label="思考强度"
-                      value={thinkingEffort} onChange={(e) => setThinkingEffort(e.target.value)}>
+                      value={thinkingEffort} onChange={(e) => { setThinkingEffort(e.target.value); handleSave({ thinkingEffort: e.target.value }); }}>
                       <option value="low">low</option>
                       <option value="medium">medium</option>
                       <option value="high">high</option>
@@ -333,7 +339,7 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                       <span className="settings-field-hint">思考过程的展示方式</span>
                     </div>
                     <select id="sdk-thinking-display" className="settings-select" aria-label="Thinking 展示"
-                      value={thinkingDisplay} onChange={(e) => setThinkingDisplay(e.target.value)}>
+                      value={thinkingDisplay} onChange={(e) => { setThinkingDisplay(e.target.value); handleSave({ thinkingDisplay: e.target.value }); }}>
                       <option value="summarized">summarized</option>
                       <option value="omitted">omitted</option>
                     </select>

@@ -315,7 +315,6 @@ export function App() {
         onMinimizeWindow={bridge.minimizeWindow}
         onToggleMaximizeWindow={bridge.toggleMaximizeWindow}
         onCloseWindow={bridge.closeWindow}
-        onToggleSdkControl={() => setSettingsOpen((v) => !v)}
       />
       {utilityPanel === "projects" ? (
         <aside className="utility-panel" aria-label="项目面板">

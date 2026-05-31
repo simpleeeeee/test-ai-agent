@@ -21,6 +21,9 @@ export type SettingsFormValues = {
   maxBudgetUsd?: number;    // 成本上限 (USD)
   maxTurns?: number;        // 最大对话轮数
   outputFormat?: { template?: string; customSchema?: string | null }; // 结构化输出配置
+  permissionMode?: string;  // SDK 权限模式
+  thinkingEffort?: string;  // 思考强度
+  thinkingDisplay?: string; // Thinking 展示方式
 };
 
 function appSettingsPath(cwd: string) {
@@ -30,6 +33,9 @@ function appSettingsPath(cwd: string) {
 export type AppSettings = {
   version: number;
   outputFormat?: { template?: string; customSchema?: string | null };
+  permissionMode?: string;
+  thinkingEffort?: string;
+  thinkingDisplay?: string;
   lastConnectionCheck?: number;
 };
 
@@ -79,6 +85,7 @@ function stringValue(value: unknown) {
 export function loadClaudeCodeSettings({ cwd }: { cwd: string }): SettingsFormValues {
   const shared = readNativeSettings(settingsPathForCwd(cwd));
   const local = readNativeSettings(settingsLocalPathForCwd(cwd));
+  const appSettings = loadAppSettings(cwd);
   return {
     baseUrl: stringValue(local.env?.ANTHROPIC_BASE_URL ?? shared.env?.ANTHROPIC_BASE_URL),
     apiKey: stringValue(local.env?.ANTHROPIC_AUTH_TOKEN ?? shared.env?.ANTHROPIC_AUTH_TOKEN),
@@ -96,7 +103,10 @@ export function loadClaudeCodeSettings({ cwd }: { cwd: string }): SettingsFormVa
     debugFile: stringValue(local.env?.CLAUDE_CODE_DEBUG_FILE ?? shared.env?.CLAUDE_CODE_DEBUG_FILE) || undefined,
     maxBudgetUsd: parseFloat(local.env?.CLAUDE_CODE_MAX_BUDGET_USD ?? shared.env?.CLAUDE_CODE_MAX_BUDGET_USD ?? "") || undefined,
     maxTurns: parseInt(local.env?.CLAUDE_CODE_MAX_TURNS ?? shared.env?.CLAUDE_CODE_MAX_TURNS ?? "", 10) || undefined,
-    outputFormat: loadAppSettings(cwd).outputFormat,
+    outputFormat: appSettings.outputFormat,
+    permissionMode: appSettings.permissionMode,
+    thinkingEffort: appSettings.thinkingEffort,
+    thinkingDisplay: appSettings.thinkingDisplay,
   };
 }
 

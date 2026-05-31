@@ -1554,7 +1554,8 @@ input:focus-visible {
 
 .settings-modal {
   width: 700px;
-  max-height: 560px;
+  height: 560px;
+  max-height: 90vh;
   background: var(--bg-card);
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-xl);
@@ -1861,6 +1862,6 @@ input:focus-visible {
 }
 
 @media (max-width: 760px) {
-  .settings-modal { width: 96vw; max-height: 90vh; }
+  .settings-modal { width: 96vw; height: auto; max-height: 90vh; }
   .settings-nav { width: 140px; }
 }

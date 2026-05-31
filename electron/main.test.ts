@@ -101,11 +101,15 @@ const loadClaudeCodeSettings = vi.fn(() => ({
   model: "",
 }));
 const saveClaudeCodeSettings = vi.fn();
+const loadAppSettings = vi.fn(() => ({ version: 1 }));
+const saveAppSettings = vi.fn();
 
 vi.mock("./agent/sdkSettings.js", () => ({
   ensureClaudeCodeSettings,
   loadClaudeCodeSettings,
   saveClaudeCodeSettings,
+  loadAppSettings,
+  saveAppSettings,
 }));
 
 const mockWarmQuery = {
@@ -130,6 +134,8 @@ describe("electron main IPC registration", () => {
     ensureClaudeCodeSettings.mockClear();
     loadClaudeCodeSettings.mockClear();
     saveClaudeCodeSettings.mockClear();
+    loadAppSettings.mockClear();
+    saveAppSettings.mockClear();
     startup.mockClear();
   });
 

@@ -1,4 +1,3 @@
-import { Settings } from "lucide-react";
 import type { SdkUiState } from "../sdkUiTypes";
 import { Composer } from "./Composer";
 import { EmptyConversationState } from "./EmptyConversationState";
@@ -25,7 +24,6 @@ type Props = {
   onMinimizeWindow: () => void;
   onToggleMaximizeWindow: () => void;
   onCloseWindow: () => void;
-  onToggleSdkControl?: () => void;
 };
 
 export function ConversationPane({
@@ -48,7 +46,6 @@ export function ConversationPane({
   onMinimizeWindow,
   onToggleMaximizeWindow,
   onCloseWindow,
-  onToggleSdkControl,
 }: Props) {
   const isEmpty = state.messages.length === 0 && state.approvals.length === 0 && state.questions.length === 0 && state.errors.length === 0;
   const placeholder = hasTestExecution ? "补充测试指令或继续提问…" : "向 AI 测试助手提问…";
@@ -58,11 +55,6 @@ export function ConversationPane({
       <header className="conversation-header">
         <span className="conversation-title">{title}</span>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {onToggleSdkControl ? (
-            <button className="window-control" type="button" aria-label="SDK 控制" title="SDK 控制" onClick={onToggleSdkControl}>
-              <Settings aria-hidden="true" size={16} />
-            </button>
-          ) : null}
           <WindowControls
             onMinimize={onMinimizeWindow}
             onToggleMaximize={onToggleMaximizeWindow}

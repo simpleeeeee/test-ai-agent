@@ -259,7 +259,7 @@ describe("App backend integration", () => {
     // Establish an active run
     emit("run:created", { runId: "run-1", prompt: "测试" });
 
-    await user.click(screen.getByRole("button", { name: "SDK 控制" }));
+    await user.click(screen.getByRole("button", { name: "设置" }));
     await user.click(within(screen.getByRole("presentation")).getByText("对话"));
     await user.selectOptions(screen.getByLabelText("权限模式"), "plan");
     await user.selectOptions(screen.getByLabelText("思考强度"), "high");
