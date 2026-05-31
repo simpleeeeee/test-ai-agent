@@ -10,6 +10,7 @@ import {
 import { parseRendererToMainPayload } from "../src/ipc/payloadSchemas.js";
 import { createBackendRuntime } from "./agent/backendRuntime.js";
 import { resolveClaudeConfigDir } from "./agent/claudeConfigDir.js";
+import { startup } from "./agent/claudeAgentSdkFacade.js";
 import { ensureClaudeCodeSettings, loadClaudeCodeSettings, saveClaudeCodeSettings } from "./agent/sdkSettings.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -144,6 +145,15 @@ function registerBackendIpc(window: BrowserWindow, cwd: string, configDir: strin
   handleRequest("run:delete-session", ({ sessionId }) =>
     manager.deleteSession(sessionId).catch((e) => ({ error: errorMessage(e), code: "SDK_ERROR" }))
   );
+  handleRequest("run:get-context-usage", ({ runId }) => manager.getContextUsage(runId));
+  handleRequest("run:interrupt", ({ runId }) => manager.interrupt(runId));
+  handleRequest("run:background-tasks", ({ runId, toolUseId }) => manager.backgroundTasks(runId, toolUseId));
+  handleRequest("run:read-file", ({ runId, path, maxBytes, encoding }) => manager.readFile(runId, path, { maxBytes, encoding }));
+  handleRequest("run:reload-plugins", ({ runId }) => manager.reloadPlugins(runId));
+  handleRequest("run:rewind-files", ({ runId, userMessageId, dryRun }) => manager.rewindFiles(runId, userMessageId, { dryRun }));
+  handleRequest("run:seed-read-state", ({ runId, path, mtime }) => manager.seedReadState(runId, path, mtime));
+  handleRequest("run:get-subagent-messages", ({ runId, sessionId, agentId, limit, offset }) => manager.getSubagentMessages(sessionId, agentId, { limit, offset }));
+  handleRequest("run:list-subagents", ({ runId, sessionId }) => manager.listSubagents(sessionId));
 }
 
 function focusedWindow() {
@@ -199,6 +209,12 @@ async function createWindow() {
     await window.loadFile(path.join(__dirname, "../../dist/index.html"));
   }
 }
+
+startup().then((warmQuery) => {
+  app.on("will-quit", () => { warmQuery[Symbol.asyncDispose](); });
+}).catch((e) => {
+  console.warn("SDK startup 预热失败:", e);
+});
 
 app.whenReady().then(createWindow);
 
