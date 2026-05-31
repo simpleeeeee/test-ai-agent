@@ -28,7 +28,6 @@ export const rendererToMainChannels = [
   "sdk:supported-agents",
   "sdk:account-info",
   "sdk:initialization-result",
-  "sdk:count-tokens",
   "settings:get",
   "settings:save",
   "window:minimize",

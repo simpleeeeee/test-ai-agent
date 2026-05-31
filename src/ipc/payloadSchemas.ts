@@ -50,7 +50,6 @@ const rendererSchemas = {
   "sdk:supported-agents": z.object({ runId: nonEmptyString }),
   "sdk:account-info": z.object({ runId: nonEmptyString }),
   "sdk:initialization-result": z.object({ runId: nonEmptyString }),
-  "sdk:count-tokens": z.object({ runId: nonEmptyString, prompt: z.string() }),
   "settings:get": noPayload,
   "settings:save": settingsFormValues,
   "window:minimize": noPayload,

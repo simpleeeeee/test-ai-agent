@@ -9,7 +9,6 @@ const rendererToMainChannels = [
   "question:answer", "task:stop",
   "sdk:supported-models", "sdk:supported-commands", "sdk:supported-agents",
   "sdk:account-info", "sdk:initialization-result",
-  "sdk:count-tokens",
   "settings:get", "settings:save",
   "window:minimize", "window:toggle-maximize", "window:close",
   "run:get-context-usage", "run:interrupt", "run:background-tasks",
