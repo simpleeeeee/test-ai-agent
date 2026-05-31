@@ -79,6 +79,10 @@ const rendererSchemas = {
   "sdk:initialization-result": z.object({ runId: nonEmptyString }),
   "settings:get": noPayload,
   "settings:save": settingsFormValues,
+  "settings:probe-connection": z.object({
+    baseUrl: nonEmptyString,
+    model: nonEmptyString,
+  }),
   "window:minimize": noPayload,
   "window:toggle-maximize": noPayload,
   "window:close": noPayload,

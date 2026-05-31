@@ -65,6 +65,7 @@ describe("IPC channels", () => {
       "sdk:initialization-result",
       "settings:get",
       "settings:save",
+      "settings:probe-connection",
       "window:minimize",
       "window:toggle-maximize",
       "window:close",

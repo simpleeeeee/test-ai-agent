@@ -295,4 +295,22 @@ describe("IPC payload schemas", () => {
     expect(parsed).toHaveProperty("thinkingDisplay", "summarized");
     expect(parsed).toHaveProperty("theme", "dark");
   });
+
+  it("accepts valid settings:probe-connection payload", () => {
+    const parsed = parseRendererToMainPayload("settings:probe-connection" as any, {
+      baseUrl: "https://api.anthropic.com",
+      model: "claude-sonnet-4-6",
+    });
+    expect(parsed).toEqual({
+      baseUrl: "https://api.anthropic.com",
+      model: "claude-sonnet-4-6",
+    });
+  });
+
+  it("rejects settings:probe-connection with empty baseUrl", () => {
+    expect(() => parseRendererToMainPayload("settings:probe-connection" as any, {
+      baseUrl: "",
+      model: "claude-sonnet",
+    })).toThrow();
+  });
 });
