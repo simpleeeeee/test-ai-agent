@@ -293,4 +293,45 @@ describe("SettingsModal", () => {
     expect(onThemeChange).toHaveBeenCalledWith("light");
     expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({ theme: "light" }));
   });
+
+  it("enables test connection button and triggers probe on click", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    const probeConnection = vi.fn().mockResolvedValue({
+      state: "connected",
+      baseUrl: "https://api.example.com",
+      model: "claude-sonnet",
+      probedAt: Date.now(),
+    });
+    const b = {
+      loadSettings: () => Promise.resolve({ baseUrl: "https://api.example.com", apiKey: "sk-test", model: "claude-sonnet" }),
+      saveSettings: vi.fn(),
+      probeConnection,
+    };
+    render(<SettingsModal bridge={b} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
+
+    const button = screen.getByRole("button", { name: "测试连接" });
+    expect(button).not.toBeDisabled();
+
+    await user.click(button);
+    expect(probeConnection).toHaveBeenCalledWith("https://api.example.com", "claude-sonnet");
+  });
+
+  it("shows connected status after successful probe", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    const probeConnection = vi.fn().mockResolvedValue({
+      state: "connected",
+      baseUrl: "https://api.example.com",
+      model: "claude-sonnet",
+      probedAt: Date.now(),
+    });
+    const b = {
+      loadSettings: () => Promise.resolve({ baseUrl: "https://api.example.com", apiKey: "sk-test", model: "claude-sonnet" }),
+      saveSettings: vi.fn(),
+      probeConnection,
+    };
+    render(<SettingsModal bridge={b} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
+
+    await user.click(screen.getByRole("button", { name: "测试连接" }));
+    expect(await screen.findByText("已连接")).toBeInTheDocument();
+  });
 });

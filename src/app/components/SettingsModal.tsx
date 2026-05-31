@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { OUTPUT_SCHEMA_TEMPLATES } from "../../domain/outputSchemas.js";
 
 type Props = {
-  bridge: { loadSettings: () => Promise<Record<string, unknown>>; saveSettings: (settings: Record<string, unknown>) => unknown };
+  bridge: { loadSettings: () => Promise<Record<string, unknown>>; saveSettings: (settings: Record<string, unknown>) => unknown; probeConnection?: (baseUrl: string, model: string) => Promise<{ state: string; baseUrl: string; model: string; error?: { code: string; message: string; suggestion: string }; probedAt: number }> };
   onClose: () => void;
   onThemeChange: (mode: "light" | "dark") => void;
   theme: "light" | "dark";
@@ -45,6 +45,14 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
   const [customSchema, setCustomSchema] = useState("");
   const [debug, setDebug] = useState(false);
   const [debugFile, setDebugFile] = useState("");
+  const [probing, setProbing] = useState(false);
+  const [probeResult, setProbeResult] = useState<{
+    state: string;
+    baseUrl: string;
+    model: string;
+    error?: { code: string; message: string; suggestion: string };
+    probedAt: number;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,6 +105,8 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
     }
   }
 
+  const effectiveStatus = probeResult ?? connectionStatus;
+
   return (
     <div className="settings-modal-overlay" role="presentation" onClick={onClose}>
       <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
@@ -144,32 +154,60 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                 </div>
               </div>
             )}
-            {activeNav === "connection" && connectionStatus && (
+            {activeNav === "connection" && (
               <div className="settings-section">
                 <div className="settings-section-title">连接状态</div>
                 <div className="settings-field">
-                  <div
-                    className={`settings-conn-status${connectionStatus.state === "connected" ? " connected" : ""}`}
-                    onClick={() => connectionStatus.state === "failed" && setShowConnectionError(!showConnectionError)}
-                    role={connectionStatus.state === "failed" ? "button" : undefined}
-                    aria-expanded={connectionStatus.state === "failed" ? showConnectionError : undefined}
-                    style={connectionStatus.state === "failed" ? { cursor: "pointer" } : undefined}
+                  {effectiveStatus && (
+                    <div
+                      className={`settings-conn-status${effectiveStatus.state === "connected" ? " connected" : ""}`}
+                      onClick={() => effectiveStatus.state === "failed" && setShowConnectionError(!showConnectionError)}
+                      role={effectiveStatus.state === "failed" ? "button" : undefined}
+                      aria-expanded={effectiveStatus.state === "failed" ? showConnectionError : undefined}
+                      style={effectiveStatus.state === "failed" ? { cursor: "pointer" } : undefined}
+                    >
+                      <span className="conn-dot" />
+                      <span>
+                        {effectiveStatus.state === "connected" ? "已连接" :
+                         effectiveStatus.state === "unverified" ? "未验证" :
+                         effectiveStatus.state === "connecting" ? "验证中..." :
+                         effectiveStatus.state === "failed" ? "连接失败" : "未验证"}
+                      </span>
+                      {effectiveStatus.state === "connected" && <> 至 {effectiveStatus.model}</>}
+                    </div>
+                  )}
+                  <button
+                    className="settings-btn"
+                    disabled={probing}
+                    onClick={async () => {
+                      setProbing(true);
+                      setProbeResult({ state: "connecting", baseUrl, model, probedAt: Date.now() });
+                      try {
+                        if (!bridge.probeConnection) {
+                          throw new Error("probeConnection not available");
+                        }
+                        const result = await bridge.probeConnection(baseUrl, model);
+                        setProbeResult(result);
+                      } catch {
+                        setProbeResult({
+                          state: "failed",
+                          baseUrl,
+                          model,
+                          error: { code: "UNKNOWN", message: "连接测试失败", suggestion: "请检查网络连接后重试" },
+                          probedAt: Date.now(),
+                        });
+                      } finally {
+                        setProbing(false);
+                      }
+                    }}
                   >
-                    <span className="conn-dot" />
-                    <span>
-                      {connectionStatus.state === "connected" ? "已连接" :
-                       connectionStatus.state === "unverified" ? "未验证" :
-                       connectionStatus.state === "connecting" ? "验证中..." :
-                       connectionStatus.state === "failed" ? "连接失败" : "未验证"}
-                    </span>
-                    {connectionStatus.state === "connected" && <> 至 {connectionStatus.model}</>}
-                  </div>
-                  <button className="settings-btn" disabled title="连接测试功能即将开放">测试连接</button>
+                    {probing ? "验证中..." : "测试连接"}
+                  </button>
                 </div>
-                {showConnectionError && connectionStatus.error && (
+                {showConnectionError && effectiveStatus?.error && (
                   <div className="settings-conn-error" role="region" aria-label="连接错误详情">
-                    <p>{connectionStatus.error.message}</p>
-                    <p className="conn-error-suggestion">{connectionStatus.error.suggestion}</p>
+                    <p>{effectiveStatus.error.message}</p>
+                    <p className="conn-error-suggestion">{effectiveStatus.error.suggestion}</p>
                   </div>
                 )}
               </div>
