@@ -108,6 +108,16 @@ vi.mock("./agent/sdkSettings.js", () => ({
   saveClaudeCodeSettings,
 }));
 
+const mockWarmQuery = {
+  [Symbol.asyncDispose]: vi.fn(() => Promise.resolve()),
+};
+
+const startup = vi.fn(() => Promise.resolve(mockWarmQuery));
+
+vi.mock("./agent/claudeAgentSdkFacade.js", () => ({
+  startup,
+}));
+
 describe("electron main IPC registration", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -120,6 +130,7 @@ describe("electron main IPC registration", () => {
     ensureClaudeCodeSettings.mockClear();
     loadClaudeCodeSettings.mockClear();
     saveClaudeCodeSettings.mockClear();
+    startup.mockClear();
   });
 
   async function flushMicrotasks() {

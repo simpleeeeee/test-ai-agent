@@ -50,7 +50,6 @@ const streamChannels: MainToRendererChannel[] = [
   "sdk:elicitation-complete",
   "sdk:user-message-replay",
   "sdk:compact-boundary",
-  "sdk:connection-status",
   "sdk:deferred-tool-use",
   "question:required",
   "question:answered",
@@ -85,12 +84,7 @@ export function createBackendBridge(api: AiTestAssistantApi) {
     setPermissionMode(runId: string, permissionMode: string) {
       return api.invoke("run:set-permission-mode", { runId, permissionMode });
     },
-    applySettings(runId: string, settings: Record<string, unknown> & {
-      outputFormat?: {
-        type: "json_schema";
-        json_schema: { name: string; strict: boolean; schema: Record<string, unknown> };
-      };
-    }) {
+    applySettings(runId: string, settings: Record<string, unknown>) {
       return api.invoke("run:apply-settings", { runId, settings });
     },
     mcpStatus(runId: string) {
@@ -124,33 +118,9 @@ export function createBackendBridge(api: AiTestAssistantApi) {
       return api.invoke("task:stop", { runId, taskId });
     },
     loadSettings() {
-      return api.invoke("settings:get", undefined) as Promise<{
-        baseUrl: string;
-        apiKey: string;
-        model: string;
-        effort?: string;
-        sandboxEnabled?: boolean;
-        promptCaching?: boolean;
-        debug?: boolean;
-        debugFile?: string;
-        maxBudgetUsd?: number;
-        maxTurns?: number;
-        outputFormat?: { template?: string; customSchema?: string | null };
-      }>;
+      return api.invoke("settings:get", undefined) as Promise<Record<string, unknown>>;
     },
-    saveSettings(settings: {
-      baseUrl: string;
-      apiKey: string;
-      model: string;
-      effort?: string;
-      sandboxEnabled?: boolean;
-      promptCaching?: boolean;
-      debug?: boolean;
-      debugFile?: string;
-      maxBudgetUsd?: number;
-      maxTurns?: number;
-      outputFormat?: { template?: string; customSchema?: string | null };
-    }) {
+    saveSettings(settings: Record<string, unknown>) {
       return api.invoke("settings:save", settings);
     },
     listSessions() {

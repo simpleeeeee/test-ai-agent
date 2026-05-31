@@ -4,7 +4,7 @@ import { createInitialSdkUiState, reduceSdkUiEvent } from "./sdkEventStore";
 import { ClaudeSidebar } from "./components/ClaudeSidebar";
 import { ConversationPane } from "./components/ConversationPane";
 import { TestConsole } from "./components/TestConsole";
-import { SettingsPanel } from "./components/SettingsPanel";
+import { SettingsModal } from "./components/SettingsModal";
 import type { Evidence } from "../domain/testRun";
 import type { SdkMessage, SessionSummary } from "./sdkUiTypes";
 import { isExplicitTestExecutionRequest } from "./testIntent";
@@ -130,6 +130,13 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [settingsModel, setSettingsModel] = useState("");
+  const [connectionStatus, setConnectionStatus] = useState<{
+    state: string;
+    baseUrl: string;
+    model: string;
+    error?: { code: string; message: string; suggestion: string };
+    probedAt: number;
+  } | undefined>();
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
@@ -154,7 +161,13 @@ export function App() {
 
   useEffect(() => {
     bridge.loadSettings().then((s) => {
-      setSettingsModel(s.model || "");
+      setSettingsModel((s.model as string) || "");
+      setConnectionStatus({
+        state: "unverified",
+        baseUrl: (s.baseUrl as string) || "",
+        model: (s.model as string) || "",
+        probedAt: Date.now(),
+      });
     }).catch(() => {});
   }, [bridge]);
 
@@ -312,13 +325,14 @@ export function App() {
       ) : null}
       {composerNotice ? <div className="composer-notice" role="status">{composerNotice}</div> : null}
       {settingsOpen ? (
-        <SettingsPanel
+        <SettingsModal
           bridge={bridge}
           onClose={() => setSettingsOpen(false)}
           onThemeChange={(mode) => setTheme(mode)}
           theme={theme}
           activeRunId={state.activeRunId}
           onApplySettings={handleApplySdkSettings}
+          connectionStatus={connectionStatus}
         />
       ) : null}
       {shouldShowTestConsole ? (
