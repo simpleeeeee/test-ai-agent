@@ -175,12 +175,7 @@ describe("IPC payload schemas", () => {
     })).toThrow();
   });
 
-  it("accepts token count request and response payloads", () => {
-    expect(parseRendererToMainPayload("sdk:count-tokens" as any, {
-      runId: "run-1",
-      prompt: "测试订单流程",
-    })).toEqual({ runId: "run-1", prompt: "测试订单流程" });
-
+  it("accepts token count response payloads", () => {
     expect(parseMainToRendererPayload("sdk:token-counted" as any, {
       runId: "run-1",
       inputTokens: 128,

@@ -10,7 +10,7 @@ describe("IPC channels", () => {
   it("allows only explicit renderer-to-main channels", () => {
     expect(isRendererToMainChannel("run:create")).toBe(true);
     expect(isRendererToMainChannel("tool:approve")).toBe(true);
-    expect(isRendererToMainChannel("sdk:count-tokens" as any)).toBe(true);
+    expect(isRendererToMainChannel("settings:get")).toBe(true);
     expect(isRendererToMainChannel("shell:openExternal")).toBe(false);
   });
 
@@ -60,7 +60,6 @@ describe("IPC channels", () => {
       "sdk:supported-agents",
       "sdk:account-info",
       "sdk:initialization-result",
-      "sdk:count-tokens",
       "settings:get",
       "settings:save",
       "window:minimize",
