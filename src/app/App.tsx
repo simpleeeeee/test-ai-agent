@@ -161,11 +161,11 @@ export function App() {
 
   useEffect(() => {
     bridge.loadSettings().then((s) => {
-      setSettingsModel(s.model || "");
+      setSettingsModel((s.model as string) || "");
       setConnectionStatus({
         state: "unverified",
-        baseUrl: s.baseUrl || "",
-        model: s.model || "",
+        baseUrl: (s.baseUrl as string) || "",
+        model: (s.model as string) || "",
         probedAt: Date.now(),
       });
     }).catch(() => {});
