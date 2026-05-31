@@ -24,6 +24,7 @@ export type SettingsFormValues = {
   permissionMode?: string;  // SDK 权限模式
   thinkingEffort?: string;  // 思考强度
   thinkingDisplay?: string; // Thinking 展示方式
+  theme?: "light" | "dark"; // UI 主题
 };
 
 function appSettingsPath(cwd: string) {
@@ -36,6 +37,7 @@ export type AppSettings = {
   permissionMode?: string;
   thinkingEffort?: string;
   thinkingDisplay?: string;
+  theme?: "light" | "dark";
   lastConnectionCheck?: number;
 };
 
@@ -107,6 +109,7 @@ export function loadClaudeCodeSettings({ cwd }: { cwd: string }): SettingsFormVa
     permissionMode: appSettings.permissionMode,
     thinkingEffort: appSettings.thinkingEffort,
     thinkingDisplay: appSettings.thinkingDisplay,
+    theme: appSettings.theme,
   };
 }
 

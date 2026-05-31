@@ -298,3 +298,28 @@ describe("filterEscalatingMode", () => {
     expect(typeof filterEscalatingMode).toBe("function");
   });
 });
+
+describe("app-settings theme", () => {
+  it("loadClaudeCodeSettings reads theme from appSettings", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-theme-"));
+    fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
+    fs.writeFileSync(path.join(cwd, ".claude", "app-settings.json"), JSON.stringify({
+      version: 1,
+      theme: "dark",
+    }));
+
+    const loaded = loadClaudeCodeSettings({ cwd });
+    expect(loaded.theme).toBe("dark");
+  });
+
+  it("loadClaudeCodeSettings returns undefined theme when appSettings has no theme", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "ai-test-theme-"));
+    fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
+    fs.writeFileSync(path.join(cwd, ".claude", "app-settings.json"), JSON.stringify({
+      version: 1,
+    }));
+
+    const loaded = loadClaudeCodeSettings({ cwd });
+    expect(loaded.theme).toBeUndefined();
+  });
+});
