@@ -158,7 +158,7 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                     </span>
                     {connectionStatus.state === "connected" && <> 至 {connectionStatus.model}</>}
                   </div>
-                  <button className="settings-btn">测试连接</button>
+                  <button className="settings-btn" disabled title="连接测试功能即将开放">测试连接</button>
                 </div>
                 {showConnectionError && connectionStatus.error && (
                   <div className="settings-conn-error" role="region" aria-label="连接错误详情">
@@ -290,8 +290,8 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                 <div className="settings-section">
                   <div className="settings-section-title">日志操作</div>
                   <div className="settings-actions">
-                    <button className="settings-btn" type="button">导出调试日志</button>
-                    <button className="settings-btn" type="button">复制最近日志</button>
+                    <button className="settings-btn" type="button" disabled title="日志功能即将开放">导出调试日志</button>
+                    <button className="settings-btn" type="button" disabled title="日志功能即将开放">复制最近日志</button>
                   </div>
                 </div>
               </>
