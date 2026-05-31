@@ -90,6 +90,20 @@ describe("backendBridge", () => {
     expect(api.send).toHaveBeenCalledWith("window:close", undefined);
   });
 
+  it("probeConnection invokes settings:probe-connection with baseUrl and model", async () => {
+    const api = {
+      send: vi.fn(),
+      invoke: vi.fn().mockResolvedValue({ state: "connected", baseUrl: "https://api.example.com", model: "claude-sonnet", probedAt: Date.now() }),
+      on: vi.fn(),
+    };
+    const bridge = createBackendBridge(api);
+    const result = await bridge.probeConnection("https://api.example.com", "claude-sonnet");
+    expect(api.invoke).toHaveBeenCalledWith("settings:probe-connection", { baseUrl: "https://api.example.com", model: "claude-sonnet" });
+    expect(result).toHaveProperty("state", "connected");
+    expect(result).toHaveProperty("baseUrl", "https://api.example.com");
+    expect(result).toHaveProperty("model", "claude-sonnet");
+  });
+
   it("subscribes to every main-to-renderer stream and returns a cleanup function", () => {
     const cleanup = vi.fn();
     const api = { send: vi.fn(), invoke: vi.fn(), on: vi.fn(() => cleanup) };

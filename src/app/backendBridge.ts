@@ -123,6 +123,15 @@ export function createBackendBridge(api: AiTestAssistantApi) {
     saveSettings(settings: Record<string, unknown>) {
       return api.invoke("settings:save", settings);
     },
+    probeConnection(baseUrl: string, model: string) {
+      return api.invoke("settings:probe-connection", { baseUrl, model }) as Promise<{
+        state: string;
+        baseUrl: string;
+        model: string;
+        error?: { code: string; message: string; suggestion: string };
+        probedAt: number;
+      }>;
+    },
     listSessions() {
       return api.invoke("run:list-sessions", undefined);
     },
