@@ -48,7 +48,9 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
   const [debugFile, setDebugFile] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
     bridge.loadSettings().then((raw) => {
+      if (cancelled) return;
       const s = raw as Record<string, unknown>;
       setBaseUrl((s.baseUrl as string) || "");
       setApiKey((s.apiKey as string) || "");
@@ -66,6 +68,7 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
         setCustomSchema((s.outputFormat as Record<string, string>).customSchema || "");
       }
     });
+    return () => { cancelled = true; };
   }, [bridge]);
 
   function handleSave(overrides?: Record<string, unknown>) {
