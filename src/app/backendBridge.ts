@@ -162,6 +162,15 @@ export function createBackendBridge(api: AiTestAssistantApi) {
     closeWindow() {
       api.send("window:close", undefined);
     },
+    getContextUsage(runId: string) { return api.invoke("run:get-context-usage", { runId }); },
+    interrupt(runId: string) { return api.invoke("run:interrupt", { runId }); },
+    backgroundTasks(runId: string, toolUseId?: string) { return api.invoke("run:background-tasks", { runId, toolUseId }); },
+    readFile(runId: string, path: string, options?: { maxBytes?: number; encoding?: "utf-8" | "base64" }) { return api.invoke("run:read-file", { runId, path, ...options }); },
+    reloadPlugins(runId: string) { return api.invoke("run:reload-plugins", { runId }); },
+    rewindFiles(runId: string, userMessageId: string, options?: { dryRun?: boolean }) { return api.invoke("run:rewind-files", { runId, userMessageId, ...options }); },
+    seedReadState(runId: string, path: string, mtime: number) { return api.invoke("run:seed-read-state", { runId, path, mtime }); },
+    getSubagentMessages(runId: string, sessionId: string, agentId: string, options?: { limit?: number; offset?: number }) { return api.invoke("run:get-subagent-messages", { runId, sessionId, agentId, ...options }); },
+    listSubagents(runId: string, sessionId: string) { return api.invoke("run:list-subagents", { runId, sessionId }); },
   };
 }
 
