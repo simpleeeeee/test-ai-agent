@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { OUTPUT_SCHEMA_TEMPLATES } from "../../domain/outputSchemas.js";
 
 type Props = {
-  bridge: { loadSettings: () => Promise<unknown>; saveSettings: (s: unknown) => unknown };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  bridge: { loadSettings: () => Promise<unknown>; saveSettings: (s: any) => any };
   onClose: () => void;
   onThemeChange: (mode: "light" | "dark") => void;
   theme: "light" | "dark";
@@ -47,7 +48,8 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
   const [debugFile, setDebugFile] = useState("");
 
   useEffect(() => {
-    bridge.loadSettings().then((s: Record<string, unknown>) => {
+    bridge.loadSettings().then((raw) => {
+      const s = raw as Record<string, unknown>;
       setBaseUrl((s.baseUrl as string) || "");
       setApiKey((s.apiKey as string) || "");
       setModel((s.model as string) || "");
