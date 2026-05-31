@@ -104,8 +104,8 @@ function registerBackendIpc(window: BrowserWindow, cwd: string, configDir: strin
   handleRequest("sdk:account-info", ({ runId }) => manager.accountInfo(runId));
   handleRequest("sdk:initialization-result", ({ runId }) => manager.initializationResult(runId));
   handleRequest("settings:get", () => loadClaudeCodeSettings({ cwd }));
-  handleRequest("settings:save", ({ baseUrl, apiKey, model }) => {
-    saveClaudeCodeSettings({ cwd, baseUrl, apiKey, model });
+  handleRequest("settings:save", ({ baseUrl, apiKey, model, effort, sandboxEnabled }) => {
+    saveClaudeCodeSettings({ cwd, baseUrl, apiKey, model, effort, sandboxEnabled });
     return loadClaudeCodeSettings({ cwd });
   });
   handleRequest("task:stop", ({ runId, taskId }) => manager.stopTask(runId, taskId));

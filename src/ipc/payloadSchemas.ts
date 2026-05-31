@@ -7,6 +7,8 @@ const settingsFormValues = z.object({
   baseUrl: nonEmptyString,
   apiKey: nonEmptyString,
   model: nonEmptyString,
+  effort: z.string().optional(),
+  sandboxEnabled: z.boolean().optional(),
 });
 
 const noPayload = z.undefined().optional();
