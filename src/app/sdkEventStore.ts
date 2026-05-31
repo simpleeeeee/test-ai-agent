@@ -247,13 +247,16 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
   }
 
   if (event.channel === "sdk:task-progress") {
-    return {
-      ...state,
-      activeRunId,
-      tasks: state.tasks.length >= 200
-        ? [...state.tasks.slice(-199), { taskId: String(payload.taskId), summary: typeof payload.summary === "string" ? payload.summary : undefined }]
-        : [...state.tasks, { taskId: String(payload.taskId), summary: typeof payload.summary === "string" ? payload.summary : undefined }],
+    const entry = {
+      taskId: String(payload.taskId),
+      summary: typeof payload.summary === "string" ? payload.summary : undefined,
+      status: typeof payload.status === "string" ? payload.status : undefined,
     };
+    const idx = state.tasks.findIndex(t => t.taskId === entry.taskId);
+    const tasks = idx >= 0
+      ? state.tasks.map((t, i) => i === idx ? { ...t, ...entry } : t)
+      : [...state.tasks, entry];
+    return { ...state, activeRunId, tasks: tasks.length > 200 ? tasks.slice(-200) : tasks };
   }
 
   if (event.channel === "sdk:permission-denied") {
