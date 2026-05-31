@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { ModelCapabilities } from "../sdkUiTypes";
 
 type SettingsFormValues = {
   baseUrl: string;
@@ -29,9 +30,10 @@ type Props = {
   activeRunId?: string;
   onApplySettings?: (runId: string, settings: Record<string, unknown>) => void;
   connectionStatus?: ConnectionStatus;
+  modelCapabilities?: ModelCapabilities;
 };
 
-export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRunId, onApplySettings, connectionStatus }: Props) {
+export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRunId, onApplySettings, connectionStatus, modelCapabilities }: Props) {
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("");
@@ -137,7 +139,10 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
         </div>
         <div className="setting-row">
           <label className="setting-label" htmlFor="sdk-thinking-effort">思考强度</label>
-          <select id="sdk-thinking-effort" aria-label="思考强度" value={thinkingEffort} onChange={(e) => setThinkingEffort(e.target.value)}>
+          <select id="sdk-thinking-effort" aria-label="思考强度"
+            value={thinkingEffort} onChange={(e) => setThinkingEffort(e.target.value)}
+            disabled={modelCapabilities != null && !modelCapabilities.supportsThinking}
+            title={modelCapabilities != null && !modelCapabilities.supportsThinking ? "当前模型不支持扩展思考" : undefined}>
             <option value="low">low</option>
             <option value="medium">medium</option>
             <option value="high">high</option>
@@ -147,7 +152,10 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
         </div>
         <div className="setting-row">
           <label className="setting-label" htmlFor="sdk-thinking-display">Thinking 展示</label>
-          <select id="sdk-thinking-display" aria-label="Thinking 展示" value={thinkingDisplay} onChange={(e) => setThinkingDisplay(e.target.value)}>
+          <select id="sdk-thinking-display" aria-label="Thinking 展示"
+            value={thinkingDisplay} onChange={(e) => setThinkingDisplay(e.target.value)}
+            disabled={modelCapabilities != null && !modelCapabilities.supportsThinking}
+            title={modelCapabilities != null && !modelCapabilities.supportsThinking ? "当前模型不支持扩展思考" : undefined}>
             <option value="summarized">summarized</option>
             <option value="omitted">omitted</option>
           </select>
@@ -155,7 +163,9 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme, activeRun
         <div className="setting-row">
           <label className="setting-label" htmlFor="sdk-effort">推理努力程度</label>
           <select id="sdk-effort" aria-label="推理努力程度"
-            value={effort} onChange={(e) => { setEffort(e.target.value); handleSave({ effort: e.target.value }); }}>
+            value={effort} onChange={(e) => { setEffort(e.target.value); handleSave({ effort: e.target.value }); }}
+            disabled={modelCapabilities != null && !modelCapabilities.supportsThinking}
+            title={modelCapabilities != null && !modelCapabilities.supportsThinking ? "当前模型不支持扩展思考" : undefined}>
             <option value="low">低</option>
             <option value="medium">中</option>
             <option value="high">高</option>

@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+
 export type ModelCapabilities = {
   model: string;
   supportsThinking: boolean;
@@ -23,6 +26,35 @@ function getCache(): Map<string, CacheEntry> {
     capabilitiesCache = new Map();
   }
   return capabilitiesCache;
+}
+
+function cacheFilePath(cwd: string) {
+  return path.join(cwd, ".claude", "model-capabilities.json");
+}
+
+export function loadCapabilitiesCache(cwd: string): void {
+  try {
+    const raw = fs.readFileSync(cacheFilePath(cwd), "utf8");
+    const data = JSON.parse(raw);
+    if (data?.entries) {
+      const cache = getCache();
+      for (const [model, caps] of Object.entries(data.entries)) {
+        cache.set(model, { caps: caps as ModelCapabilities, storedAt: Date.now() });
+      }
+    }
+  } catch { /* file missing or corrupt, ignore */ }
+}
+
+export function saveCapabilitiesCache(cwd: string): void {
+  const cache = getCache();
+  if (cache.size === 0) return;
+  const entries: Record<string, ModelCapabilities> = {};
+  for (const [model, entry] of cache) {
+    entries[model] = entry.caps;
+  }
+  const dir = path.dirname(cacheFilePath(cwd));
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(cacheFilePath(cwd), JSON.stringify({ version: 1, entries }, null, 2), "utf8");
 }
 
 export function clearCapabilitiesCache(): void {

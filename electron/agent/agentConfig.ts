@@ -3,6 +3,8 @@ import path from "node:path";
 import { loadClaudeCodeSettings, loadResolvedSettings } from "./sdkSettings.js";
 // 以下类型按需从 facade 导入；若因版本差异导致导入失败（循环依赖或类型缺失），可降级为 any
 import type { OnElicitation, SpawnOptions, SpawnedProcess } from "./claudeAgentSdkFacade.js";
+import { detectModelCapabilities } from "./modelCapabilities.js";
+import type { ModelCapabilities } from "./modelCapabilities.js";
 
 export type AgentRuntimeConfig = {
   cwd: string;
@@ -227,6 +229,27 @@ function assertThirdPartyBaseUrl(baseUrl: string) {
   }
 }
 
+function degradeOutputFormatToPrompt(of: { type: "json_schema"; json_schema: { name: string; strict: boolean; schema: Record<string, unknown> } }): string {
+  const schema = of.json_schema.schema;
+  const fields = extractFieldNames(schema);
+  const lines = ["请以 JSON 格式输出，必须包含以下字段："];
+  for (const f of fields) lines.push(`- ${f}`);
+  lines.push("", "以 ```json ... ``` 代码块包裹 JSON 输出。");
+  return lines.join("\n");
+}
+
+function extractFieldNames(schema: Record<string, unknown>, prefix = ""): string[] {
+  const result: string[] = [];
+  if (schema.type === "object" && schema.properties && typeof schema.properties === "object") {
+    for (const [key, prop] of Object.entries(schema.properties as Record<string, Record<string, unknown>>)) {
+      const fullPath = prefix ? `${prefix}.${key}` : key;
+      const desc = prop.description ? ` (${prop.description})` : "";
+      result.push(`${fullPath}: ${prop.type ?? "string"}${desc}`);
+    }
+  }
+  return result;
+}
+
 export async function loadAgentRuntimeConfig(input: {
   cwd: string;
   claudeConfigDir?: string | null;
@@ -237,7 +260,7 @@ export async function loadAgentRuntimeConfig(input: {
     stderr?: (data: string) => void;
     abortController?: AbortController;
   };
-}): Promise<AgentRuntimeConfig> {
+}): Promise<AgentRuntimeConfig & { model: string; degradations: Array<{ feature: string; reason: string }> }> {
   const settings = loadClaudeCodeSettings({ cwd: input.cwd });
   const baseUrl = settings.baseUrl.trim();
   const authToken = settings.apiKey.trim();
@@ -293,28 +316,72 @@ export async function loadAgentRuntimeConfig(input: {
     ? resolvedSandboxEnabled
     : settings.sandboxEnabled;
 
+  // === 构建合并后的 sdkOptions ===
+  const mergedOptions: Record<string, unknown> = {
+    ...userSdkOptions,
+    cwd: input.cwd,
+    ...(pathToClaudeCodeExecutable ? { pathToClaudeCodeExecutable } : {}),
+    includePartialMessages: true,
+    permissionMode: userSdkOptions.permissionMode ?? "default",
+    thinking,
+    // 新字段合并（userSdkOptions 已经包含了这些字段，此处用合并后的值覆盖）
+    ...(effort ? { effort } : {}),
+    ...(sandboxEnabled !== undefined
+      ? { sandbox: { ...(userSdkOptions.sandbox ?? {}), enabled: sandboxEnabled } }
+      : userSdkOptions.sandbox
+        ? { sandbox: userSdkOptions.sandbox }
+        : {}),
+    ...(input.claudeConfigDir ? { env: { CLAUDE_CONFIG_DIR: input.claudeConfigDir } } : {}),
+    // 注入 codeOptions：将回调/实例类型的运行时选项传递到 SDK options
+    ...(input.codeOptions?.onElicitation ? { onElicitation: input.codeOptions.onElicitation } : {}),
+    ...(input.codeOptions?.spawnClaudeCodeProcess ? { spawnClaudeCodeProcess: input.codeOptions.spawnClaudeCodeProcess } : {}),
+    ...(input.codeOptions?.stderr ? { stderr: input.codeOptions.stderr } : {}),
+    ...(input.codeOptions?.abortController ? { abortController: input.codeOptions.abortController } : {}),
+  };
+
+  // === 模型能力检测 + 自动降级 ===
+  const degradations: Array<{ feature: string; reason: string }> = [];
+  if (model) {
+    let caps: ModelCapabilities;
+    try {
+      caps = await detectModelCapabilities(
+        { query: /* NOTE: SDK query not available here; use heuristic */ undefined as any },
+        model,
+      );
+    } catch {
+      caps = { model, supportsThinking: true, supportsJsonSchema: true, supportsPromptCaching: true, maxContextWindow: 200000, supportsToolUse: true, detectedAt: Date.now(), detectionMethod: "heuristic" };
+    }
+
+    // 若探测失败回退到保守默认值，在此处覆盖为乐观启发式默认值（无真实 SDK 时假定全部支持）
+    if (caps.detectionMethod !== "probe") {
+      caps = { model, supportsThinking: true, supportsJsonSchema: true, supportsPromptCaching: true, maxContextWindow: 200000, supportsToolUse: true, detectedAt: Date.now(), detectionMethod: "heuristic" };
+    }
+
+    if (!caps.supportsThinking) {
+      delete mergedOptions.thinking;
+      delete mergedOptions.effort;
+      degradations.push({ feature: "thinking", reason: "模型不支持" });
+    }
+    if (!caps.supportsJsonSchema && mergedOptions.outputConfig) {
+      const outputConfig = mergedOptions.outputConfig as Record<string, unknown>;
+      const formatObj = outputConfig.format ?? outputConfig;
+      try {
+        const promptInjection = degradeOutputFormatToPrompt(formatObj as any);
+        mergedOptions.systemPrompt = ((mergedOptions.systemPrompt as string) ?? "") + "\n\n" + promptInjection;
+      } catch { /* schema structure unexpected, skip degradation */ }
+      delete mergedOptions.outputConfig;
+      degradations.push({ feature: "jsonSchema", reason: "模型不支持，已降级为自然语言格式要求" });
+    }
+    if (!caps.supportsPromptCaching) {
+      delete mergedOptions.promptCaching;
+      degradations.push({ feature: "promptCaching", reason: "模型不支持" });
+    }
+  }
+
   return {
     cwd: input.cwd,
-    sdkOptions: {
-      ...userSdkOptions,
-      cwd: input.cwd,
-      ...(pathToClaudeCodeExecutable ? { pathToClaudeCodeExecutable } : {}),
-      includePartialMessages: true,
-      permissionMode: userSdkOptions.permissionMode ?? "default",
-      thinking,
-      // 新字段合并（userSdkOptions 已经包含了这些字段，此处用合并后的值覆盖）
-      ...(effort ? { effort } : {}),
-      ...(sandboxEnabled !== undefined
-        ? { sandbox: { ...(userSdkOptions.sandbox ?? {}), enabled: sandboxEnabled } }
-        : userSdkOptions.sandbox
-          ? { sandbox: userSdkOptions.sandbox }
-          : {}),
-      ...(input.claudeConfigDir ? { env: { CLAUDE_CONFIG_DIR: input.claudeConfigDir } } : {}),
-      // 注入 codeOptions：将回调/实例类型的运行时选项传递到 SDK options
-      ...(input.codeOptions?.onElicitation ? { onElicitation: input.codeOptions.onElicitation } : {}),
-      ...(input.codeOptions?.spawnClaudeCodeProcess ? { spawnClaudeCodeProcess: input.codeOptions.spawnClaudeCodeProcess } : {}),
-      ...(input.codeOptions?.stderr ? { stderr: input.codeOptions.stderr } : {}),
-      ...(input.codeOptions?.abortController ? { abortController: input.codeOptions.abortController } : {}),
-    },
+    sdkOptions: mergedOptions,
+    model,
+    degradations,
   };
 }

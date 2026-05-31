@@ -106,7 +106,7 @@ const mainSchemas = {
   }),
   "sdk:system-event": z.object({
     runId: nonEmptyString,
-    subtype: nonEmptyString,
+    subtype: z.enum(["capability_degraded"]).or(nonEmptyString),
     raw: z.unknown(),
   }),
   "sdk:raw-message": z.object({ runId: nonEmptyString, message: z.unknown() }),

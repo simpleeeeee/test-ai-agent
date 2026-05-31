@@ -304,13 +304,33 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
 
   if (event.channel === "sdk:system-event") {
     const systemEvent = { subtype: String(payload.subtype), raw: payload.raw };
-    return {
+    let nextState = {
       ...state,
       activeRunId,
       systemEvents: state.systemEvents.length >= 200
         ? [...state.systemEvents.slice(-199), systemEvent]
         : [...state.systemEvents, systemEvent],
     };
+
+    // 能力降级时添加用户通知
+    if (String(payload.subtype) === "capability_degraded") {
+      const raw = payload.raw as { model?: string; degradations?: Array<{ feature: string; reason: string }> } | undefined;
+      const degradationsList = raw?.degradations ?? [];
+      const modelLabel = raw?.model ? ` (${raw.model})` : "";
+      const features = degradationsList.map((d) => d.feature).join("、");
+      const notification = {
+        message: `模型${modelLabel}的以下功能已被自动降级：${features}`,
+        notificationType: "warning",
+      };
+      nextState = {
+        ...nextState,
+        notifications: nextState.notifications.length >= 200
+          ? [...nextState.notifications.slice(-199), notification]
+          : [...nextState.notifications, notification],
+      };
+    }
+
+    return nextState;
   }
 
   if (event.channel === "sdk:connection-status") {

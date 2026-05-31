@@ -1,6 +1,17 @@
 import type { MainToRendererChannel } from "../ipc/channels";
 import type { BugDraft, Evidence, ToolCall } from "../domain/testRun";
 
+export type ModelCapabilities = {
+  model: string;
+  supportsThinking: boolean;
+  supportsJsonSchema: boolean;
+  supportsPromptCaching: boolean;
+  maxContextWindow: number;
+  supportsToolUse: boolean;
+  detectedAt: number;
+  detectionMethod: "probe" | "heuristic" | "manual";
+};
+
 export type SdkMessage = {
   id: string;
   role: "user" | "assistant" | "system";
@@ -128,6 +139,7 @@ export type SdkUiState = {
     error?: { code: string; message: string; suggestion: string };
     probedAt: number;
   };
+  modelCapabilities?: ModelCapabilities;
 };
 
 export type SdkUiEvent =

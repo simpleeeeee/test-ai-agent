@@ -51,6 +51,13 @@ export class AgentSessionManager {
     runOptions?: { resume?: string; continue?: boolean },
   ) {
     const config = await this.loadConfig({ cwd: this.deps.cwd ?? process.cwd(), claudeConfigDir: this.deps.configDir });
+    if (config.degradations && config.degradations.length > 0) {
+      this.deps.emit("sdk:system-event", {
+        runId,
+        subtype: "capability_degraded",
+        raw: { model: config.model, degradations: config.degradations },
+      });
+    }
     const input = new AsyncMessageQueue<unknown>();
     const isResuming = !!(runOptions?.resume || runOptions?.continue);
     if (!isResuming) {
