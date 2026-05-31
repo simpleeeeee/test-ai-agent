@@ -72,4 +72,17 @@ describe("SettingsModal", () => {
     await user.click(screen.getByRole("button", { name: "暗色" }));
     expect(onThemeChange).toHaveBeenCalledWith("dark");
   });
+
+  it("shows 已连接 when connectionStatus state is connected", () => {
+    const connectionStatus = {
+      state: "connected" as const,
+      baseUrl: "https://api.example.com",
+      model: "claude-sonnet",
+      probedAt: Date.now(),
+    };
+    render(
+      <SettingsModal bridge={bridge} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" connectionStatus={connectionStatus} />,
+    );
+    expect(screen.getByText("已连接")).toBeInTheDocument();
+  });
 });

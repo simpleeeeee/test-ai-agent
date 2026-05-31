@@ -5,6 +5,13 @@ type Props = {
   onClose: () => void;
   onThemeChange: (mode: "light" | "dark") => void;
   theme: "light" | "dark";
+  connectionStatus?: {
+    state: string;
+    baseUrl: string;
+    model: string;
+    error?: { code: string; message: string; suggestion: string };
+    probedAt: number;
+  };
 };
 
 const NAV_ITEMS = [
@@ -16,7 +23,7 @@ const NAV_ITEMS = [
   { key: "debug", icon: "🔧", label: "调试" },
 ] as const;
 
-export function SettingsModal({ onClose, theme, onThemeChange }: Props) {
+export function SettingsModal({ onClose, theme, onThemeChange, connectionStatus }: Props) {
   const [activeNav, setActiveNav] = useState("connection");
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -66,6 +73,24 @@ export function SettingsModal({ onClose, theme, onThemeChange }: Props) {
                     <span className="settings-field-hint">默认使用的 Claude 模型</span>
                   </div>
                   <input className="settings-input" type="text" value={model} onChange={(e) => setModel(e.target.value)} placeholder="claude-sonnet-4-6" />
+                </div>
+              </div>
+            )}
+            {activeNav === "connection" && connectionStatus && (
+              <div className="settings-section">
+                <div className="settings-section-title">连接状态</div>
+                <div className="settings-field">
+                  <div className={`settings-conn-status${connectionStatus.state === "connected" ? " connected" : ""}`}>
+                    <span className="conn-dot" />
+                    <span>
+                      {connectionStatus.state === "connected" ? "已连接" :
+                       connectionStatus.state === "unverified" ? "未验证" :
+                       connectionStatus.state === "connecting" ? "验证中..." :
+                       connectionStatus.state === "failed" ? "连接失败" : "未验证"}
+                    </span>
+                    {connectionStatus.state === "connected" && <> 至 {connectionStatus.model}</>}
+                  </div>
+                  <button className="settings-btn">测试连接</button>
                 </div>
               </div>
             )}
