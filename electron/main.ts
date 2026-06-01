@@ -10,7 +10,7 @@ import {
 import { parseRendererToMainPayload } from "../src/ipc/payloadSchemas.js";
 import { createBackendRuntime, type BackendRuntime } from "./agent/backendRuntime.js";
 import { resolveClaudeConfigDir } from "./agent/claudeConfigDir.js";
-import { startup } from "./agent/claudeAgentSdkFacade.js";
+import { startup, query as sdkQuery } from "./agent/claudeAgentSdkFacade.js";
 import { ensureClaudeCodeSettings, loadClaudeCodeSettings, loadAppSettings, saveAppSettings, saveClaudeCodeSettings } from "./agent/sdkSettings.js";
 import type { ConnectionProbeQuery } from "./agent/connectionProbe.js";
 
@@ -257,7 +257,9 @@ async function createWindow() {
 }
 
 startup().then((warmQuery) => {
-  sdkWarmQuery = warmQuery as unknown as ConnectionProbeQuery;
+  sdkWarmQuery = {
+    query: (prompt: string) => sdkQuery({ prompt, options: { max_turns: 1 } }),
+  } as ConnectionProbeQuery;
   app.on("before-quit", async (event) => {
     event.preventDefault();
     try {
@@ -274,20 +276,6 @@ startup().then((warmQuery) => {
     }
   });
 
-  // Connection probe
-  const settings = loadClaudeCodeSettings({ cwd: appBaseDirectory() });
-  import("./agent/connectionProbe.js").then(({ probeConnection }) => {
-    probeConnection(warmQuery as unknown as import("./agent/connectionProbe.js").ConnectionProbeQuery, {
-      baseUrl: settings.baseUrl,
-      model: settings.model,
-    }).then((status) => {
-      for (const win of BrowserWindow.getAllWindows()) {
-        sendToRenderer(win, "sdk:connection-status", status);
-      }
-    }).catch((err) => {
-      console.warn("Connection probe failed:", err);
-    });
-  });
 }).catch((e) => {
   console.warn("SDK startup 预热失败:", e);
 });

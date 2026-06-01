@@ -4,7 +4,7 @@ import type { ConnectionState, ConnectionStatus } from "../../src/ipc/connection
 export type { ConnectionState, ConnectionStatus };
 
 export type ConnectionProbeQuery = {
-  query: (input: { prompt: unknown; options?: Record<string, unknown> }) => unknown;
+  query: (prompt: string) => AsyncGenerator<unknown, void>;
 };
 
 function extractErrorCode(error: unknown): string {
@@ -60,11 +60,14 @@ export async function probeConnection(
   );
 
   const probePromise = (async (): Promise<ConnectionStatus> => {
+    let query: AsyncGenerator<unknown, void> | undefined;
     try {
-      await warmQuery.query({
-        prompt: "ping",
-        options: { max_turns: 1 },
-      });
+      query = warmQuery.query("ping");
+      const first = await query.next();
+
+      if (first.done) {
+        throw new Error("No response from API");
+      }
 
       return {
         state: "connected",
@@ -87,6 +90,8 @@ export async function probeConnection(
         },
         probedAt: Date.now(),
       };
+    } finally {
+      await query?.return?.(undefined);
     }
   })();
 

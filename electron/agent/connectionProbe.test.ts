@@ -1,10 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { probeConnection } from "./connectionProbe.js";
 
 describe("probeConnection", () => {
   it("probe succeeds → returns state: connected", async () => {
     const warmQuery = {
-      query: async () => ({ result: "ok" }),
+      query: (_prompt: string) => ({
+        next: async () => ({ value: { type: "assistant" }, done: false }) as IteratorResult<unknown, void>,
+      }),
     };
 
     const status = await probeConnection(warmQuery, {
@@ -18,14 +20,55 @@ describe("probeConnection", () => {
     expect(status.probedAt).toBeGreaterThan(0);
   });
 
+  it("probe calls query.return() to clean up the generator after success", async () => {
+    const returnSpy = vi.fn();
+    const warmQuery = {
+      query: (_prompt: string) => ({
+        next: async () => ({ value: { type: "assistant" }, done: false }) as IteratorResult<unknown, void>,
+        return: returnSpy,
+      }),
+    };
+
+    const status = await probeConnection(warmQuery, {
+      baseUrl: "https://gateway.example.com",
+      model: "test-model",
+    });
+
+    expect(status.state).toBe("connected");
+    expect(returnSpy).toHaveBeenCalled();
+  });
+
+  it("probe calls query.return() to clean up the generator after failure", async () => {
+    const returnSpy = vi.fn();
+    const error = new Error("connection refused");
+    (error as any).code = "ECONNREFUSED";
+
+    const warmQuery = {
+      query: (_prompt: string) => ({
+        next: async () => { throw error; },
+        return: returnSpy,
+      }),
+    };
+
+    const status = await probeConnection(warmQuery, {
+      baseUrl: "https://gateway.example.com",
+      model: "test-model",
+    });
+
+    expect(status.state).toBe("failed");
+    expect(returnSpy).toHaveBeenCalled();
+  });
+
   it("probe throws ENOTFOUND → returns state: failed with error.code = ENOTFOUND and Chinese message", async () => {
     const notFoundError = new Error("getaddrinfo ENOTFOUND gateway.example.com");
     (notFoundError as any).code = "ENOTFOUND";
 
     const warmQuery = {
-      query: async () => {
-        throw notFoundError;
-      },
+      query: (_prompt: string) => ({
+        next: async () => {
+          throw notFoundError;
+        },
+      }),
     };
 
     const status = await probeConnection(warmQuery, {
@@ -46,10 +89,12 @@ describe("probeConnection", () => {
   });
 
   it("probe hangs (timeout) → returns state: failed with error.code = TIMEOUT", async () => {
-    // 创建一个永远不 resolve 的 query
+    // 创建一个永远不 resolve 的 next()
     const warmQuery = {
-      query: () => new Promise(() => {
-        // 永不 resolve，模拟挂起
+      query: (_prompt: string) => ({
+        next: () => new Promise<IteratorResult<unknown, void>>(() => {
+          // 永不 resolve，模拟挂起
+        }),
       }),
     };
 

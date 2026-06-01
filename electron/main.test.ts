@@ -117,9 +117,14 @@ const mockWarmQuery = {
 };
 
 const startup = vi.fn(() => Promise.resolve(mockWarmQuery));
+const sdkQuery = vi.fn(() => ({
+  next: async () => ({ value: { type: "assistant" }, done: false }),
+  return: vi.fn(),
+}));
 
 vi.mock("./agent/claudeAgentSdkFacade.js", () => ({
   startup,
+  query: sdkQuery,
 }));
 
 describe("electron main IPC registration", () => {
@@ -137,6 +142,7 @@ describe("electron main IPC registration", () => {
     loadAppSettings.mockClear();
     saveAppSettings.mockClear();
     startup.mockClear();
+    sdkQuery.mockClear();
   });
 
   async function flushMicrotasks() {
