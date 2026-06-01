@@ -258,7 +258,7 @@ async function createWindow() {
 
 startup().then((warmQuery) => {
   sdkWarmQuery = {
-    query: (prompt: string) => sdkQuery({ prompt, options: { max_turns: 1 } }),
+    query: (prompt: string) => sdkQuery({ prompt, options: { maxTurns: 1 } }),
   } as ConnectionProbeQuery;
   app.on("before-quit", async (event) => {
     event.preventDefault();
