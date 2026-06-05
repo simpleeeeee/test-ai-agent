@@ -178,6 +178,7 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                         }
                         const result = await bridge.probeConnection(baseUrl, model);
                         setProbeResult(result);
+                        if (result.state === "failed") setShowConnectionError(true);
                       } catch (err) {
                         const diagMsg = err instanceof Error ? err.message : String(err);
                         setProbeResult({
@@ -187,6 +188,7 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                           error: { code: "UNKNOWN", message: `连接测试失败: ${diagMsg}`, suggestion: "请检查网络连接后重试" },
                           probedAt: Date.now(),
                         });
+                        setShowConnectionError(true);
                       } finally {
                         setProbing(false);
                       }

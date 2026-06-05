@@ -335,7 +335,7 @@ describe("SettingsModal", () => {
     expect(await screen.findByText("已连接")).toBeInTheDocument();
   });
 
-  it("resets showConnectionError on new probe so error is not auto-expanded", async () => {
+  it("auto-expands error detail when probe fails", async () => {
     const user = (await import("@testing-library/user-event")).default.setup();
     // First probe fails
     const probeConnection = vi.fn()
@@ -361,19 +361,14 @@ describe("SettingsModal", () => {
     };
     render(<SettingsModal bridge={b} onClose={vi.fn()} onThemeChange={vi.fn()} theme="light" />);
 
-    // First probe → fails
+    // First probe → fails, error detail auto-expands
     await user.click(screen.getByRole("button", { name: "测试连接" }));
     expect(await screen.findByText("连接失败")).toBeInTheDocument();
-
-    // User expands error detail
-    await user.click(screen.getByText("连接失败"));
     expect(screen.getByText("API 密钥无效")).toBeInTheDocument();
 
-    // Second probe → also fails
+    // Second probe → also fails, error detail auto-expands with new error
     await user.click(screen.getByRole("button", { name: "测试连接" }));
     expect(await screen.findByText("连接失败")).toBeInTheDocument();
-
-    // Error detail should NOT be auto-expanded (showConnectionError was reset)
-    expect(screen.queryByText("服务器内部错误")).not.toBeInTheDocument();
+    expect(screen.getByText("服务器内部错误")).toBeInTheDocument();
   });
 });
