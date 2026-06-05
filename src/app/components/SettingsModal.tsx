@@ -345,10 +345,10 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                     </div>
                     <select id="sdk-permission-mode" className="settings-select" aria-label="权限模式"
                       value={permissionMode} onChange={(e) => { setPermissionMode(e.target.value); handleSave({ permissionMode: e.target.value }); }}>
-                      <option value="default">default</option>
-                      <option value="acceptEdits">acceptEdits</option>
-                      <option value="bypassPermissions">bypassPermissions</option>
-                      <option value="plan">plan</option>
+                      <option value="default">默认</option>
+                      <option value="acceptEdits">接受编辑</option>
+                      <option value="bypassPermissions">绕过权限</option>
+                      <option value="plan">仅规划</option>
                     </select>
                   </div>
                   <div className="settings-field">
@@ -358,11 +358,11 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                     </div>
                     <select id="sdk-thinking-effort" className="settings-select" aria-label="思考强度"
                       value={thinkingEffort} onChange={(e) => { setThinkingEffort(e.target.value); handleSave({ thinkingEffort: e.target.value }); }}>
-                      <option value="low">low</option>
-                      <option value="medium">medium</option>
-                      <option value="high">high</option>
-                      <option value="xhigh">xhigh</option>
-                      <option value="max">max</option>
+                      <option value="low">低</option>
+                      <option value="medium">中</option>
+                      <option value="high">高</option>
+                      <option value="xhigh">极高</option>
+                      <option value="max">最大</option>
                     </select>
                   </div>
                   <div className="settings-field">
@@ -372,8 +372,8 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                     </div>
                     <select id="sdk-thinking-display" className="settings-select" aria-label="Thinking 展示"
                       value={thinkingDisplay} onChange={(e) => { setThinkingDisplay(e.target.value); handleSave({ thinkingDisplay: e.target.value }); }}>
-                      <option value="summarized">summarized</option>
-                      <option value="omitted">omitted</option>
+                      <option value="summarized">摘要</option>
+                      <option value="omitted">隐藏</option>
                     </select>
                   </div>
                   <div className="settings-field">

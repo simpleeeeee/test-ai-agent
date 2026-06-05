@@ -192,10 +192,16 @@ describe("SettingsModal", () => {
     expect(screen.getByLabelText("Thinking 展示")).toBeInTheDocument();
     expect(screen.getByLabelText("推理努力程度")).toBeInTheDocument();
 
-    // 推理努力程度使用中文标签
-    expect(screen.getByRole("option", { name: "低" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "高" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "最大" })).toBeInTheDocument();
+    // 所有下拉选项使用中文标签
+    expect(screen.getByRole("option", { name: "默认" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "接受编辑" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "绕过权限" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "仅规划" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "摘要" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "隐藏" })).toBeInTheDocument();
+    // 思考强度和推理努力程度共享相同的中文标签（低/中/高/极高/最大）
+    const maxOptions = screen.getAllByRole("option", { name: "最大" });
+    expect(maxOptions.length).toBeGreaterThanOrEqual(2);
   });
 
   it("shows 已连接 when connectionStatus state is connected", () => {
