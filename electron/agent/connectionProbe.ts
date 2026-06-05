@@ -76,6 +76,16 @@ export async function probeConnection(
         probedAt: Date.now(),
       };
     } catch (error: unknown) {
+      console.error("[DIAGNOSTIC] probeConnection caught error:", error);
+      if (error && typeof error === "object") {
+        const err = error as Record<string, unknown>;
+        console.error("[DIAGNOSTIC]   error.code:", err.code);
+        console.error("[DIAGNOSTIC]   error.status:", err.status);
+        console.error("[DIAGNOSTIC]   error.statusCode:", err.statusCode);
+        console.error("[DIAGNOSTIC]   error.message:", err.message);
+        console.error("[DIAGNOSTIC]   error.name:", err.name);
+        console.error("[DIAGNOSTIC]   error.constructor.name:", (error as any)?.constructor?.name);
+      }
       const code = extractErrorCode(error);
       const diagnostic = diagnoseError(error);
 

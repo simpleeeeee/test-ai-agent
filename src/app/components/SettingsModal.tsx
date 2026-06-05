@@ -132,7 +132,7 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                     <span className="settings-field-label">API Key</span>
                     <span className="settings-field-hint">用于身份验证的 API 密钥</span>
                   </div>
-                  <input className="settings-input" type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} onBlur={() => handleSave()} placeholder="sk-ant-api-..." />
+                  <input className="settings-input" type="text" value={apiKey} onChange={(e) => setApiKey(e.target.value)} onBlur={() => handleSave()} placeholder="sk-ant-api-..." />
                 </div>
                 <div className="settings-field">
                   <div className="settings-field-label-group">
