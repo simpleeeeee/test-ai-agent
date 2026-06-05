@@ -178,12 +178,13 @@ export function SettingsModal({ bridge, onClose, theme, onThemeChange, activeRun
                         }
                         const result = await bridge.probeConnection(baseUrl, model);
                         setProbeResult(result);
-                      } catch {
+                      } catch (err) {
+                        const diagMsg = err instanceof Error ? err.message : String(err);
                         setProbeResult({
                           state: "failed",
                           baseUrl,
                           model,
-                          error: { code: "UNKNOWN", message: "连接测试失败", suggestion: "请检查网络连接后重试" },
+                          error: { code: "UNKNOWN", message: `连接测试失败: ${diagMsg}`, suggestion: "请检查网络连接后重试" },
                           probedAt: Date.now(),
                         });
                       } finally {
