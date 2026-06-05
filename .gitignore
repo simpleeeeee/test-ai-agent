@@ -8,3 +8,4 @@ release/
 .superpowers/
 .playwright-mcp/
 .worktrees/
+.claude/
