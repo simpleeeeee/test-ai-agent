@@ -136,33 +136,38 @@ function registerBackendIpc(window: BrowserWindow, cwd: string, configDir: strin
     return loadClaudeCodeSettings({ cwd });
   });
   handleRequest("settings:probe-connection", async ({ baseUrl, model }) => {
-    // [DIAGNOSTIC] 检查 SDK 状态和配置
-    console.error("[DIAGNOSTIC] probe-connection handler called");
-    console.error("[DIAGNOSTIC]   baseUrl:", baseUrl);
-    console.error("[DIAGNOSTIC]   model:", model);
-    console.error("[DIAGNOSTIC]   sdkWarmQuery ready:", !!sdkWarmQuery);
+    // [DIAGNOSTIC] 写入文件以绕过 Windows shell:true 的 stdout 路由问题
+    const diagLines: string[] = [];
+    const diag = (label: string, val?: unknown) => { diagLines.push(`[DIAGNOSTIC] ${label} ${val !== undefined ? String(val) : ""}`); };
+    diag("=== probe-connection handler called ===");
+    diag("baseUrl:", baseUrl);
+    diag("model:", model);
+    diag("sdkWarmQuery ready:", !!sdkWarmQuery);
 
-    // [DIAGNOSTIC] 读取磁盘上的设置文件，确认 apiKey 是否正确写入
     try {
       const fs = await import("node:fs");
       const path = await import("node:path");
       const configDir = path.join(appBaseDirectory(), ".claude");
       const localPath = path.join(configDir, "settings.local.json");
       const sharedPath = path.join(configDir, "settings.json");
-      console.error("[DIAGNOSTIC]   config dir:", configDir);
-      console.error("[DIAGNOSTIC]   settings.local.json exists:", fs.existsSync(localPath));
-      console.error("[DIAGNOSTIC]   settings.json exists:", fs.existsSync(sharedPath));
+      diag("config dir:", configDir);
+      diag("settings.local.json exists:", fs.existsSync(localPath));
+      diag("settings.json exists:", fs.existsSync(sharedPath));
       for (const p of [localPath, sharedPath]) {
         if (fs.existsSync(p)) {
           const raw = JSON.parse(fs.readFileSync(p, "utf8"));
           const token = raw?.env?.ANTHROPIC_AUTH_TOKEN ?? "(missing)";
-          console.error(`[DIAGNOSTIC]   ${path.basename(p)} ANTHROPIC_AUTH_TOKEN:`, token ? `${token.substring(0, 8)}...` : "(empty)");
-          console.error(`[DIAGNOSTIC]   ${path.basename(p)} ANTHROPIC_BASE_URL:`, raw?.env?.ANTHROPIC_BASE_URL ?? "(missing)");
-          console.error(`[DIAGNOSTIC]   ${path.basename(p)} ANTHROPIC_MODEL:`, raw?.env?.ANTHROPIC_MODEL ?? "(missing)");
+          diag(`${path.basename(p)} ANTHROPIC_AUTH_TOKEN:`, token ? `${token.substring(0, 8)}...` : "(empty)");
+          diag(`${path.basename(p)} ANTHROPIC_BASE_URL:`, raw?.env?.ANTHROPIC_BASE_URL ?? "(missing)");
+          diag(`${path.basename(p)} ANTHROPIC_MODEL:`, raw?.env?.ANTHROPIC_MODEL ?? "(missing)");
         }
       }
+      // 写入诊断文件
+      const diagFile = path.join(appBaseDirectory(), "diagnostic.log");
+      fs.appendFileSync(diagFile, diagLines.join("\n") + "\n", "utf8");
+      console.error("[DIAGNOSTIC] wrote to:", diagFile);
     } catch (e) {
-      console.error("[DIAGNOSTIC]   failed to read config:", e);
+      console.error("[DIAGNOSTIC] failed:", e);
     }
     if (!sdkWarmQuery) {
       return {

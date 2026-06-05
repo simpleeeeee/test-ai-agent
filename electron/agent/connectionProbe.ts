@@ -76,16 +76,25 @@ export async function probeConnection(
         probedAt: Date.now(),
       };
     } catch (error: unknown) {
-      console.error("[DIAGNOSTIC] probeConnection caught error:", error);
-      if (error && typeof error === "object") {
-        const err = error as Record<string, unknown>;
-        console.error("[DIAGNOSTIC]   error.code:", err.code);
-        console.error("[DIAGNOSTIC]   error.status:", err.status);
-        console.error("[DIAGNOSTIC]   error.statusCode:", err.statusCode);
-        console.error("[DIAGNOSTIC]   error.message:", err.message);
-        console.error("[DIAGNOSTIC]   error.name:", err.name);
-        console.error("[DIAGNOSTIC]   error.constructor.name:", (error as any)?.constructor?.name);
-      }
+      // [DIAGNOSTIC] 写入诊断文件
+      try {
+        const fs = await import("node:fs");
+        const logPath = (await import("node:path")).join((await import("node:process")).default.cwd(), "diagnostic.log");
+        const lines = [
+          `[DIAGNOSTIC] === probeConnection caught error ===`,
+          `[DIAGNOSTIC]   error: ${String(error)}`,
+        ];
+        if (error && typeof error === "object") {
+          const err = error as Record<string, unknown>;
+          lines.push(`[DIAGNOSTIC]   error.code: ${String(err.code)}`);
+          lines.push(`[DIAGNOSTIC]   error.status: ${String(err.status)}`);
+          lines.push(`[DIAGNOSTIC]   error.statusCode: ${String(err.statusCode)}`);
+          lines.push(`[DIAGNOSTIC]   error.message: ${String(err.message)}`);
+          lines.push(`[DIAGNOSTIC]   error.name: ${String(err.name)}`);
+          lines.push(`[DIAGNOSTIC]   error.constructor.name: ${String((error as any)?.constructor?.name)}`);
+        }
+        fs.appendFileSync(logPath, lines.join("\n") + "\n", "utf8");
+      } catch { /* 诊断自身失败不影响功能 */ }
       const code = extractErrorCode(error);
       const diagnostic = diagnoseError(error);
 
