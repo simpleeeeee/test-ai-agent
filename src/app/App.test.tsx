@@ -132,6 +132,29 @@ describe("App backend integration", () => {
 
     expect(send).toHaveBeenCalledWith("run:create", { prompt: "你好，介绍一下你能做什么" });
     expect(send).toHaveBeenCalledWith("run:send-message", { runId: "run-chat", message: "继续说明" });
+    expect(screen.queryByRole("button", { name: "确认计划并执行" })).not.toBeInTheDocument();
+  });
+
+  it("shows the confirm plan button only after a plan-ready event", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.type(screen.getByLabelText("消息输入"), "生成测试计划");
+    await user.click(screen.getByRole("button", { name: "发送" }));
+
+    expect(screen.queryByRole("button", { name: "确认计划并执行" })).not.toBeInTheDocument();
+
+    emit("assistant:text-delta", { runId: "run-plan", messageId: "msg-plan", delta: "计划草稿" });
+    emit("run:created", { runId: "run-plan", prompt: "生成测试计划" });
+    emit("run:plan-ready", {
+      runId: "run-plan",
+      plan: [
+        { id: "step-1", title: "梳理测试范围", status: "pending" },
+        { id: "step-2", title: "生成测试用例", status: "pending" },
+      ],
+    });
+
+    expect(await screen.findByRole("button", { name: "确认计划并执行" })).toBeInTheDocument();
   });
 
   it("opens the test console only after an explicit test execution request", async () => {

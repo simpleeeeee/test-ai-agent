@@ -1,5 +1,5 @@
 import type { MainToRendererChannel } from "../ipc/channels";
-import type { BugDraft, Evidence, ToolCall } from "../domain/testRun";
+import type { BugDraft, Evidence, RunStatus, ToolCall } from "../domain/testRun";
 
 export type ModelCapabilities = {
   model: string;
@@ -53,6 +53,13 @@ export type QuestionRequest = {
   requestId: string;
   questions: unknown[];
 };
+
+export type ConversationEntry =
+  | { id: string; kind: "user-message"; messageId: string; content: string; complete: true }
+  | { id: string; kind: "assistant-message"; messageId: string; content: string; complete: boolean; thinkingContent?: string; thinkingDuration?: string; model?: string; stopReason?: string }
+  | { id: string; kind: "tool-call"; toolCall: ToolCall }
+  | { id: string; kind: "approval"; request: ApprovalRequest }
+  | { id: string; kind: "question"; request: QuestionRequest };
 
 export type McpServerUiStatus = {
   name: string;
@@ -115,6 +122,9 @@ export type SdkUiState = {
   activeRunId?: string;
   modelName?: string;
   messages: SdkMessage[];
+  toolCalls?: ToolCall[];
+  conversationEntries?: ConversationEntry[];
+  runStatuses?: Record<string, RunStatus>;
   approvals: ApprovalRequest[];
   questions: QuestionRequest[];
   mcpServers: McpServerUiStatus[];

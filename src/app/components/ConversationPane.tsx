@@ -49,12 +49,13 @@ export function ConversationPane({
 }: Props) {
   const isEmpty = state.messages.length === 0 && state.approvals.length === 0 && state.questions.length === 0 && state.errors.length === 0;
   const placeholder = hasTestExecution ? "补充测试指令或继续提问…" : "向 AI 测试助手提问…";
+  const shouldShowPlanApproval = activeRunId ? state.runStatuses?.[activeRunId] === "waiting_confirmation" : false;
 
   return (
     <main className="conversation" aria-label="对话">
       <header className="conversation-header">
         <span className="conversation-title">{title}</span>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div className="conversation-header-actions">
           <WindowControls
             onMinimize={onMinimizeWindow}
             onToggleMaximize={onToggleMaximizeWindow}
@@ -84,7 +85,7 @@ export function ConversationPane({
               onCopyMessage={onCopyMessage}
               onRetryMessage={onRetryMessage}
             />
-            {activeRunId ? (
+            {shouldShowPlanApproval ? (
               <div className="plan-action-row">
                 <button className="primary-action" type="button" onClick={onApprovePlan}>
                   确认计划并执行

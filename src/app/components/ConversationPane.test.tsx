@@ -57,6 +57,7 @@ describe("ConversationPane", () => {
     const user = userEvent.setup();
     const state = createInitialSdkUiState();
     state.activeRunId = "run-1";
+    state.runStatuses = { "run-1": "waiting_confirmation" };
     state.messages = [{ id: "msg-1", role: "assistant", content: "计划草稿", complete: true }];
 
     render(
@@ -84,6 +85,36 @@ describe("ConversationPane", () => {
     expect(screen.getByLabelText("消息输入")).toHaveAttribute("placeholder", "补充测试指令或继续提问…");
     await user.click(screen.getByRole("button", { name: "确认计划并执行" }));
     expect(callbacks.onApprovePlan).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not show the confirm plan button unless the run is waiting for confirmation", () => {
+    const state = createInitialSdkUiState();
+    state.activeRunId = "run-1";
+    state.runStatuses = { "run-1": "planning" };
+
+    render(
+      <ConversationPane
+        state={state}
+        title="订单模块回归"
+        composerValue=""
+        hasTestExecution={true}
+        activeRunId="run-1"
+        onApprove={callbacks.onApprove}
+        onDeny={callbacks.onDeny}
+        onAnswer={callbacks.onAnswer}
+        onCopyMessage={callbacks.onCopyMessage}
+        onRetryMessage={callbacks.onRetryMessage}
+        onApprovePlan={callbacks.onApprovePlan}
+        onComposerChange={callbacks.onComposerChange}
+        onComposerSubmit={callbacks.onComposerSubmit}
+        onAddContent={callbacks.onAddContent}
+        onMinimizeWindow={callbacks.onMinimizeWindow}
+        onToggleMaximizeWindow={callbacks.onToggleMaximizeWindow}
+        onCloseWindow={callbacks.onCloseWindow}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "确认计划并执行" })).not.toBeInTheDocument();
   });
 
   it("shows a loading banner while a history session is being restored", () => {

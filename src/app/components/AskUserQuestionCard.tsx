@@ -21,27 +21,29 @@ export function AskUserQuestionCard({ request, onAnswer }: Props) {
   }
 
   return (
-    <form className="sdk-card question-card" aria-label="需要补充信息" onSubmit={submit}>
-      <h3>需要补充信息</h3>
+    <form className="question-transcript" aria-label="需要补充信息" onSubmit={submit}>
+      <div className="question-title">需要补充信息</div>
       {(request.questions as Question[]).map((question, index) => {
         const id = question.id ?? `question-${index}`;
         const label = question.label ?? `问题 ${index + 1}`;
         return question.options?.length ? (
-          <label key={id}>
-            {label}
+          <label key={id} className="question-field">
+            <span className="question-label">{label}</span>
             <select value={answers[id] ?? ""} onChange={(event) => setAnswers({ ...answers, [id]: event.currentTarget.value })}>
               <option value="">请选择</option>
               {question.options.map((option) => <option key={option} value={option}>{option}</option>)}
             </select>
           </label>
         ) : (
-          <label key={id}>
-            {label}
+          <label key={id} className="question-field">
+            <span className="question-label">{label}</span>
             <input value={answers[id] ?? ""} onChange={(event) => setAnswers({ ...answers, [id]: event.currentTarget.value })} />
           </label>
         );
       })}
-      <button type="submit">提交回答</button>
+      <div className="question-actions">
+        <button type="submit">提交回答</button>
+      </div>
     </form>
   );
 }

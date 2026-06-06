@@ -30,7 +30,7 @@ export function ToolApprovalCard({ request, onApprove, onDeny }: Props) {
   const indicatorStatus = selected === "denied" ? "error" : selected ? "done" : "active";
 
   return (
-    <div className="approval-card">
+    <div className="approval-transcript" aria-label="审批中">
       <div className="term-line">
         <ActivityIndicator status={indicatorStatus} />
         <span className="term-prompt">$</span>

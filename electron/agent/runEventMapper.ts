@@ -28,6 +28,7 @@ export class SdkRunEventMapperSession {
   private readonly toolInputs = new Map<string, string>();
   private pendingThinkingDuration: string | undefined;
   private stopReason: string | undefined;
+  private hasStreamedAssistantText = false;
 
   constructor(
     private readonly runId: string,
@@ -86,6 +87,14 @@ export class SdkRunEventMapperSession {
     const reason = this.stopReason;
     this.stopReason = undefined;
     return reason;
+  }
+
+  markStreamedAssistantText() {
+    this.hasStreamedAssistantText = true;
+  }
+
+  hasAssistantTextStreamed() {
+    return this.hasStreamedAssistantText;
   }
 }
 
@@ -162,6 +171,7 @@ function mapSdkMessageWithSession(session: SdkRunEventMapperSession, runId: stri
       const index = typeof sdkEvent.index === "number" ? sdkEvent.index : 0;
       const delta = sdkEvent.delta;
       if (delta?.type === "text_delta") {
+        session.markStreamedAssistantText();
         events.push({ type: "assistant:text-delta", messageId: session.messageId(message.uuid), delta: delta.text ?? "" });
       }
       if (delta?.type === "thinking_delta") {
@@ -237,12 +247,12 @@ function mapSdkMessageWithSession(session: SdkRunEventMapperSession, runId: stri
   }
 
   // Handle non-stream messages (result, system, etc.) via the existing logic
-  events.push(...mapNonStreamSdkMessage(runId, message));
+  events.push(...mapNonStreamSdkMessage(runId, message, session));
   events.push(raw(runId, message));
   return events;
 }
 
-function mapNonStreamSdkMessage(runId: string, message: any): RunEvent[] {
+function mapNonStreamSdkMessage(runId: string, message: any, session?: SdkRunEventMapperSession): RunEvent[] {
   const events: RunEvent[] = [];
 
   if (message.type === "result") {
@@ -280,7 +290,7 @@ function mapNonStreamSdkMessage(runId: string, message: any): RunEvent[] {
     }
 
     // Result text as final assistant message
-    if (typeof message.result === "string" && message.result.length > 0) {
+    if (typeof message.result === "string" && message.result.length > 0 && !session?.hasAssistantTextStreamed()) {
       events.push({ type: "assistant:text-delta", messageId: resultMessageId, delta: message.result });
       events.push({ type: "assistant:message-completed", messageId: resultMessageId, result: message.result });
     }

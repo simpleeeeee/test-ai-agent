@@ -3,6 +3,7 @@ import type { SessionSummary } from "../sdkUiTypes";
 
 type Props = {
   activeRunId?: string;
+  activeNav?: "conversation" | "projects";
   sessions: SessionSummary[];
   onNewChat: () => void;
   onSelectConversation: () => void;
@@ -11,7 +12,7 @@ type Props = {
   onSettingsClick: () => void;
 };
 
-export function ClaudeSidebar({ activeRunId, sessions, onNewChat, onSelectConversation, onSelectProjects, onResumeSession, onSettingsClick }: Props) {
+export function ClaudeSidebar({ activeRunId, activeNav = "conversation", sessions, onNewChat, onSelectConversation, onSelectProjects, onResumeSession, onSettingsClick }: Props) {
   return (
     <aside className="claude-sidebar" aria-label="会话导航">
       <div className="claude-brand">
@@ -23,11 +24,21 @@ export function ClaudeSidebar({ activeRunId, sessions, onNewChat, onSelectConver
           <Plus aria-hidden="true" size={18} />
           新建聊天
         </button>
-        <button className="claude-nav-item active" type="button" onClick={onSelectConversation}>
+        <button
+          aria-current={activeNav === "conversation" ? "page" : undefined}
+          className={activeNav === "conversation" ? "claude-nav-item active" : "claude-nav-item"}
+          type="button"
+          onClick={onSelectConversation}
+        >
           <MessageSquare aria-hidden="true" size={18} />
           对话
         </button>
-        <button className="claude-nav-item" type="button" onClick={onSelectProjects}>
+        <button
+          aria-current={activeNav === "projects" ? "page" : undefined}
+          className={activeNav === "projects" ? "claude-nav-item active" : "claude-nav-item"}
+          type="button"
+          onClick={onSelectProjects}
+        >
           <Folder aria-hidden="true" size={18} />
           项目
         </button>

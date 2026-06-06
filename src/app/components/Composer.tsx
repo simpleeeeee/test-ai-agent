@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Plus, Send } from "lucide-react";
 import type { TokenUsage } from "../sdkUiTypes";
 
@@ -40,6 +41,8 @@ export function Composer({
   modelName,
   usage,
 }: Props) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   function handleSubmit() {
     const trimmed = value.trim();
     if (!trimmed) return;
@@ -52,6 +55,17 @@ export function Composer({
       handleSubmit();
     }
   }
+
+  function resizeTextarea() {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "0px";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+  }
+
+  useEffect(() => {
+    resizeTextarea();
+  }, [value]);
 
   const showInfoBar = (modelName != null && modelName !== "") || hasTokenStats(usage);
   const cacheTokens = usage ? getCacheTokens(usage) : 0;
@@ -71,8 +85,11 @@ export function Composer({
         }}
       >
         <textarea
+          ref={textareaRef}
           aria-label="消息输入"
+          rows={1}
           onChange={(event) => onChange(event.currentTarget.value)}
+          onInput={resizeTextarea}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           value={value}

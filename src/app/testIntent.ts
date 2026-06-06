@@ -11,3 +11,13 @@ export function isExplicitTestExecutionRequest(value: string): boolean {
   // 以"测试"开头，后跟至少2个汉字（即具体功能描述）
   return /^测试.{2,}/.test(value);
 }
+
+/**
+ * 检查用户输入是否明确在请求生成测试计划。
+ * 仅用于触发计划生成/审批流程，不应对普通聊天或单纯执行测试请求生效。
+ */
+export function isTestPlanRequest(value: string): boolean {
+  if (!value) return false;
+  const normalized = value.replace(/\s+/g, "");
+  return /(?:生成|制定|创建|编写|输出)?测试计划/.test(normalized) || /测试方案/.test(normalized);
+}

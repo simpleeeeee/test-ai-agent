@@ -19,6 +19,55 @@ describe("sdkEventStore", () => {
     expect(state.messages).toEqual([{ id: "msg-1", role: "assistant", content: "正在生成计划", complete: false }]);
   });
 
+  it("builds a conversation timeline in event order", () => {
+    let state = createInitialSdkUiState();
+
+    state = reduceSdkUiEvent(state, {
+      channel: "ui:user-message-sent",
+      payload: { messageId: "user-1", content: "Read src/domain/testRun.ts" },
+    });
+    state = reduceSdkUiEvent(state, {
+      channel: "assistant:text-delta",
+      payload: { runId: "run-1", messageId: "assistant-1", delta: "正在读取文件" },
+    });
+    state = reduceSdkUiEvent(state, {
+      channel: "assistant:thinking-delta",
+      payload: { runId: "run-1", messageId: "assistant-1", delta: "分析依赖关系…" },
+    });
+    state = reduceSdkUiEvent(state, {
+      channel: "tool:call-started",
+      payload: {
+        runId: "run-1",
+        toolCall: { id: "tool-1", toolName: "Read", label: "src/domain/testRun.ts", status: "running" },
+      },
+    });
+    state = reduceSdkUiEvent(state, {
+      channel: "tool:approval-required",
+      payload: {
+        runId: "run-1",
+        requestId: "approval-1",
+        toolCall: { id: "tool-2", toolName: "Write", label: "tests/e2e/order-regression.spec.ts", status: "waiting_approval", approvalReason: "写入测试文件。" },
+      },
+    });
+    state = reduceSdkUiEvent(state, {
+      channel: "question:required",
+      payload: { runId: "run-1", requestId: "question-1", questions: [{ id: "scope", label: "测试范围" }] },
+    });
+
+    expect(state.conversationEntries?.map((entry) => entry.kind)).toEqual([
+      "user-message",
+      "assistant-message",
+      "tool-call",
+      "approval",
+      "question",
+    ]);
+    const timeline = state.conversationEntries ?? [];
+    expect((timeline[1] as any)?.content).toBe("正在读取文件");
+    expect((timeline[1] as any)?.thinkingContent).toBe("分析依赖关系…");
+    expect((timeline[2] as any)?.toolCall.toolName).toBe("Read");
+    expect((timeline[3] as any)?.request.requestId).toBe("approval-1");
+  });
+
   it("stores approvals, questions, MCP status, raw audit, usage, errors, and task progress", () => {
     let state = createInitialSdkUiState();
 
@@ -100,6 +149,28 @@ describe("sdkEventStore", () => {
     });
 
     expect(state.workspaceModes).toEqual({});
+  });
+
+  it("tracks the active run status through planning and confirmation", () => {
+    let state = createInitialSdkUiState();
+
+    state = reduceSdkUiEvent(state, {
+      channel: "run:created",
+      payload: { runId: "run-1", prompt: "生成测试计划" },
+    });
+    expect(state.runStatuses?.["run-1"]).toBe("planning");
+
+    state = reduceSdkUiEvent(state, {
+      channel: "run:plan-ready",
+      payload: { runId: "run-1", plan: [] },
+    });
+    expect(state.runStatuses?.["run-1"]).toBe("waiting_confirmation");
+
+    state = reduceSdkUiEvent(state, {
+      channel: "run:status-changed",
+      payload: { status: "running" },
+    });
+    expect(state.runStatuses?.["run-1"]).toBe("running");
   });
 
   it("marks only the active run as test execution after local confirmation", () => {
@@ -352,20 +423,35 @@ describe("sdkEventStore", () => {
   it("stores streamed tool input, enriched usage, permission denials, and system events", () => {
     let state = createInitialSdkUiState();
     state = reduceSdkUiEvent(state, {
+      channel: "tool:call-started",
+      payload: {
+        runId: "run-1",
+        toolCall: { id: "toolu-1", toolName: "Read", label: "src/domain/testRun.ts", status: "running" },
+      },
+    });
+    state = reduceSdkUiEvent(state, {
       channel: "tool:approval-required",
       payload: {
         runId: "run-1",
         requestId: "req-1",
-        toolCall: { id: "toolu-1", toolName: "mcp__browser__navigate", label: "导航", status: "waiting_approval" },
+        toolCall: { id: "approval-1", toolName: "mcp__browser__navigate", label: "导航", status: "waiting_approval" },
       },
     });
     state = reduceSdkUiEvent(state, {
       channel: "tool:input-json-delta" as any,
-      payload: { runId: "run-1", toolCallId: "toolu-1", delta: "{\"url\"", inputSummary: "{\"url\"" },
+      payload: { runId: "run-1", toolCallId: "approval-1", delta: "{\"url\"", inputSummary: "{\"url\"" },
     });
     state = reduceSdkUiEvent(state, {
       channel: "sdk:usage",
       payload: { runId: "run-1", raw: { input_tokens: 1 }, cost: { total_cost_usd: 0.01 }, durationMs: 100, numTurns: 2, model: "claude" },
+    });
+    state = reduceSdkUiEvent(state, {
+      channel: "sdk:tool-summary" as any,
+      payload: { runId: "run-1", toolUseId: "toolu-1", summary: "export type RunStatus = ..." },
+    });
+    state = reduceSdkUiEvent(state, {
+      channel: "tool:call-completed",
+      payload: { runId: "run-1", toolCallId: "toolu-1", outputSummary: "读取完成" },
     });
     state = reduceSdkUiEvent(state, {
       channel: "sdk:permission-denied" as any,
@@ -378,6 +464,13 @@ describe("sdkEventStore", () => {
 
     expect(state.approvals[0].toolCall.inputSummary).toBe("{\"url\"");
     expect(state.approvals[0].toolCall.streamedInput).toBe("{\"url\"");
+    expect(state.toolCalls?.[0]).toMatchObject({
+      id: "toolu-1",
+      toolName: "Read",
+      label: "src/domain/testRun.ts",
+      status: "completed",
+      outputSummary: "读取完成",
+    });
     expect(state.runStats).toEqual({
       model: "claude",
       durationMs: 100,

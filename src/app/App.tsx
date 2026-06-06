@@ -8,7 +8,7 @@ import { SettingsPanel } from "./components/SettingsPanel";
 import type { Evidence } from "../domain/testRun";
 import type { SdkMessage, SessionSummary } from "./sdkUiTypes";
 import type { ConnectionStatus } from "../ipc/connectionTypes.js";
-import { isExplicitTestExecutionRequest } from "./testIntent";
+import { isExplicitTestExecutionRequest, isTestPlanRequest } from "./testIntent";
 import "../ui/styles.css";
 
 const fallbackListeners = new Map<string, Array<(payload: unknown) => void>>();
@@ -26,15 +26,31 @@ const fallbackApi = {
       const prompt = (payload as { prompt?: string })?.prompt ?? "";
       const runId = "run-1";
       const msgId = "msg-1";
+      const shouldUsePlanFlow = isTestPlanRequest(prompt);
       setTimeout(() => {
         emitFallback("run:created", { runId, prompt });
-        emitFallback("assistant:thinking-delta", { runId, messageId: msgId, delta: "分析用户需求…" });
-        emitFallback("assistant:thinking-delta", { runId, messageId: msgId, delta: "匹配测试策略…" });
-        emitFallback("assistant:text-delta", { runId, messageId: msgId, delta: `已根据"${prompt}"生成测试计划，请审核后点击确认执行。` });
-        emitFallback("assistant:message-completed", { runId, messageId: msgId, thinkingDuration: "2s" });
-        emitFallback("sdk:usage", { runId, raw: { input_tokens: 1132, output_tokens: 423, cache_read_input_tokens: 580, context_tokens: 2100, max_context_tokens: 25000 } });
-        emitFallback("sdk:task-progress", { runId, taskId: "task-1", summary: "等待审核测试计划" });
-        emitFallback("sdk:mcp-status", { runId, servers: [{ name: "browser", status: "connected" }, { name: "api", status: "pending" }] });
+        if (shouldUsePlanFlow) {
+          emitFallback("run:planning", { runId });
+          emitFallback("assistant:thinking-delta", { runId, messageId: msgId, delta: "分析用户需求…" });
+          emitFallback("assistant:thinking-delta", { runId, messageId: msgId, delta: "匹配测试策略…" });
+          emitFallback("assistant:text-delta", { runId, messageId: msgId, delta: `已根据"${prompt}"生成测试计划，请审核后点击确认执行。` });
+          emitFallback("assistant:message-completed", { runId, messageId: msgId, thinkingDuration: "2s" });
+          emitFallback("run:plan-ready", {
+            runId,
+            plan: [
+              { id: "step-1", title: "梳理测试范围", status: "pending" },
+              { id: "step-2", title: "生成测试用例", status: "pending" },
+            ],
+          });
+          emitFallback("sdk:usage", { runId, raw: { input_tokens: 1132, output_tokens: 423, cache_read_input_tokens: 580, context_tokens: 2100, max_context_tokens: 25000 } });
+          emitFallback("sdk:task-progress", { runId, taskId: "task-1", summary: "等待审核测试计划" });
+          emitFallback("sdk:mcp-status", { runId, servers: [{ name: "browser", status: "connected" }, { name: "api", status: "pending" }] });
+        } else {
+          emitFallback("assistant:thinking-delta", { runId, messageId: msgId, delta: "分析用户需求…" });
+          emitFallback("assistant:text-delta", { runId, messageId: msgId, delta: `已收到“${prompt}”，我可以继续帮你分析并给出建议。` });
+          emitFallback("assistant:message-completed", { runId, messageId: msgId, thinkingDuration: "1.2s" });
+          emitFallback("sdk:usage", { runId, raw: { input_tokens: 608, output_tokens: 212, cache_read_input_tokens: 180, context_tokens: 980, max_context_tokens: 25000 } });
+        }
       }, 0);
     } else if (channel === "run:approve-plan") {
       const runId = (payload as { runId?: string })?.runId ?? "run-1";
@@ -124,6 +140,7 @@ function mapSessionMessages(raw: unknown): SdkMessage[] {
 
 export function App() {
   const [composerValue, setComposerValue] = useState("");
+  const [activeSidebarItem, setActiveSidebarItem] = useState<"conversation" | "projects">("conversation");
   const [utilityPanel, setUtilityPanel] = useState<"projects" | null>(null);
   const [composerNotice, setComposerNotice] = useState("");
   const [pendingTestExecutionIntent, setPendingTestExecutionIntent] = useState(false);
@@ -201,6 +218,7 @@ export function App() {
   }
 
   function handleApprovePlan() {
+    dispatch({ channel: "run:status-changed", payload: { status: "running" } });
     bridge.approvePlan(requestRunId);
   }
 
@@ -211,6 +229,7 @@ export function App() {
   function handleNewChat() {
     historyRestoreToken.current += 1;
     setHistoryLoadingSessionId(undefined);
+    setActiveSidebarItem("conversation");
     dispatch({ channel: "ui:new-chat" });
     setComposerValue("");
     setComposerNotice("");
@@ -220,6 +239,7 @@ export function App() {
   }
 
   function handleSelectConversation() {
+    setActiveSidebarItem("conversation");
     closeUtilityPanels();
     setSettingsOpen(false);
   }
@@ -227,6 +247,7 @@ export function App() {
   function handleResumeSession(sessionId: string) {
     const restoreToken = ++historyRestoreToken.current;
     const previousRunId = state.activeRunId;
+    setActiveSidebarItem("conversation");
     setHistoryLoadingSessionId(sessionId);
     dispatch({
       channel: "ui:session-loaded",
@@ -267,6 +288,7 @@ export function App() {
   }
 
   function handleSelectProjects() {
+    setActiveSidebarItem("projects");
     setUtilityPanel("projects");
     setComposerNotice("");
   }
@@ -284,6 +306,7 @@ export function App() {
     <div className={shouldShowTestConsole ? "app-shell test-mode" : "app-shell chat-mode"}>
       <ClaudeSidebar
         activeRunId={state.activeRunId}
+        activeNav={activeSidebarItem}
         sessions={state.sessions}
         onNewChat={handleNewChat}
         onSelectConversation={handleSelectConversation}

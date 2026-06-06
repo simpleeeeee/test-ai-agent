@@ -456,7 +456,7 @@ input:focus-visible {
 
 .message-column {
   display: grid;
-  gap: 15px;
+  gap: 18px;
   align-content: start;
 }
 
@@ -480,42 +480,195 @@ input:focus-visible {
 }
 
 .assistant-message {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  display: grid;
-  gap: 12px;
-  grid-template-columns: 26px 1fr;
+  display: block;
+  position: relative;
   line-height: 1.72;
-  padding: 15px 16px 13px;
+  padding: 3px 0 4px;
+  overflow: visible;
 }
 
-.assistant-message p {
+.assistant-mark {
+  color: var(--accent);
+  left: -34px;
+  margin-top: 2px;
+  position: absolute;
+  top: 4px;
+}
+
+.assistant-content {
+  width: min(560px, 100%);
+}
+
+.message-markdown {
+  color: var(--text-primary);
+  font-size: var(--font-md);
+  line-height: 1.72;
+}
+
+.message-markdown p,
+.message-markdown blockquote {
   margin: 0;
 }
 
-.assistant-message ol,
-.assistant-message ul {
-  margin: 10px 0 0;
+.message-markdown p + p,
+.message-markdown p + ol,
+.message-markdown p + ul,
+.message-markdown p + blockquote,
+.message-markdown ol + p,
+.message-markdown ul + p,
+.message-markdown blockquote + p {
+  margin-top: 10px;
+}
+
+.message-markdown h2,
+.message-markdown h3 {
+  color: var(--text-primary);
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1.35;
+  margin: 14px 0 8px;
+}
+
+.message-markdown h2:first-child,
+.message-markdown h3:first-child {
+  margin-top: 0;
+}
+
+.message-markdown h2 {
+  font-size: var(--font-lg);
+}
+
+.message-markdown h3 {
+  font-size: var(--font-md);
+}
+
+.message-markdown strong {
+  font-weight: 650;
+}
+
+.message-markdown ol,
+.message-markdown ul {
+  margin: 9px 0 0;
   padding-left: 20px;
+}
+
+.message-markdown li {
+  margin: 3px 0;
+  padding-left: 2px;
+}
+
+.message-markdown blockquote {
+  border-left: 2px solid var(--border-strong);
+  color: var(--text-secondary);
+  padding-left: 12px;
+}
+
+.message-markdown a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.message-markdown em {
+  font-style: italic;
+}
+
+.message-markdown del {
+  color: var(--text-tertiary);
+}
+
+.message-markdown code {
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  padding: 0.1em 0.35em;
+}
+
+.message-markdown pre {
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  overflow-x: auto;
+  padding: 12px 14px;
+  white-space: pre;
+}
+
+.message-markdown pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+.message-markdown table {
+  border-collapse: collapse;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.message-markdown th,
+.message-markdown td {
+  border: 1px solid var(--border-subtle);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.message-markdown th {
+  background: var(--surface-2);
+  font-weight: 650;
+}
+
+.message-markdown hr {
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+  margin: 14px 0;
+}
+
+.message-markdown li > p {
+  margin: 0;
+}
+
+.message-markdown input[type="checkbox"] {
+  margin: 0 6px 0 0;
+  vertical-align: middle;
 }
 
 .assistant-actions {
   display: flex;
-  gap: 16px;
-  justify-content: flex-end;
-  margin-top: 14px;
+  gap: 18px;
+  justify-content: flex-start;
+  margin-top: 12px;
+  opacity: 0.72;
+  transition: opacity var(--transition-fast);
+}
+
+.assistant-message:hover .assistant-actions,
+.assistant-message:focus-within .assistant-actions {
+  opacity: 1;
 }
 
 .assistant-actions button {
   align-items: center;
   background: transparent;
   border: 0;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   display: inline-flex;
   font-size: 12px;
   gap: 5px;
   padding: 0;
+  transition: color var(--transition-fast);
+}
+
+.assistant-actions button:hover {
+  color: var(--text-secondary);
+}
+
+.tool-call-stream {
+  display: grid;
+  gap: 8px;
 }
 
 .empty-state {
@@ -1196,6 +1349,7 @@ input:focus-visible {
 .activity-indicator.done {
   background: var(--green);
   animation: none;
+  transform: scale(1);
 }
 
 .activity-indicator.error {
@@ -1204,68 +1358,66 @@ input:focus-visible {
 }
 
 /* ============================================================
-   THINKING BLOCK — LLM 思考过程可折叠区块
+   THINKING BLOCK — 采用工具调用同款交互结构
    ============================================================ */
 .thinking-block {
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  overflow: hidden;
+  padding: 0;
 }
 
-.thinking-block:hover { border-color: var(--border-strong); }
+.thinking-call-body {
+  min-width: 0;
+}
 
-.thinking-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-  user-select: none;
-  font-size: var(--font-sm);
+.thinking-block .tool-call-tool-name {
+  color: var(--accent);
+}
+
+.thinking-block.is-complete .tool-call-tool-name {
+  color: var(--green);
+}
+
+.thinking-block.is-complete .tool-call-status {
+  color: var(--green);
+}
+
+.thinking-block.is-complete .thinking-toggle {
+  color: var(--green);
+}
+
+.thinking-block .tool-call-summary {
   color: var(--text-secondary);
 }
 
-.thinking-header:hover { background: var(--bg-sidebar); }
-
-.thinking-header .thinking-label {
-  font-weight: 500;
-  color: var(--text-primary);
+.thinking-toggle {
+  padding: 0 2px;
+  margin-top: 2px;
+  min-width: 10px;
 }
 
-.thinking-header .thinking-time {
-  color: var(--text-tertiary);
-  font-size: var(--font-xs);
-  margin-left: auto;
-}
-
-.thinking-header svg {
-  flex: none;
-  transition: transform var(--transition-fast);
-}
-
-.thinking-header.expanded svg { transform: rotate(180deg); }
-
-.thinking-body {
+.thinking-detail {
   display: none;
-  padding: 10px 12px 12px;
-  font-size: var(--font-sm);
-  line-height: 1.55;
+  margin-left: 18px;
+  padding-top: 1px;
   color: var(--text-secondary);
-  border-top: 1px solid var(--border-subtle);
-  background: var(--bg-sidebar);
+  font-family: var(--font-mono);
+  font-size: var(--font-xs);
+  line-height: 1.55;
+  white-space: pre-wrap;
 }
 
-.thinking-body.open { display: block; }
+.thinking-detail.open {
+  display: block;
+}
 
 /* ============================================================
    TOOL CALL CARD — 工具调用内联卡片
    ============================================================ */
-.tool-call-card { padding: 7px 0; }
+.tool-call-card { padding: 0; }
 
 .tool-call-body {
   min-width: 0;
   display: grid;
-  gap: 3px;
+  gap: 2px;
 }
 
 .tool-call-header {
@@ -1302,8 +1454,8 @@ input:focus-visible {
 .tool-call-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 2px 0;
+  gap: 4px;
+  padding: 0 2px;
   border: 0;
   background: transparent;
   color: var(--text-tertiary);
@@ -1314,77 +1466,75 @@ input:focus-visible {
 
 .tool-call-toggle:hover { color: var(--text-secondary); }
 
-.tool-call-toggle svg { transition: transform var(--transition-fast); }
-.tool-call-toggle.expanded svg { transform: rotate(180deg); }
+.chevron-icon {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  transition: transform var(--transition-fast);
+}
 
 .tool-call-detail {
   display: none;
-  margin-top: 2px;
-  padding: 10px 14px;
-  background: var(--bg-sidebar);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  margin-top: 1px;
+  padding: 0 0 0 18px;
   font-family: var(--font-mono);
   font-size: var(--font-xs);
   line-height: 1.55;
   white-space: pre-wrap;
-  overflow: auto;
-  max-height: 160px;
+  overflow: visible;
+  max-height: none;
 }
 
 .tool-call-detail.open { display: block; }
-.tool-call-detail.is-output { color: var(--text-primary); }
 
 /* ============================================================
-   APPROVAL CARD — 深色迷你终端 无红绿灯
+   APPROVAL / QUESTION TRANSCRIPTS — 终端式交互
    ============================================================ */
-.approval-card {
-  background: #1e1d1a;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-xl);
-  padding: 16px;
+.approval-transcript,
+.question-transcript {
   display: grid;
-  gap: 10px;
+  gap: 8px;
+  padding: 0;
   font-family: var(--font-mono);
   font-size: var(--font-sm);
   line-height: 1.6;
-  color: #d4d1c8;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  color: var(--text-primary);
 }
 
-.approval-card .term-line {
+.approval-transcript .term-line {
   display: flex;
   gap: 8px;
   align-items: flex-start;
 }
 
-.approval-card .term-prompt {
-  color: #788c5d;
+.approval-transcript .term-prompt {
+  color: var(--text-tertiary);
   flex: none;
   font-weight: 600;
 }
 
-.approval-card .term-text {
-  color: #d4d1c8;
+.approval-transcript .term-text {
+  color: var(--text-primary);
 }
 
-.approval-card .term-block {
+.approval-transcript .term-block {
   margin: 0;
-  padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--radius-sm);
+  padding: 0 0 0 18px;
+  background: transparent;
+  border: 0;
   font-family: var(--font-mono);
   font-size: var(--font-xs);
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   white-space: pre-wrap;
-  overflow: auto;
-  max-height: 140px;
+  overflow: visible;
+  max-height: none;
 }
 
-.approval-card .term-actions {
+.approval-transcript .term-actions {
   display: flex;
   gap: 8px;
+  padding-left: 18px;
+  flex-wrap: wrap;
 }
 
 .approval-btn {
@@ -1393,10 +1543,10 @@ input:focus-visible {
   justify-content: center;
   padding: 0 14px;
   min-height: 34px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background: transparent;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: var(--font-xs);
   font-weight: 500;
@@ -1406,9 +1556,9 @@ input:focus-visible {
 }
 
 .approval-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #fff;
+  background: var(--bg-sidebar);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
 }
 
 .approval-btn:disabled {
@@ -1418,8 +1568,45 @@ input:focus-visible {
 }
 
 .approval-btn.is-selected {
-  border-color: rgba(255, 255, 255, 0.45);
-  color: #fff;
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.question-transcript .question-title {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.question-transcript .question-field {
+  display: grid;
+  gap: 6px;
+}
+
+.question-transcript .question-label {
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+}
+
+.question-transcript select,
+.question-transcript input {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font: inherit;
+  padding: 8px 10px;
+}
+
+.question-transcript select:focus-visible,
+.question-transcript input:focus-visible {
+  outline: 2px solid rgba(217, 119, 87, 0.28);
+  outline-offset: 2px;
+}
+
+.question-transcript .question-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 2px;
 }
 
 @media (max-width: 1120px) {

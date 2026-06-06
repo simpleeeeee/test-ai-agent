@@ -206,6 +206,40 @@ describe("mapSdkMessageToRunEvents", () => {
     expect(events).toContainEqual({ type: "run:status-changed", status: "completed" });
   });
 
+  it("does not emit result fallback text after streamed assistant text", () => {
+    const mapper = new SdkRunEventMapperSession("run-1");
+
+    mapper.map({
+      type: "stream_event",
+      uuid: "uuid-1",
+      event: { type: "message_start", message: { id: "msg-1" } },
+    });
+    mapper.map({
+      type: "stream_event",
+      uuid: "uuid-2",
+      event: { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "最终回复" } },
+    });
+    mapper.map({
+      type: "stream_event",
+      uuid: "uuid-3",
+      event: { type: "message_stop" },
+    });
+
+    const resultEvents = mapper.map({
+      type: "result",
+      subtype: "success",
+      session_id: "session-1",
+      usage: { input_tokens: 10, output_tokens: 5 },
+      result: "最终回复",
+    });
+
+    expect(resultEvents).toContainEqual({ type: "sdk:session-changed", sessionId: "session-1" });
+    expect(resultEvents).toContainEqual({ type: "sdk:usage", raw: { input_tokens: 10, output_tokens: 5 } });
+    expect(resultEvents).toContainEqual({ type: "run:status-changed", status: "completed" });
+    expect(resultEvents).not.toContainEqual({ type: "assistant:text-delta", messageId: "result-session-1", delta: "最终回复" });
+    expect(resultEvents).not.toContainEqual({ type: "assistant:message-completed", messageId: "result-session-1", result: "最终回复" });
+  });
+
   it("maps SDK system init and compact events", () => {
     const mapper = new SdkRunEventMapperSession("run-1");
 

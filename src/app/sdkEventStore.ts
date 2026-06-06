@@ -1,5 +1,5 @@
-import type { BugDraft, Evidence } from "../domain/testRun";
-import type { ApprovalRequest, McpServerUiStatus, QuestionRequest, SdkUiEvent, SdkUiState, TokenUsage } from "./sdkUiTypes";
+import type { BugDraft, Evidence, RunStatus, ToolCall } from "../domain/testRun";
+import type { ApprovalRequest, ConversationEntry, McpServerUiStatus, QuestionRequest, SdkUiEvent, SdkUiState, TokenUsage } from "./sdkUiTypes";
 
 function payloadRecord(payload: unknown): Record<string, unknown> {
   return payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
@@ -74,10 +74,90 @@ function markHasTestExecution(state: SdkUiState, runId: string | undefined): Sdk
   };
 }
 
+function capToolCalls(toolCalls: ToolCall[]) {
+  return toolCalls.length > 200 ? toolCalls.slice(-200) : toolCalls;
+}
+
+function capConversationEntries(entries: ConversationEntry[]) {
+  return entries.length > 400 ? entries.slice(-400) : entries;
+}
+
+function updateRunStatuses(state: SdkUiState, runId: string | undefined, status: RunStatus): SdkUiState {
+  if (!runId) return state;
+  return {
+    ...state,
+    runStatuses: {
+      ...(state.runStatuses ?? {}),
+      [runId]: status,
+    },
+  };
+}
+
+function updateToolCallList(
+  state: SdkUiState,
+  toolCallId: string,
+  patch: Partial<ToolCall>,
+  fallback?: ToolCall,
+): SdkUiState {
+  const current = state.toolCalls ?? [];
+  const exists = current.some((toolCall) => toolCall.id === toolCallId);
+  const next = exists
+    ? current.map((toolCall) => (toolCall.id === toolCallId ? { ...toolCall, ...patch } : toolCall))
+    : fallback
+      ? [...current, { ...fallback, ...patch }]
+      : current;
+
+  return {
+    ...state,
+    toolCalls: capToolCalls(next),
+  };
+}
+
+function updateConversationEntryList(
+  state: SdkUiState,
+  entryId: string,
+  patch: Partial<ConversationEntry>,
+  fallback?: ConversationEntry,
+): SdkUiState {
+  const current = state.conversationEntries ?? [];
+  const exists = current.some((entry) => entry.id === entryId);
+  const next = exists
+    ? current.map((entry) => (entry.id === entryId ? { ...entry, ...patch } as ConversationEntry : entry))
+    : fallback
+      ? [...current, { ...fallback, ...patch } as ConversationEntry]
+      : current;
+
+  return {
+    ...state,
+    conversationEntries: capConversationEntries(next),
+  };
+}
+
+function entriesFromMessages(messages: SdkUiState["messages"]): ConversationEntry[] {
+  return messages.map((message) => (
+    message.role === "user"
+      ? { id: message.id, kind: "user-message", messageId: message.id, content: message.content, complete: true }
+      : {
+        id: message.id,
+        kind: "assistant-message",
+        messageId: message.id,
+        content: message.content,
+        complete: message.complete,
+        ...(message.thinkingContent !== undefined ? { thinkingContent: message.thinkingContent } : {}),
+        ...(message.thinkingDuration !== undefined ? { thinkingDuration: message.thinkingDuration } : {}),
+        ...(message.model !== undefined ? { model: message.model } : {}),
+        ...(message.stopReason !== undefined ? { stopReason: message.stopReason } : {}),
+      }
+  ));
+}
+
 export function createInitialSdkUiState(): SdkUiState {
   return {
     workspaceModes: {},
     messages: [],
+    toolCalls: [],
+    conversationEntries: [],
+    runStatuses: {},
     approvals: [],
     questions: [],
     mcpServers: [],
@@ -116,11 +196,13 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
   }
 
   if (event.channel === "ui:session-loaded") {
+    const messages = event.payload.messages;
     return {
       ...createInitialSdkUiState(),
       sessions: state.sessions,
       activeRunId: event.payload.sessionId,
-      messages: event.payload.messages,
+      messages,
+      conversationEntries: entriesFromMessages(messages),
     };
   }
 
@@ -129,6 +211,10 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
       ...state,
       activeRunId,
       messages: [...state.messages, { id: event.payload.messageId, role: "user" as const, content: event.payload.content, complete: true }],
+      conversationEntries: capConversationEntries([
+        ...(state.conversationEntries ?? []),
+        { id: event.payload.messageId, kind: "user-message", messageId: event.payload.messageId, content: event.payload.content, complete: true },
+      ]),
     };
   }
 
@@ -136,20 +222,69 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
     return markHasTestExecution({ ...state, activeRunId }, activeRunId);
   }
 
+  if (event.channel === "run:created") {
+    const runId = typeof payload.runId === "string" ? payload.runId : activeRunId;
+    return {
+      ...state,
+      activeRunId: runId ?? state.activeRunId,
+      ...(typeof runId === "string" ? { runStatuses: { ...(state.runStatuses ?? {}), [runId]: "planning" as RunStatus } } : {}),
+    };
+  }
+
+  if (event.channel === "run:planning") {
+    return updateRunStatuses({ ...state, activeRunId }, activeRunId, "planning");
+  }
+
+  if (event.channel === "run:plan-ready") {
+    return updateRunStatuses({ ...state, activeRunId }, activeRunId, "waiting_confirmation");
+  }
+
+  if (event.channel === "run:status-changed") {
+    const status = payload.status as RunStatus | undefined;
+    return status ? updateRunStatuses({ ...state, activeRunId }, activeRunId, status) : { ...state, activeRunId };
+  }
+
   if (event.channel === "assistant:text-delta") {
     const messageId = String(payload.messageId);
     const delta = typeof payload.delta === "string" ? payload.delta : "";
     const existing = state.messages.find((message) => message.id === messageId);
+    const existingEntry = (state.conversationEntries ?? []).find((entry) => entry.id === messageId && entry.kind === "assistant-message") as Extract<ConversationEntry, { kind: "assistant-message" }> | undefined;
+    const content = `${existingEntry?.content ?? ""}${delta}`;
     const messages = existing
       ? state.messages.map((message) => message.id === messageId ? { ...message, content: message.content + delta } : message)
       : [...state.messages, { id: messageId, role: "assistant" as const, content: delta, complete: false }];
-    return { ...state, activeRunId, messages };
+    return {
+      ...state,
+      activeRunId,
+      messages,
+      conversationEntries: capConversationEntries(
+        updateConversationEntryList(
+          { ...state, conversationEntries: state.conversationEntries ?? [] },
+          messageId,
+          {
+            kind: "assistant-message",
+            messageId,
+            content,
+            complete: false,
+          } as Partial<ConversationEntry>,
+          {
+            id: messageId,
+            kind: "assistant-message",
+            messageId,
+            content: delta,
+            complete: false,
+          },
+        ).conversationEntries ?? [],
+      ),
+    };
   }
 
   if (event.channel === "assistant:thinking-delta") {
     const messageId = String(payload.messageId);
     const delta = typeof payload.delta === "string" ? payload.delta : "";
     const existing = state.messages.find((message) => message.id === messageId);
+    const existingEntry = (state.conversationEntries ?? []).find((entry) => entry.id === messageId && entry.kind === "assistant-message") as Extract<ConversationEntry, { kind: "assistant-message" }> | undefined;
+    const thinkingContent = `${existingEntry?.thinkingContent ?? ""}${delta}`;
     const messages = existing
       ? state.messages.map((message) =>
           message.id === messageId
@@ -157,7 +292,29 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
             : message,
         )
       : [...state.messages, { id: messageId, role: "assistant" as const, content: "", complete: false, thinkingContent: delta }];
-    return { ...state, activeRunId, messages };
+    return {
+      ...state,
+      activeRunId,
+      messages,
+      conversationEntries: capConversationEntries(updateConversationEntryList(
+        { ...state, conversationEntries: state.conversationEntries ?? [] },
+        messageId,
+        {
+          kind: "assistant-message",
+          messageId,
+          thinkingContent,
+          complete: false,
+        } as Partial<ConversationEntry>,
+        {
+          id: messageId,
+          kind: "assistant-message",
+          messageId,
+          content: "",
+          complete: false,
+          thinkingContent: delta,
+        },
+      ).conversationEntries ?? []),
+    };
   }
 
   if (event.channel === "assistant:message-started") {
@@ -170,6 +327,12 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
     return {
       ...state,
       activeRunId,
+      conversationEntries: capConversationEntries(updateConversationEntryList(
+        { ...state, conversationEntries: state.conversationEntries ?? [] },
+        messageId,
+        { kind: "assistant-message", messageId, model, content: existing?.content ?? "", complete: existing?.complete ?? false } as Partial<ConversationEntry>,
+        { id: messageId, kind: "assistant-message", messageId, content: "", complete: false, ...(model ? { model } : {}) },
+      ).conversationEntries ?? []),
       messages,
       ...(model ? { modelName: model, runStats: { ...state.runStats, model } } : {}),
       ...(payload.usage ? { usage: normalizeUsage(payload.usage) } : {}),
@@ -189,6 +352,25 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
           ? { ...message, complete: true, ...(thinkingDuration !== undefined ? { thinkingDuration } : {}), ...(stopReason !== undefined ? { stopReason } : {}) }
           : message,
       ),
+      conversationEntries: capConversationEntries(updateConversationEntryList(
+        { ...state, conversationEntries: state.conversationEntries ?? [] },
+        messageId,
+        { kind: "assistant-message", messageId, complete: true, ...(thinkingDuration !== undefined ? { thinkingDuration } : {}), ...(stopReason !== undefined ? { stopReason } : {}) } as Partial<ConversationEntry>,
+      ).conversationEntries ?? []),
+    };
+  }
+
+  if (event.channel === "tool:call-started") {
+    const toolCall = payload.toolCall as ToolCall;
+    return {
+      ...updateToolCallList(state, toolCall.id, { ...toolCall, status: "running" }, { ...toolCall, status: "running" }),
+      conversationEntries: capConversationEntries(updateConversationEntryList(
+        { ...state, conversationEntries: state.conversationEntries ?? [] },
+        toolCall.id,
+        { kind: "tool-call", toolCall: { ...toolCall, status: "running" } } as Partial<ConversationEntry>,
+        { id: toolCall.id, kind: "tool-call", toolCall: { ...toolCall, status: "running" } },
+      ).conversationEntries ?? []),
+      activeRunId,
     };
   }
 
@@ -196,7 +378,18 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
     const approvals = state.approvals.length >= 200
       ? state.approvals
       : [...state.approvals, payload as unknown as ApprovalRequest];
-    return { ...state, activeRunId, approvals };
+    const toolCall = payload.toolCall as ToolCall;
+    return {
+      ...updateToolCallList(state, toolCall.id, { ...toolCall, status: "waiting_approval" }, { ...toolCall, status: "waiting_approval" }),
+      activeRunId,
+      approvals,
+      conversationEntries: capConversationEntries(updateConversationEntryList(
+        { ...state, conversationEntries: state.conversationEntries ?? [] },
+        typeof payload.requestId === "string" ? payload.requestId : toolCall.id,
+        { kind: "approval", request: payload as ApprovalRequest } as Partial<ConversationEntry>,
+        { id: typeof payload.requestId === "string" ? payload.requestId : toolCall.id, kind: "approval", request: payload as ApprovalRequest },
+      ).conversationEntries ?? []),
+    };
   }
 
   if (event.channel === "tool:input-json-delta") {
@@ -207,14 +400,84 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
         ? { ...a, toolCall: { ...a.toolCall, inputSummary, streamedInput: inputSummary } }
         : a,
     );
-    return { ...state, activeRunId, approvals };
+    return {
+      ...updateToolCallList(
+        state,
+        toolCallId,
+        { inputSummary, streamedInput: inputSummary },
+        { id: toolCallId, toolName: toolCallId, label: toolCallId, status: "running" },
+      ),
+      activeRunId,
+      approvals,
+      conversationEntries: capConversationEntries(updateConversationEntryList(
+        { ...state, conversationEntries: state.conversationEntries ?? [] },
+        toolCallId,
+        { kind: "tool-call", toolCall: { ...(state.toolCalls ?? []).find((toolCall) => toolCall.id === toolCallId) ?? { id: toolCallId, toolName: toolCallId, label: toolCallId, status: "running" }, inputSummary, streamedInput: inputSummary } } as Partial<ConversationEntry>,
+        { id: toolCallId, kind: "tool-call", toolCall: { id: toolCallId, toolName: toolCallId, label: toolCallId, status: "running", inputSummary, streamedInput: inputSummary } },
+      ).conversationEntries ?? []),
+    };
+  }
+
+  if (event.channel === "tool:call-completed") {
+    const toolCallId = String(payload.toolCallId);
+    return {
+      ...updateToolCallList(
+        state,
+        toolCallId,
+        {
+          status: "completed",
+          outputSummary: typeof payload.outputSummary === "string" ? payload.outputSummary : undefined,
+        },
+        { id: toolCallId, toolName: toolCallId, label: toolCallId, status: "completed" },
+      ),
+      activeRunId,
+      conversationEntries: capConversationEntries(updateConversationEntryList(
+        { ...state, conversationEntries: state.conversationEntries ?? [] },
+        toolCallId,
+        { kind: "tool-call", toolCall: { ...(state.toolCalls ?? []).find((toolCall) => toolCall.id === toolCallId) ?? { id: toolCallId, toolName: toolCallId, label: toolCallId, status: "completed" }, status: "completed", outputSummary: typeof payload.outputSummary === "string" ? payload.outputSummary : undefined } } as Partial<ConversationEntry>,
+        { id: toolCallId, kind: "tool-call", toolCall: { id: toolCallId, toolName: toolCallId, label: toolCallId, status: "completed", outputSummary: typeof payload.outputSummary === "string" ? payload.outputSummary : undefined } },
+      ).conversationEntries ?? []),
+    };
+  }
+
+  if (event.channel === "tool:call-failed") {
+    const toolCallId = String(payload.toolCallId);
+    return {
+      ...updateToolCallList(
+        state,
+        toolCallId,
+        {
+          status: "failed",
+          outputSummary: typeof payload.outputSummary === "string" ? payload.outputSummary : undefined,
+        },
+        { id: toolCallId, toolName: toolCallId, label: toolCallId, status: "failed" },
+      ),
+      activeRunId,
+      conversationEntries: capConversationEntries(updateConversationEntryList(
+        { ...state, conversationEntries: state.conversationEntries ?? [] },
+        toolCallId,
+        { kind: "tool-call", toolCall: { ...(state.toolCalls ?? []).find((toolCall) => toolCall.id === toolCallId) ?? { id: toolCallId, toolName: toolCallId, label: toolCallId, status: "failed" }, status: "failed", outputSummary: typeof payload.outputSummary === "string" ? payload.outputSummary : undefined } } as Partial<ConversationEntry>,
+        { id: toolCallId, kind: "tool-call", toolCall: { id: toolCallId, toolName: toolCallId, label: toolCallId, status: "failed", outputSummary: typeof payload.outputSummary === "string" ? payload.outputSummary : undefined } },
+      ).conversationEntries ?? []),
+    };
   }
 
   if (event.channel === "question:required") {
     const questions = state.questions.length >= 200
       ? state.questions
       : [...state.questions, payload as unknown as QuestionRequest];
-    return { ...state, activeRunId, questions };
+    const request = payload as unknown as QuestionRequest;
+    return {
+      ...state,
+      activeRunId,
+      questions,
+      conversationEntries: capConversationEntries(updateConversationEntryList(
+        { ...state, conversationEntries: state.conversationEntries ?? [] },
+        request.requestId,
+        { kind: "question", request } as Partial<ConversationEntry>,
+        { id: request.requestId, kind: "question", request },
+      ).conversationEntries ?? []),
+    };
   }
 
   if (event.channel === "question:answered") {
@@ -311,6 +574,45 @@ export function reduceSdkUiEvent(state: SdkUiState, event: SdkUiEvent): SdkUiSta
       ...(payload.progress !== undefined ? { progress: payload.progress } : {}),
     });
     return { ...state, activeRunId, toolProgress: next };
+  }
+
+  if (event.channel === "sdk:tool-summary") {
+    const toolUseId = String(payload.toolUseId);
+    return {
+      ...updateToolCallList(
+        state,
+        toolUseId,
+        { outputSummary: String(payload.summary ?? "") },
+        { id: toolUseId, toolName: toolUseId, label: toolUseId, status: "running" },
+      ),
+      activeRunId,
+      conversationEntries: capConversationEntries(updateConversationEntryList(
+        { ...state, conversationEntries: state.conversationEntries ?? [] },
+        toolUseId,
+        { kind: "tool-call", toolCall: { ...(state.toolCalls ?? []).find((toolCall) => toolCall.id === toolUseId) ?? { id: toolUseId, toolName: toolUseId, label: toolUseId, status: "running" }, outputSummary: String(payload.summary ?? "") } } as Partial<ConversationEntry>,
+        { id: toolUseId, kind: "tool-call", toolCall: { id: toolUseId, toolName: toolUseId, label: toolUseId, status: "running", outputSummary: String(payload.summary ?? "") } },
+      ).conversationEntries ?? []),
+    };
+  }
+
+  if (event.channel === "sdk:deferred-tool-use") {
+    const toolName = String(payload.toolName);
+    const toolUseId = String(payload.toolUseId);
+    return {
+      ...updateToolCallList(
+        state,
+        toolUseId,
+        { toolName, label: toolName, status: "running" },
+        { id: toolUseId, toolName, label: toolName, status: "running" },
+      ),
+      activeRunId,
+      conversationEntries: capConversationEntries(updateConversationEntryList(
+        { ...state, conversationEntries: state.conversationEntries ?? [] },
+        toolUseId,
+        { kind: "tool-call", toolCall: { ...(state.toolCalls ?? []).find((toolCall) => toolCall.id === toolUseId) ?? { id: toolUseId, toolName, label: toolName, status: "running" }, toolName, label: toolName, status: "running" } } as Partial<ConversationEntry>,
+        { id: toolUseId, kind: "tool-call", toolCall: { id: toolUseId, toolName, label: toolName, status: "running" } },
+      ).conversationEntries ?? []),
+    };
   }
 
   if (event.channel === "sdk:task-notification") {

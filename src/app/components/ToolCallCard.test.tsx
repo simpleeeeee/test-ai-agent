@@ -19,13 +19,13 @@ describe("ToolCallCard", () => {
   it("toggles output on click when output provided", async () => {
     const user = userEvent.setup();
     render(<ToolCallCard toolName="Read" summary="test.ts" status="done" statusText="3ms" output="文件内容…" />);
-    await user.click(screen.getByText("查看输出"));
+    await user.click(screen.getByText("调用过程"));
     expect(screen.getByText("文件内容…")).toBeVisible();
   });
 
   it("does not render toggle when no output", () => {
     render(<ToolCallCard toolName="Read" summary="test.ts" status="active" statusText="执行中…" />);
-    expect(screen.queryByText("查看输出")).not.toBeInTheDocument();
+    expect(screen.queryByText("调用过程")).not.toBeInTheDocument();
   });
 
   it("renders tool progress when status is running", () => {
