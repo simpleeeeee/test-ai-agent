@@ -34,16 +34,16 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme }: Props) 
     <div className="settings-overlay open" onClick={onClose} role="presentation">
       <div className="settings-panel" onClick={(e) => e.stopPropagation()}>
         <div className="setting-row">
-          <div className="setting-label">Base URL</div>
-          <input type="text" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} onBlur={handleSave} placeholder="https://api.anthropic.com" />
+          <label className="setting-label" htmlFor="settings-base-url">Base URL</label>
+          <input id="settings-base-url" type="text" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} onBlur={handleSave} placeholder="https://api.anthropic.com" />
         </div>
         <div className="setting-row">
-          <div className="setting-label">API Key</div>
-          <input type="text" value={apiKey} onChange={(e) => setApiKey(e.target.value)} onBlur={handleSave} placeholder="sk-ant-api-..." />
+          <label className="setting-label" htmlFor="settings-api-key">API Key</label>
+          <input id="settings-api-key" type="text" value={apiKey} onChange={(e) => setApiKey(e.target.value)} onBlur={handleSave} placeholder="sk-ant-api-..." />
         </div>
         <div className="setting-row">
-          <div className="setting-label">模型</div>
-          <input type="text" value={model} onChange={(e) => setModel(e.target.value)} onBlur={handleSave} placeholder="claude-sonnet-4-6" />
+          <label className="setting-label" htmlFor="settings-model">模型</label>
+          <input id="settings-model" type="text" value={model} onChange={(e) => setModel(e.target.value)} onBlur={handleSave} placeholder="claude-sonnet-4-6" />
         </div>
         <div className="setting-divider" />
         <div className="setting-row-inline">
