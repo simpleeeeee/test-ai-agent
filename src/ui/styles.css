@@ -620,67 +620,87 @@ input:focus-visible {
 }
 
 .composer-shell textarea {
+  width: 100%;
   background: transparent;
   border: 0;
+  outline: 0;
+  resize: none;
   color: var(--text-primary);
   font-size: var(--font-md);
   line-height: 1.55;
-  outline: 0;
-  resize: none;
+  padding: 0;
 }
 
 .composer-shell textarea::placeholder {
   color: var(--text-tertiary);
 }
 
-.composer-toolbar,
-.composer-tools {
-  align-items: center;
+.composer-toolbar {
   display: flex;
+  align-items: center;
   justify-content: space-between;
+  margin-top: 4px;
 }
 
 .composer-tools {
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
-.icon-button,
-.composer-send {
-  align-items: center;
-  border-radius: 8px;
+.icon-button {
   display: inline-flex;
-  height: 31px;
+  align-items: center;
   justify-content: center;
-  width: 31px;
+  width: 31px; height: 31px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
 }
 
-.icon-button {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
+.icon-button:hover {
+  background: var(--bg-sidebar-hover);
+  border-color: var(--border-strong);
   color: var(--text-primary);
 }
 
+.icon-button:active { transform: scale(0.96); }
+
 .composer-send {
-  background: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 31px; height: 31px;
   border: 0;
+  border-radius: var(--radius-md);
+  background: var(--accent);
   color: #fff;
+  transition: all var(--transition-fast);
 }
 
-.composer-send:hover {
-  background: var(--accent-hover);
-}
+.composer-send:hover { background: var(--accent-hover); }
+.composer-send:active { transform: scale(0.93); background: var(--accent-active); }
 
 .model-pill {
-  align-items: center;
-  background: var(--bg-pill);
-  border: 1px solid var(--border-pill);
-  border-radius: 8px;
-  color: #465369;
   display: inline-flex;
-  font-size: 12px;
+  align-items: center;
   gap: 6px;
   height: 31px;
   padding: 0 10px;
+  border: 1px solid var(--border-pill);
+  border-radius: var(--radius-md);
+  background: var(--bg-pill);
+  color: #465369;
+  font-size: var(--font-sm);
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.model-pill:hover {
+  background: #dce2ec;
+  border-color: #c8d0de;
 }
 
 /* ============================================================
