@@ -67,7 +67,7 @@ test("ordinary chat uses high-fidelity Claude Desktop shell", async ({ page }) =
 
   await expect(page.locator(".claude-sidebar")).toHaveCSS("background-color", "rgb(232, 230, 220)");
   await expect(page.locator(".app-shell")).toHaveCSS("background-color", "rgb(250, 249, 245)");
-  await expect(page.locator(".composer-shell")).toHaveCSS("border-radius", "12px");
+  await expect(page.locator(".composer-shell")).toHaveCSS("border-top-left-radius", "12px");
 });
 
 test("sidebar history scrolls internally and long titles stay truncated", async ({ page }) => {

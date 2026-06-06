@@ -11,7 +11,7 @@ test("tester can submit a request and enter test execution mode", async ({ page 
   await page.getByLabel("消息输入").fill("测试订单模块功能");
   await page.getByRole("button", { name: "发送" }).click();
 
-  await expect(page.getByText(/测试订单模块功能/)).toBeVisible();
+  await expect(page.locator(".user-bubble").getByText("测试订单模块功能")).toBeVisible();
   await expect(page.getByRole("complementary", { name: "测试监控台" })).toBeVisible();
   await expect(page.getByText("计划进度")).toBeVisible();
   await expect(page.getByText("MCP 服务")).toBeVisible();
