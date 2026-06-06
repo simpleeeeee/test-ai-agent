@@ -163,14 +163,11 @@ input:focus-visible {
 
 .app-shell {
   display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   height: 100%;
   overflow: hidden;
   background: var(--bg-primary);
   color: var(--text-primary);
-}
-
-.app-shell.chat-mode {
-  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
 }
 
 .app-shell.test-mode {
