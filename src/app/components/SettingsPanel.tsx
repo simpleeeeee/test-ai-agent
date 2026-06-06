@@ -1,14 +1,8 @@
 import { useEffect, useState } from "react";
 
-type SettingsFormValues = {
-  baseUrl: string;
-  apiKey: string;
-  model: string;
-};
-
 type SettingsBridge = {
-  loadSettings: () => Promise<SettingsFormValues>;
-  saveSettings: (settings: SettingsFormValues) => unknown;
+  loadSettings: () => Promise<Record<string, unknown>>;
+  saveSettings: (settings: Record<string, unknown>) => unknown;
 };
 
 type Props = {
@@ -24,10 +18,11 @@ export function SettingsPanel({ bridge, onClose, onThemeChange, theme }: Props) 
   const [model, setModel] = useState("");
 
   useEffect(() => {
-    bridge.loadSettings().then((s) => {
-      setBaseUrl(s.baseUrl || "");
-      setApiKey(s.apiKey || "");
-      setModel(s.model || "");
+    bridge.loadSettings().then((raw) => {
+      const s = raw as Record<string, unknown>;
+      setBaseUrl((s.baseUrl as string) || "");
+      setApiKey((s.apiKey as string) || "");
+      setModel((s.model as string) || "");
     });
   }, [bridge]);
 

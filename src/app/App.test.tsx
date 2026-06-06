@@ -252,26 +252,26 @@ describe("App backend integration", () => {
     expect(await screen.findByText("claude-opus-4-8")).toBeInTheDocument();
   });
 
-  it("sends SDK runtime settings through the backend bridge", async () => {
+  it("opens SettingsPanel with LLM config fields and supports theme toggle", async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    // Establish an active run
-    emit("run:created", { runId: "run-1", prompt: "测试" });
-
+    // Open settings
     await user.click(screen.getByRole("button", { name: "设置" }));
-    await user.click(within(screen.getByRole("presentation")).getByText("对话"));
-    await user.selectOptions(screen.getByLabelText("权限模式"), "plan");
-    await user.selectOptions(screen.getByLabelText("思考强度"), "high");
-    await user.click(screen.getByRole("button", { name: "应用设置" }));
 
-    expect(invoke).toHaveBeenCalledWith("run:apply-settings", expect.objectContaining({
-      runId: "run-1",
-      settings: expect.objectContaining({
-        permissionMode: "plan",
-        thinking: expect.objectContaining({ effort: "high" }),
-      }),
-    }));
+    // SettingsPanel renders with Base URL, API Key, Model, and Theme controls
+    expect(screen.getByText("Base URL")).toBeInTheDocument();
+    expect(screen.getByText("API Key")).toBeInTheDocument();
+    expect(screen.getByText("模型")).toBeInTheDocument();
+    expect(screen.getByText("主题")).toBeInTheDocument();
+
+    // Click dark theme button
+    await user.click(screen.getByRole("button", { name: "暗色" }));
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+
+    // Click light theme button
+    await user.click(screen.getByRole("button", { name: "浅色" }));
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
   });
 
   it("shows a loading banner while a clicked history session is being restored", async () => {
