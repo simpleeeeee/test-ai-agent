@@ -704,7 +704,7 @@ input:focus-visible {
 
 .composer-info-model {
   font-size: var(--font-xs);
-  font-weight: 520;
+  font-weight: 500;
   color: var(--text-primary);
   max-width: 180px;
   overflow: hidden;
@@ -728,7 +728,7 @@ input:focus-visible {
 .composer-token-item strong {
   color: var(--text-primary);
   font-family: var(--font-mono);
-  font-weight: 520;
+  font-weight: 500;
 }
 
 .composer-token-item.cache-hit {
@@ -793,7 +793,7 @@ input:focus-visible {
 .composer-context-tooltip .tooltip-heading {
   margin-bottom: 4px;
   color: #faf9f5;
-  font-weight: 520;
+  font-weight: 500;
 }
 
 .composer-context-tooltip .tooltip-progress {
@@ -1208,7 +1208,7 @@ input:focus-visible {
 .thinking-header:hover { background: var(--bg-sidebar); }
 
 .thinking-header .thinking-label {
-  font-weight: 520;
+  font-weight: 500;
   color: var(--text-primary);
 }
 
@@ -1492,7 +1492,7 @@ input:focus-visible {
   padding: 1px 6px;
   border-radius: var(--radius-full);
   margin-left: 6px;
-  font-weight: 520;
+  font-weight: 500;
 }
 .task-status-label.status-started {
   background: var(--accent-soft);
@@ -1520,7 +1520,7 @@ input:focus-visible {
   gap: 8px;
   font-size: var(--font-sm);
   color: var(--text-primary);
-  font-weight: 520;
+  font-weight: 500;
 }
 .task-notification-item .task-notification-status {
   font-size: var(--font-xs);
@@ -1857,4 +1857,96 @@ input:focus-visible {
 @media (max-width: 760px) {
   .settings-modal { width: 96vw; height: auto; max-height: 90vh; }
   .settings-nav { width: 140px; }
+}
+
+/* ============================================================
+   SETTINGS PANEL — 左下浮动设置面板
+   ============================================================ */
+.settings-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+
+.settings-overlay.open {
+  display: block;
+}
+
+.settings-panel {
+  position: fixed;
+  left: 10px;
+  bottom: 56px;
+  z-index: 51;
+  width: 240px;
+  padding: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  display: grid;
+  gap: 12px;
+}
+
+.settings-panel .setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-panel .setting-label {
+  font-size: var(--font-sm);
+  font-weight: 500;
+}
+
+.settings-panel input {
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: var(--font-sm);
+  font-family: var(--font-mono);
+}
+
+.settings-panel input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.settings-panel .setting-row-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.settings-panel .setting-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 2px 0;
+}
+
+.theme-switch {
+  display: flex;
+  gap: 1px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.theme-switch button {
+  padding: 4px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-xs);
+  cursor: pointer;
+}
+
+.theme-switch button.active {
+  background: var(--bg-sidebar-active);
+  color: var(--text-primary);
+  font-weight: 600;
 }
